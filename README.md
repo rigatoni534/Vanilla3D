@@ -6,7 +6,7 @@ Vanilla3D is very early in its development stage, so it is not near the end goal
 
 Currently, you can create basic prisms so you can make cubes and platforms. It has physics, but they're not advanced. The renderer also lacks in depth perception, so some objects can look a little wonky from perspectives.
 
-Scripts cannot be edited yet, but that should be coming soon, and it will use a lightweight custom language similar to Lua or Luau by Roblox, but I promise you it won't be like Roblox with 4 legacy methods, one deprecated but still technically works, and the new modern method that will be legacy soon anyway.
+Scripts can be edited using Vanillalua, a custom language similar to Lua but simpler and lighter fit for an HTML. It is fairly capable. It will be able to handle most tasks, and its capabilities are far beyond what the engine can do NOW. You can also use JSON for data but it is not usable by Vanillalua, yet.
 ## Who is this for?
 I'm using this for me and my friends to all play games together during school during our free time, and possibly that some random dude who wants to make a game but he only has a Chromebook, can actually make a game and share it.
 ## Versioning
@@ -23,3 +23,5 @@ Overall, this project in my mind is awesome, but you shouldn't expect much since
 That's Vanilla3D
 
 And im rigatoni or sum bro im willingly typing professionally thats how you know im in too deep.
+
+P.s im lazy to update this rn but most of this is changed info and shouldnt be really trusted just wait for the vanilla website to be made and itll be more up to date lol

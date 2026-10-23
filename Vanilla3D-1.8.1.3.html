@@ -81,6 +81,9 @@
   .brand-name { font-weight: 650; font-size: 14px; letter-spacing: -0.01em; white-space: nowrap; }
   .brand-sub { color: var(--muted); font-size: 13px; padding-left: 10px; border-left: 1px solid var(--line); white-space: nowrap; }
   .toolbar-end { display: flex; justify-content: flex-end; gap: 4px; }
+  .file-menu-wrap { position: relative; display: flex; align-items: center; }
+  .file-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 220; min-width: 228px; box-shadow: var(--shadow); }
+  .menu-separator { height: 1px; margin: 5px 8px; background: var(--line); }
 
   .btn {
     display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px;
@@ -334,6 +337,81 @@
   .pill:hover { color: var(--text); border-color: var(--muted); }
   .pill[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
 
+  /* ───── Tabs ───── */
+  #tabbar {
+    flex: none; display: flex; align-items: flex-end; gap: 4px; height: 38px; padding: 8px 12px 0;
+    background: var(--bg); border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none;
+  }
+  #tabbar::-webkit-scrollbar { display: none; }
+  .tab {
+    position: relative; flex: none; display: flex; align-items: center; gap: 7px; height: 30px; max-width: 210px;
+    padding: 0 7px 0 11px; border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0;
+    color: var(--text-2); font-weight: 550; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .tab .ic { color: var(--muted); flex: none; transition: color .15s; }
+  .tab:hover { background: var(--hover); color: var(--text); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tab.active { background: var(--viewport); border-color: var(--line); color: var(--text); margin-bottom: -1px; height: 31px; }
+  .tab.active .ic { color: var(--accent); }
+  .tab-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab-close {
+    flex: none; width: 20px; height: 20px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 5px;
+    background: transparent; color: var(--muted); cursor: pointer;
+  }
+  .tab-close .ic { width: 12px; height: 12px; color: inherit; }
+  .tab-close:hover { background: var(--hover); color: var(--text); }
+
+  /* ───── Script editor ───── */
+  :root { --syn-kw: #c792ea; --syn-str: #a5d66b; --syn-num: #f2a65a; --syn-com: #6c778a; --syn-bi: #5fb3f0; --syn-lit: #f2a65a; --syn-prop: #7fd6c8; }
+  body.light-theme { --syn-kw: #8e44ad; --syn-str: #2e7d32; --syn-num: #b36200; --syn-com: #8a93a3; --syn-bi: #1f6fc1; --syn-lit: #b36200; --syn-prop: #0e7c74; }
+  #script-editor { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; background: var(--viewport); }
+  #script-editor[hidden] { display: none; }
+  .se-head { flex: none; height: 36px; padding: 0 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); color: var(--text-2); font-size: 12px; }
+  .se-title { color: var(--text); font-weight: 650; font-size: 13px; }
+  .se-chip { padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 11.5px; }
+  .se-spacer { flex: 1; }
+  .se-note { color: var(--warn); font-weight: 550; }
+  .se-note[hidden] { display: none; }
+  #se-counts { display: flex; gap: 12px; }
+  .se-count { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+  .se-count i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .se-count.error i { background: var(--bad); }
+  .se-count.warning i { background: var(--warn); }
+  .se-count.ok i { background: var(--ok, #4cc38a); }
+  .se-body { flex: 1; min-height: 0; display: flex; }
+  .se-gutter { flex: none; width: 56px; overflow: hidden; border-right: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 45%, transparent); }
+  #se-lines-inner { padding: 8px 0 56px; font: 12px/20px var(--mono); color: var(--muted); text-align: right; will-change: transform; }
+  #se-lines-inner div { height: 20px; padding-right: 12px; }
+  #se-lines-inner div.cur { color: var(--text); }
+  .se-code { position: relative; flex: 1; min-width: 0; }
+  .se-text {
+    position: absolute; inset: 0; margin: 0; padding: 8px 14px 56px; border: 0; font: 13px/20px var(--mono); letter-spacing: 0;
+    white-space: pre; tab-size: 2; -moz-tab-size: 2; word-wrap: normal; overflow-wrap: normal; text-align: left;
+  }
+  pre.se-text { overflow: hidden; pointer-events: none; color: var(--text); }
+  textarea.se-text {
+    background: transparent; color: transparent; caret-color: var(--text); resize: none; outline: none; overflow: auto;
+    scrollbar-width: thin; scrollbar-color: var(--line) transparent; user-select: text; -webkit-user-select: text;
+  }
+  textarea.se-text::selection { background: color-mix(in srgb, var(--accent) 38%, transparent); color: transparent; }
+  .se-markers { flex: none; width: 32px; overflow: hidden; position: relative; border-left: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 45%, transparent); }
+  #se-markers-inner { position: relative; will-change: transform; }
+  .se-marker { position: absolute; left: 6px; width: 20px; height: 20px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 5px; background: transparent; cursor: pointer; }
+  .se-marker:hover { background: var(--hover); }
+  .se-marker .ic { width: 15px; height: 15px; }
+  .se-marker.error .ic { color: var(--bad); }
+  .se-marker.warning .ic { color: var(--warn); }
+  .tk-kw { color: var(--syn-kw); } .tk-str { color: var(--syn-str); } .tk-num { color: var(--syn-num); } .tk-com { color: var(--syn-com); font-style: italic; }
+  .tk-bi { color: var(--syn-bi); } .tk-lit { color: var(--syn-lit); } .tk-prop { color: var(--syn-prop); }
+  .se-output { flex: none; height: 124px; display: flex; flex-direction: column; border-top: 1px solid var(--line); background: var(--panel); }
+  .se-out-head { flex: none; height: 30px; padding: 0 8px 0 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); font-size: 12px; font-weight: 650; color: var(--text-2); }
+  .se-out-list { flex: 1; overflow: auto; padding: 6px 14px; font: 12px/18px var(--mono); user-select: text; -webkit-user-select: text; }
+  .out-line { white-space: pre-wrap; word-break: break-word; }
+  .out-line.print { color: var(--text); } .out-line.info { color: var(--muted); } .out-line.error { color: var(--bad); }
+  .out-empty { color: var(--muted); font-family: var(--ui); }
+  .btn-outline { background: transparent; border: 1px solid var(--line); color: var(--text); }
+  .btn-outline:hover { background: var(--hover); }
+
   /* ───── Explorer item actions ───── */
   .tree-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tree-item .item-more {
@@ -409,12 +487,154 @@
     .stats { gap: 12px; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  /* Full-screen Vanillalua documentation workspace */
+  .docs-overlay { align-items: stretch; justify-content: stretch; padding: 0; background: var(--bg, #0b1018); backdrop-filter: none; -webkit-backdrop-filter: none; z-index: 180; }
+  .docs-overlay.active { opacity: 1; }
+  .docs-app { width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--bg, #0b1018); color: var(--text); transform: translateY(5px); transition: transform .18s ease; }
+  .docs-overlay.active .docs-app { transform: none; }
+  .docs-topbar { flex: 0 0 72px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 30px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .docs-brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+  .docs-brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; color: #17130a; background: #f2b134; font-size: 22px; font-weight: 900; box-shadow: 0 5px 18px #f2b1342b; }
+  .docs-brand h2 { margin: 0; font-size: 17px; font-weight: 750; letter-spacing: -.3px; }
+  .docs-brand p { margin: 4px 0 0; font: 10px var(--mono); letter-spacing: 1.2px; color: var(--muted); }
+  .docs-return { display: inline-flex; align-items: center; gap: 9px; padding: 10px 15px; border-radius: 9px; white-space: nowrap; font-weight: 650; }
+  .docs-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 255px minmax(0,1fr); }
+  .docs-sidebar { min-height: 0; display: flex; flex-direction: column; padding: 25px 14px 14px; background: var(--panel); border-right: 1px solid var(--line); }
+  .docs-sidebar-label { padding: 0 12px 13px; font: 10px var(--mono); letter-spacing: 1.25px; font-weight: 700; color: var(--muted); }
+  .docs-nav { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 2px; }
+  .docs-nav-btn { width: 100%; display: flex; align-items: center; gap: 11px; text-align: left; border: 1px solid transparent; border-radius: 8px; padding: 10px 11px; background: transparent; color: var(--text-2); cursor: pointer; font-family: var(--ui); font-size: 12.5px; font-weight: 500; transition: background .14s,border-color .14s,color .14s; }
+  .docs-nav-btn:hover { background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text); }
+  .docs-nav-btn.active { color: var(--text); background: color-mix(in srgb, #f2b134 12%, var(--panel)); border-color: color-mix(in srgb, #f2b134 32%, var(--line)); box-shadow: inset 3px 0 #f2b134; }
+  .docs-nav-num { flex: 0 0 22px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--muted); font: 10px var(--mono); }
+  .docs-nav-btn.active .docs-nav-num { background: #f2b13424; color: #f2b134; }
+  .docs-sidebar-foot { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line-soft); padding: 15px 10px 4px; color: var(--muted); font-size: 11px; }
+  .docs-status-dot { width: 7px; height: 7px; border-radius: 50%; background: #44c78a; box-shadow: 0 0 0 3px #44c78a1c; }
+  .docs-main { min-width: 0; min-height: 0; overflow: auto; scroll-behavior: smooth; }
+  .docs-article { width: min(930px,100%); margin: 0 auto; padding: 42px clamp(22px,5vw,70px) 80px; }
+  .docs-article > p:first-child { margin-top: 0; padding: 20px 22px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--text-2); font-size: 14px; }
+  .docs-article h3 { margin: 46px 0 15px; padding-top: 22px; border-top: 1px solid var(--line-soft); font-size: 23px; line-height: 1.3; letter-spacing: -.55px; scroll-margin-top: 24px; }
+  .docs-article h3::before { content: ''; display: block; width: 28px; height: 3px; margin: -23px 0 18px; border-radius: 3px; background: #f2b134; }
+  .docs-article p, .docs-article li { color: var(--text-2); font-size: 13.5px; }
+  .docs-article p { margin: 12px 0 17px; }
+  .docs-article ul { padding-left: 22px; margin: 12px 0 20px; }
+  .docs-article li { padding-left: 3px; margin: 8px 0; }
+  .docs-article b { color: var(--text); }
+  .docs-article :not(pre) > code { padding: 2px 5px; border: 1px solid color-mix(in srgb, #f2b134 18%, var(--line)); border-radius: 5px; background: color-mix(in srgb, #f2b134 8%, var(--panel)); color: color-mix(in srgb, #f2b134 75%, var(--text)); font: 11.5px var(--mono); white-space: nowrap; }
+  .docs-article pre { position: relative; margin: 18px 0 23px; padding: 42px 0 0; overflow: auto; border: 1px solid #29374b; border-radius: 11px; background: #0b111b; color: #dce7f7; box-shadow: 0 8px 24px #00000016; }
+  .docs-article pre::before { content: 'VANILLALUA'; position: absolute; top: 0; left: 0; right: 0; height: 31px; display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid #29374b; background: #121b29; color: #91a4bd; font: 9px var(--mono); letter-spacing: 1.4px; }
+  .docs-article pre::after { content: ''; position: absolute; top: 12px; left: 12px; width: 7px; height: 7px; border-radius: 50%; background: #fb7185; box-shadow: 12px 0 #fbbf24,24px 0 #34d399; }
+  .docs-article pre code { display: block; padding: 13px 18px 17px; color: inherit; font: 12px/1.75 var(--mono); tab-size: 4; white-space: pre; }
+  .docs-article .docs-copy { position: absolute; top: 5px; right: 8px; z-index: 1; border: 1px solid #34445b; border-radius: 5px; padding: 4px 8px; color: #b6c5d9; background: #1b2737; font-size: 10px; cursor: pointer; }
+  .docs-article .docs-copy:hover { background: #29384c; color: white; }
+  .docs-article .docs-copy.copied { color: #6ee7b7; }
+  @media (max-width: 760px) { .docs-topbar { flex-basis: 64px; padding: 0 14px; } .docs-brand-mark { width: 32px; height: 32px; } .docs-brand h2 { font-size: 14px; } .docs-brand p { font-size: 8px; letter-spacing: .7px; } .docs-return { padding: 9px; font-size: 11px; } .docs-layout { grid-template-columns: 164px minmax(0,1fr); } .docs-sidebar { padding: 17px 8px 10px; } .docs-sidebar-label { padding-left: 8px; font-size: 9px; } .docs-nav-btn { gap: 7px; padding: 9px 6px; font-size: 11px; } .docs-nav-num { flex-basis: 19px; width: 19px; height: 19px; } .docs-article { padding: 24px 15px 55px; } .docs-article h3 { font-size: 19px; margin-top: 34px; } .docs-article pre code { font-size: 11px; padding-left: 12px; } }
+  @media (max-width: 480px) { .docs-layout { grid-template-columns: 125px minmax(0,1fr); } .docs-nav-btn { display: block; font-size: 10px; line-height: 1.35; } .docs-nav-num { display: inline-grid; margin-right: 4px; } .docs-sidebar-foot { font-size: 9px; padding-left: 4px; } .docs-return { gap: 4px; } }
+
+
+  /* ───── File menu (fits the other menus) ───── */
+  .file-menu.menu { position: absolute; top: calc(100% + 8px); right: 0; left: auto; width: 272px; z-index: 220; padding: 6px; }
+  .file-menu .menu-title { padding: 8px 10px 4px; font-weight: 600; }
+  .file-menu .menu-meta { font-family: var(--ui); }
+  .file-menu .menu-separator { margin: 6px 4px; background: var(--line-soft); }
+  .fm-foot { margin: 6px 4px 2px; padding: 8px 8px 4px; border-top: 1px solid var(--line-soft); color: var(--muted); font-size: 11.5px; }
+  #file-btn[aria-expanded="true"] { background: var(--hover); color: var(--text); }
+  #toast-host { position: fixed; left: 50%; bottom: 44px; transform: translateX(-50%); z-index: 400; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+  .toast { display: flex; align-items: center; gap: 9px; max-width: min(460px, 90vw); padding: 9px 14px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--good); border-radius: 8px; box-shadow: var(--shadow); color: var(--text); animation: toast-in .16s ease-out; }
+  .toast.warn { border-left-color: var(--warn); } .toast.bad { border-left-color: var(--bad); }
+  .toast .ic { color: var(--good); } .toast.warn .ic { color: var(--warn); } .toast.bad .ic { color: var(--bad); }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
+  .confirm-overlay { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .15s; }
+  .confirm-overlay.active { opacity: 1; pointer-events: auto; }
+  .confirm-overlay .modal-card { transform: none; }
+  .cf-text { margin: 0 0 16px; color: var(--text-2); }
+  .cf-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .cf-btn { padding: 0 16px; } .cf-btn:not(.btn-primary) { border-color: var(--line); }
+  .cf-btn.danger { background: var(--bad); color: #fff; }
+
+  /* ───── Documentation redesign ───── */
+  .docs-brand-mark { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+  .docs-brand p { font: 12px var(--ui); letter-spacing: 0; color: var(--muted); }
+  .docs-sidebar { padding: 18px 12px 12px; }
+  .docs-search { width: 100%; height: 34px; margin: 0 0 12px; padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: 13px var(--ui); }
+  .docs-search:focus { outline: none; border-color: var(--accent); }
+  .docs-nav { gap: 1px; }
+  .docs-nav-group { padding: 14px 11px 5px; color: var(--muted); font-size: 12px; font-weight: 650; }
+  .docs-nav-group:first-child { padding-top: 2px; }
+  .docs-nav-btn { padding: 7px 11px; font-size: 13px; border: 0; border-radius: 7px; }
+  .docs-nav-btn.active { background: var(--accent-soft); box-shadow: none; color: var(--text); font-weight: 600; }
+  .docs-nav-btn[hidden], .docs-nav-group[hidden] { display: none; }
+  .docs-article { width: min(820px, 100%); padding: 44px clamp(22px, 5vw, 64px) 96px; }
+  .docs-article > p:first-child { padding: 0; border: 0; background: none; font-size: 16px; line-height: 1.6; color: var(--text); }
+  .docs-article p, .docs-article li { font-size: 14px; max-width: 70ch; }
+  .docs-article h3 { margin: 52px 0 12px; padding-top: 26px; font-size: 24px; letter-spacing: -.02em; }
+  .docs-article h3::before { display: none; }
+  .docs-article h4 { margin: 26px 0 8px; font-size: 15px; }
+  .docs-article :not(pre) > code, .docs-article .kbd { border-color: var(--line); background: var(--panel-2); color: var(--text); }
+  .docs-article .kbd { display: inline-block; margin-left: 6px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font: 11px var(--mono); color: var(--muted); }
+  .docs-article .ver-chip { color: var(--accent); }
+  .docs-article pre { padding-top: 34px; border-color: var(--line); background: var(--viewport); color: var(--text); box-shadow: none; }
+  .docs-article pre::before { content: 'Vanillalua'; height: 30px; border-bottom: 1px solid var(--line); background: var(--panel); color: var(--muted); font: 600 12px var(--ui); letter-spacing: 0; }
+  .docs-article pre::after { display: none; }
+  .docs-article .docs-copy { top: 3px; border-color: var(--line); background: var(--panel-2); color: var(--text-2); font: 12px var(--ui); }
+  .docs-article .docs-copy:hover { background: var(--hover); color: var(--text); }
+  .docs-article .docs-copy.copied { color: var(--good); }
+  .docs-table { width: 100%; margin: 16px 0 22px; border-collapse: collapse; font-size: 13px; }
+  .docs-table th { padding: 8px 12px; text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
+  .docs-table td { padding: 10px 12px; vertical-align: top; color: var(--text-2); border-bottom: 1px solid var(--line-soft); }
+  .docs-table td:first-child { color: var(--text); white-space: nowrap; font-weight: 550; }
+  .docs-table td code { white-space: normal; }
+  .callout { margin: 16px 0 22px; padding: 12px 16px; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; background: var(--accent-soft); color: var(--text-2); font-size: 13.5px; max-width: 70ch; }
+  .docs-empty { padding: 12px; color: var(--muted); font-size: 13px; }
+
+  /* ───── Childing, settings and UI refresh ───── */
+  .tree-item { margin-left: calc(var(--depth, 0) * 14px); gap: 6px; transition: background .12s; }
+  .tree-item:hover { background: var(--hover); }
+  .tree-twist { flex: none; width: 14px; height: 14px; padding: 0; display: grid; place-items: center; background: none; border: 0; color: var(--muted); cursor: pointer; }
+  .tree-twist .ic { width: 12px; height: 12px; transition: transform .15s; } .tree-twist.open .ic { transform: rotate(90deg); }
+  .drop-target { background: var(--accent-soft) !important; outline: 1px dashed var(--accent); outline-offset: -1px; }
+  .settings-card { width: min(860px, 94vw); height: min(620px, 88vh); display: flex; flex-direction: column; }
+  .settings-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 200px minmax(0, 1fr); }
+  .set-nav { display: flex; flex-direction: column; gap: 2px; padding: 12px 10px; border-right: 1px solid var(--line-soft); background: color-mix(in srgb, var(--bg) 40%, var(--panel)); border-radius: 0 0 0 12px; }
+  .set-tab { display: flex; align-items: center; gap: 9px; height: 34px; padding: 0 11px; border: 0; border-radius: 7px; background: none; color: var(--text-2); font-weight: 550; text-align: left; cursor: pointer; }
+  .set-tab .ic { color: var(--muted); } .set-tab:hover { background: var(--hover); color: var(--text); }
+  .set-tab[aria-selected="true"] { background: var(--accent-soft); color: var(--text); } .set-tab[aria-selected="true"] .ic { color: var(--accent); }
+  .set-panes { min-height: 0; overflow-y: auto; padding: 8px 28px 24px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .set-pane[hidden] { display: none; }
+  .set-h { margin: 14px 0 4px; font-size: 20px; letter-spacing: -.01em; }
+  .set-sub { margin: 22px 0 2px; padding-top: 16px; border-top: 1px solid var(--line-soft); font-weight: 650; }
+  .set-note { margin: 0 0 8px; }
+  .sel { height: 30px; min-width: 176px; padding: 0 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font: inherit; }
+  .sel:focus-visible, .name-grid .text:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .name-grid { display: grid; grid-template-columns: 150px minmax(0, 260px); gap: 10px 14px; align-items: center; padding: 6px 0; }
+  .name-grid label { color: var(--text-2); }
+  .setting-title code { font: 12px var(--mono); padding: 1px 5px; border-radius: 4px; background: var(--panel-2); border: 1px solid var(--line); }
+  .tag { margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 600; }
+  @media (max-width: 640px) { .settings-body { grid-template-columns: 1fr; } .set-nav { flex-direction: row; border-right: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; overflow-x: auto; } .name-grid { grid-template-columns: 1fr; } }
+  /* general polish */
+  #toolbar { box-shadow: 0 1px 0 var(--line-soft); }
+  .btn { border-radius: 7px; } .btn:focus-visible { outline-offset: 2px; }
+  .pane-header { background: color-mix(in srgb, var(--bg) 35%, var(--panel)); letter-spacing: .01em; }
+  #sidebar { box-shadow: -1px 0 0 var(--line-soft); }
+  .menu, .modal-card { border-radius: 12px; }
+  .tree-group { border-radius: 7px; } .tree-item { border-radius: 7px; }
+  .tree-item.selected { box-shadow: inset 2px 0 var(--accent); }
+  .tree-item { user-select: none; -webkit-user-select: none; }
+  .tree-item.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+  .tree-item.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+  .tree-item.selected + .tree-item.selected { border-top-left-radius: 0; border-top-right-radius: 0; }
 </style>
 </head>
 <body>
   <!-- Icon sprite -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-save" viewBox="0 0 16 16"><path d="M3 2.5h8l2.5 2.5v8.5a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5z"/><path d="M5 2.5v3.5h5V2.5M5 13.5v-4h6v4"/></symbol>
+    <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.5v7.5M4.75 7.25 8 10.5l3.25-3.25M3 13h10"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V3M4.75 5.75 8 2.5l3.25 3.25M3 13h10"/></symbol>
+    <symbol id="i-book" viewBox="0 0 16 16"><path d="M3 3.75A1.75 1.75 0 0 1 4.75 2H13v9.5H4.75A1.75 1.75 0 0 0 3 13.25z"/><path d="M3 13.25A1.75 1.75 0 0 0 4.75 15H13v-3.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
     <symbol id="i-cube" viewBox="0 0 16 16"><path d="M8 1.5 14 4.75v6.5L8 14.5 2 11.25v-6.5z"/><path d="M2 4.75 8 8l6-3.25M8 8v6.5"/></symbol>
+    <symbol id="i-model" viewBox="0 0 16 16"><path d="M5.5 1.75 9.5 4v4.25L5.5 10.5 1.5 8.25V4z"/><path d="M1.5 4l4 2.25L9.5 4M5.5 6.25v4.25"/><path d="M10.5 5.75 14.5 8v4.25L10.5 14.5 6.5 12.25V8z"/><path d="M6.5 8l4 2.25 4-2.25M10.5 10.25v4.25"/></symbol>
     <symbol id="i-play" viewBox="0 0 16 16"><path d="M4.5 2.75v10.5L13 8z"/></symbol>
     <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.25"/><path d="M8 7.25v4M8 4.75v.01"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 16 16"><path d="M2.5 5h5.5M11.5 5h2M2.5 11h2M8 11h5.5"/><circle cx="9.75" cy="5" r="1.75"/><circle cx="6.25" cy="11" r="1.75"/></symbol>
@@ -438,6 +658,8 @@
     <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5M7 7v4M9 7v4"/></symbol>
     <symbol id="i-target" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.75"/><circle cx="8" cy="8" r="1.25"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/></symbol>
     <symbol id="i-ruler" viewBox="0 0 16 16"><path d="M2 10.5 10.5 2 14 5.5 5.5 14z M5 8l1.5 1.5M7 6l1.5 1.5M9 4l1.5 1.5"/></symbol>
+    <symbol id="i-err" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.75"/><path d="M8 4.9v3.6M8 10.9h.01"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 2.5 14.2 13H1.8z M8 6.6v3M8 11.4h.01"/></symbol>
     <symbol id="i-engine" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1.5"/><path d="M6.5 1.75V4M9.5 1.75V4M6.5 12v2.25M9.5 12v2.25M1.75 6.5H4M1.75 9.5H4M12 6.5h2.25M12 9.5h2.25"/></symbol>
   </svg>
 
@@ -458,14 +680,51 @@
       </label>
     </div>
     <div class="toolbar-end">
+      <div class="file-menu-wrap">
+        <button id="file-btn" class="btn" type="button" aria-haspopup="menu" aria-expanded="false" title="Save, open or start a Vanilla World">File <span aria-hidden="true">▾</span></button>
+        <div id="file-menu" class="menu file-menu" role="menu" aria-label="File" hidden>
+          <div class="menu-title">Save</div>
+          <button class="menu-item" role="menuitem" data-file-act="save-browser"><svg class="ic"><use href="#i-save"/></svg>Save in browser<span class="menu-meta">Ctrl S</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="save-file"><svg class="ic"><use href="#i-download"/></svg>Download as .vnw<span class="menu-meta">Ctrl Shift S</span></button>
+          <div class="menu-separator"></div>
+          <div class="menu-title">Open</div>
+          <button class="menu-item" role="menuitem" data-file-act="import-browser"><svg class="ic"><use href="#i-folder"/></svg>Open browser save</button>
+          <button class="menu-item" role="menuitem" data-file-act="import-file"><svg class="ic"><use href="#i-upload"/></svg>Open .vnw file…</button>
+          <div class="menu-separator"></div>
+          <button class="menu-item danger" role="menuitem" data-file-act="new-world"><svg class="ic"><use href="#i-plus"/></svg>New empty world</button>
+          <button class="menu-item" role="menuitem" data-file-act="docs"><svg class="ic"><use href="#i-book"/></svg>Documentation</button>
+          <div class="fm-foot" id="file-status">No browser save yet</div>
+        </div>
+      </div>
       <button id="version-btn" class="btn" title="Version info"><svg class="ic"><use href="#i-info"/></svg><span class="label">Version</span></button>
       <button id="settings-btn" class="btn" title="Settings"><svg class="ic"><use href="#i-sliders"/></svg><span class="label">Settings</span></button>
     </div>
   </header>
+  <input id="vnw-file-input" type="file" accept=".vnw,application/json" hidden>
 
   <div id="workspace">
     <div id="main-column">
+      <div id="tabbar" role="tablist" aria-label="Open tabs"></div>
       <div id="canvas-container">
+        <div id="script-editor" hidden>
+          <div class="se-head">
+            <svg class="ic"><use href="#i-script"/></svg><span id="se-title" class="se-title"></span><span id="se-lang" class="se-chip"></span>
+            <span id="se-note" class="se-note" hidden>Read-only while the simulation runs</span>
+            <span class="se-spacer"></span><span id="se-counts"></span>
+          </div>
+          <div class="se-body">
+            <div class="se-gutter" aria-hidden="true"><div id="se-lines-inner"></div></div>
+            <div class="se-code">
+              <pre id="se-hl" class="se-text" aria-hidden="true"></pre>
+              <textarea id="se-input" class="se-text" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="Script code"></textarea>
+            </div>
+            <div class="se-markers" aria-label="Problems"><div id="se-markers-inner"></div></div>
+          </div>
+          <div class="se-output">
+            <div class="se-out-head"><span>Output</span><span class="se-spacer"></span><button id="se-out-clear" class="btn btn-outline" style="height:22px;padding:0 9px;font-size:11.5px">Clear</button></div>
+            <div id="se-out-list" class="se-out-list" role="log" aria-live="polite"></div>
+          </div>
+        </div>
         <canvas id="sky-canvas" class="layer"></canvas>
         <canvas id="gl-canvas" class="layer"></canvas>
         <canvas id="screen"></canvas>
@@ -516,6 +775,7 @@
   <div id="add-menu" class="menu" role="menu" hidden>
     <div class="menu-title" id="add-menu-title">Add</div>
     <button class="menu-item" role="menuitem" data-kind="prism6"><svg class="ic"><use href="#i-cube"/></svg>Rectangular Prism<span class="menu-meta">prism6</span></button>
+    <button class="menu-item" role="menuitem" data-kind="model"><svg class="ic"><use href="#i-model"/></svg>Model<span class="menu-meta">model</span></button>
     <button class="menu-item" role="menuitem" data-kind="worldsettings"><svg class="ic"><use href="#i-sun"/></svg>World Settings</button>
     <button class="menu-item" role="menuitem" data-kind="script"><svg class="ic"><use href="#i-script"/></svg>Script</button>
   </div>
@@ -523,14 +783,26 @@
   <!-- Explorer item menu -->
   <div id="item-menu" class="menu" role="menu" aria-label="Instance options" hidden>
     <button class="menu-item" role="menuitem" data-act="rename"><svg class="ic"><use href="#i-edit"/></svg>Rename</button>
+    <button class="menu-item" role="menuitem" data-act="group"><svg class="ic"><use href="#i-model"/></svg>Group into Model<span class="menu-meta">Ctrl G</span></button>
+    <button class="menu-item" role="menuitem" data-act="ungroup"><svg class="ic"><use href="#i-cube"/></svg>Ungroup<span class="menu-meta">Ctrl Shift G</span></button>
     <button class="menu-item" role="menuitem" data-act="copy"><svg class="ic"><use href="#i-copy"/></svg>Copy</button>
     <button class="menu-item" role="menuitem" data-act="paste"><svg class="ic"><use href="#i-paste"/></svg>Paste</button>
     <button class="menu-item" role="menuitem" data-act="cut"><svg class="ic"><use href="#i-cut"/></svg>Cut</button>
     <button class="menu-item danger" role="menuitem" data-act="delete"><svg class="ic"><use href="#i-trash"/></svg>Delete</button>
+    <button class="menu-item" role="menuitem" data-act="addchild"><svg class="ic"><use href="#i-plus"/></svg>Add Child…</button>
+    <button class="menu-item" role="menuitem" data-act="pastechild"><svg class="ic"><use href="#i-paste"/></svg>Paste as Child</button>
     <button class="menu-item" role="menuitem" data-act="camera"><svg class="ic"><use href="#i-target"/></svg>Move Camera To</button>
   </div>
 
   <!-- Modals -->
+  <div id="toast-host" aria-live="polite"></div>
+  <div id="confirm-overlay" class="confirm-overlay" role="alertdialog" aria-modal="true" aria-labelledby="cf-title" aria-describedby="cf-text">
+    <div class="modal-card">
+      <div class="modal-head"><h2 class="modal-title" id="cf-title"></h2></div>
+      <div class="modal-body"><p id="cf-text" class="cf-text"></p>
+        <div class="cf-actions"><button class="btn cf-btn" id="cf-cancel" type="button">Cancel</button><button class="btn btn-primary cf-btn" id="cf-ok" type="button"></button></div></div>
+    </div>
+  </div>
   <div id="modal-version" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mv-title">
     <div class="modal-card">
       <div class="modal-head">
@@ -548,30 +820,358 @@
   </div>
 
   <div id="modal-settings" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ms-title">
-    <div class="modal-card">
+    <div class="modal-card settings-card">
       <div class="modal-head">
         <h2 class="modal-title" id="ms-title">Settings</h2>
         <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
       </div>
-      <div class="modal-body">
-        <label class="setting" for="theme-toggle">
-          <div><div class="setting-title">Light mode</div><div class="setting-desc">Use a light palette for the editor and viewport.</div></div>
-          <input type="checkbox" id="theme-toggle" class="switch">
-        </label>
-        <label class="setting" for="opt-left-drag">
-          <div><div class="setting-title">Drag to move</div><div class="setting-desc">Rotate the camera by dragging with the left mouse button.</div></div>
-          <input type="checkbox" id="opt-left-drag" class="switch" checked>
-        </label>
-        <label class="setting" for="opt-right-click">
-          <div><div class="setting-title">Right click to move</div><div class="setting-desc">Rotate the camera by dragging with the right mouse button.</div></div>
-          <input type="checkbox" id="opt-right-click" class="switch">
-        </label>
+      <div class="settings-body">
+        <nav class="set-nav" role="tablist" aria-label="Settings sections">
+          <button class="set-tab" role="tab" data-pane="basics" aria-selected="true"><svg class="ic"><use href="#i-sliders"/></svg>Basics</button>
+          <button class="set-tab" role="tab" data-pane="scripting" aria-selected="false"><svg class="ic"><use href="#i-script"/></svg>Scripting</button>
+          <button class="set-tab" role="tab" data-pane="appearance" aria-selected="false"><svg class="ic"><use href="#i-sun"/></svg>Appearance</button>
+        </nav>
+        <div class="set-panes">
+          <section class="set-pane" id="set-basics">
+            <h3 class="set-h">Basics</h3>
+            <div class="setting"><div><div class="setting-title">Camera move method</div><div class="setting-desc">Which mouse button turns the camera.</div></div>
+              <select id="set-cam" class="sel" aria-label="Camera move method"><option value="drag">Drag (left button)</option><option value="right">Right click</option></select></div>
+            <label class="setting" for="opt-uid"><div><div class="setting-title">Show UID instead of name</div><div class="setting-desc">The Explorer lists each instance by its unique ID.</div></div><input type="checkbox" id="opt-uid" class="switch"></label>
+            <div class="set-sub">Default object names</div>
+            <div class="setting-desc set-note">The name given to new instances. Leave a field empty to restore its default.</div>
+            <div class="name-grid">
+              <label for="dn-prism6">Rectangular Prism</label><input class="text" id="dn-prism6" maxlength="24" placeholder="Block">
+              <label for="dn-model">Model</label><input class="text" id="dn-model" maxlength="24" placeholder="Model">
+              <label for="dn-script">Script</label><input class="text" id="dn-script" maxlength="24" placeholder="Script">
+              <label for="dn-worldsettings">World Settings</label><input class="text" id="dn-worldsettings" maxlength="24" placeholder="Settings">
+            </div>
+          </section>
+          <section class="set-pane" id="set-scripting" hidden>
+            <h3 class="set-h">Scripting</h3>
+            <label class="setting" for="opt-syntax"><div><div class="setting-title">Script coloration</div><div class="setting-desc">Color keywords, strings and numbers in the script editor.</div></div><input type="checkbox" id="opt-syntax" class="switch" checked></label>
+            <div class="set-sub">Pre-include in every script</div>
+            <div class="setting-desc set-note">Included lines no longer need to be typed. Required means the script will not run without it.</div>
+            <label class="setting" for="pre-Scripts"><div><div class="setting-title"><code>call Scripts</code> <span class="tag">Required</span></div><div class="setting-desc">Load the Scripts space.</div></div><input type="checkbox" id="pre-Scripts" class="switch"></label>
+            <label class="setting" for="pre-Instance"><div><div class="setting-title"><code>get Instance</code> <span class="tag">Required</span></div><div class="setting-desc">Load create, delete, duplicate and UID methods.</div></div><input type="checkbox" id="pre-Instance" class="switch"></label>
+            <label class="setting" for="pre-World"><div><div class="setting-title"><code>call World</code></div><div class="setting-desc">Load the World space.</div></div><input type="checkbox" id="pre-World" class="switch"></label>
+            <label class="setting" for="pre-Storage"><div><div class="setting-title"><code>call Storage</code></div><div class="setting-desc">Load the Storage space.</div></div><input type="checkbox" id="pre-Storage" class="switch"></label>
+            <label class="setting" for="pre-Scripting"><div><div class="setting-title"><code>get Scripting</code></div><div class="setting-desc">Load UID lookup and reassignment utilities.</div></div><input type="checkbox" id="pre-Scripting" class="switch"></label>
+            <div class="setting"><div><div class="setting-title">Script Docs</div><div class="setting-desc">The editor guide and the Vanillalua reference.</div></div><button class="btn btn-outline" id="script-docs-btn" type="button">Open Docs</button></div>
+          </section>
+          <section class="set-pane" id="set-appearance" hidden>
+            <h3 class="set-h">Appearance</h3>
+            <label class="setting" for="theme-toggle"><div><div class="setting-title">Light mode</div><div class="setting-desc">Use a light palette for the editor and viewport.</div></div><input type="checkbox" id="theme-toggle" class="switch"></label>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-script-docs" class="modal-overlay docs-overlay" role="dialog" aria-modal="true" aria-labelledby="sd-title">
+    <div class="docs-app">
+      <header class="docs-topbar">
+        <div class="docs-brand"><span class="docs-brand-mark">V</span><div><h2 id="sd-title">Vanilla Engine Docs</h2><p id="docs-sub">Editor guide and Vanillalua reference</p></div></div>
+        <button class="btn docs-return" id="docs-return-settings" type="button"><span aria-hidden="true">←</span> <span id="docs-return-label">Return to Settings</span></button>
+      </header>
+      <div class="docs-layout">
+        <aside class="docs-sidebar"><input id="docs-search" class="docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
+        <main class="docs-main"><div class="docs-article" id="docs-article" style="line-height:1.65">
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">2.2.0.2</code>.</p>
+        <h3 data-group="Editor guide">Editor overview</h3>
+        <p>The editor is built from a few panels. Everything you build lives in one of three <b>spaces</b> in the Explorer.</p>
+        <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
+          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b> and <b>Scripts</b> spaces. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a World Settings or a Script. Storage holds objects kept for scripts and never renders; only World renders.</td></tr>
+          <tr><td>Viewport</td><td>The 3D view. Select, Move and Scale modes work here.</td></tr>
+          <tr><td>Properties</td><td>Edits the selected instance: name, position, size, physics flags, script options.</td></tr>
+          <tr><td>Tab bar</td><td>World is always open. Scripts open as tabs over the viewport.</td></tr>
+        </tbody></table>
+        <p><b>Multi-select:</b> hold <kbd>Shift</kbd> and click to add or remove single objects. Hold <kbd>Ctrl</kbd> (<kbd>Cmd</kbd> on Mac) and click to select every object between your last click and the one you click. Copy, cut, paste, delete and dragging then apply to all selected objects.</p>
+        <p>Hover an instance in the Explorer and press the three-dot button for <b>Rename, Copy, Paste, Cut, Delete</b> and <b>Move Camera To</b>.</p>
+        <h3 data-group="Editor guide">Camera and selection</h3>
+        <p>The camera looks like a first-person view: the horizon stays level and dragging turns your head up, down, left and right. There is no momentum, so it stops the moment you let go. Move with <code>W</code> <code>A</code> <code>S</code> <code>D</code>.</p>
+        <p>In <b>Settings</b>, <b>Drag to move</b> turns the camera with the left mouse button and <b>Right click to move</b> uses the right button. The camera is locked while you drag a gizmo handle.</p>
+        <h3 data-group="Editor guide">Move, Scale and Offset</h3>
+        <ul>
+          <li><b>Select</b> picks an instance in the viewport or the Explorer.</li>
+          <li><b>Move</b> shows an arrow on each of the six sides of the selected block.</li>
+          <li><b>Scale</b> shows a sphere on each of the six sides.</li>
+        </ul>
+        <p>Handles are always drawn on top of the scene at about a third of the block's size. The <b>Offset</b> box next to Run sets the step for both tools in Vanillameters. It starts at <code>0.5</code>; set it to <code>0</code> for free, unstepped movement.</p>
+        <h3 data-group="Editor guide">Run and Stop</h3>
+        <p><b>Run</b> works like Roblox Studio: the world is snapshotted, physics and scripts run live, and <b>Stop</b> restores the snapshot exactly as it was. Anything scripts create or change during a run is discarded on Stop, and global variables are cleared.</p>
+        <div class="callout"><b>Heads up:</b> saving, opening a world and starting a new one are blocked while a simulation runs. Stop first.</div>
+        <h3 data-group="Editor guide">World Settings</h3>
+        <p>A World Settings instance controls the environment. It appears under World and is editable in Properties.</p>
+        <table class="docs-table"><thead><tr><th>Property</th><th>Range</th><th>Default</th></tr></thead><tbody>
+          <tr><td><code>TimeOfDay</code></td><td>0 to 24 hours, drives the sky</td><td>14</td></tr>
+          <tr><td><code>Gravity</code></td><td>0 to 1000 m/s². Presets: Earth 9.8, Moon 1.62, Space 0, Jupiter 24.8</td><td>9.8</td></tr>
+          <tr><td><code>KillLayer</code></td><td>Any height. Moving objects that fall below it are deleted</td><td>-5000</td></tr>
+        </tbody></table>
+        <p>There is no invisible ground at <code>y = 0</code>. Objects fall until they land on something solid or pass the kill layer.</p>
+        <h3 data-group="Editor guide">File menu and .vnw files</h3>
+        <p>The <b>File</b> menu in the top bar saves and opens whole worlds. A world file (<code>.vnw</code>) is plain JSON holding everything in World, Storage and Scripts, including script source. Engine-owned objects such as the Viewfinder are not saved.</p>
+        <table class="docs-table"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+          <tr><td>Save in browser <span class="kbd">Ctrl S</span></td><td>Keeps one save in this browser's local storage. Saving again overwrites it.</td></tr>
+          <tr><td>Download as .vnw <span class="kbd">Ctrl Shift S</span></td><td>Downloads <code>World.vnw</code> to share or back up.</td></tr>
+          <tr><td>Open browser save</td><td>Replaces the current world with your browser save.</td></tr>
+          <tr><td>Open .vnw file…</td><td>Replaces the current world with a file you choose. Invalid files are rejected with a message and nothing changes.</td></tr>
+          <tr><td>New empty world</td><td>Clears World, Storage and Scripts, leaving one World Settings.</td></tr>
+        </tbody></table>
+        <p>Opening and creating ask for confirmation first because they replace everything. There is no undo, so save before you open another world.</p>
+        <h3 data-group="Editor guide">Childing</h3>
+        <p>Any instance can be a <b>child</b> of another instance. The Explorer shows children indented under their parent, with an arrow to collapse them.</p>
+        <ul>
+          <li><b>Drag</b> a row onto another row to make it a child. Drag it onto a space name to move it back to the top level of that space.</li>
+          <li>Use <b>Add Child…</b> or <b>Paste as Child</b> in an instance's three-dot menu to create or paste something directly inside it.</li>
+          <li>Deleting a parent deletes all of its children. Copy, cut and paste carry children along.</li>
+          <li><b>Reorder</b> by dropping on the top or bottom edge of a row (a line shows where it will land). Dropping on the middle of a row makes a child.</li>
+        </ul>
+        <p>Children live in the same space as their parent and keep their own position; they do not move with the parent. A script placed under an object, anywhere inside World or Scripts, runs like any other script and can reach that object with <code>script.Parent</code>.</p>
+        <h3 data-group="Editor guide">Settings</h3>
+        <table class="docs-table"><thead><tr><th>Setting</th><th>What it does</th></tr></thead><tbody>
+          <tr><td>Camera move method</td><td>Choose whether dragging with the left button or the right button turns the camera.</td></tr>
+          <tr><td>Show UID instead of name</td><td>The Explorer lists instances by unique ID.</td></tr>
+          <tr><td>Default object names</td><td>Sets the name for each new Rectangular Prism, Script and World Settings. Empty restores the default.</td></tr>
+          <tr><td>Script coloration</td><td>Turns syntax coloring in the script editor on or off.</td></tr>
+          <tr><td>Pre-include</td><td>Adds <code>call Scripts</code>, <code>get Instance</code>, <code>call World</code>, <code>call Storage</code> or <code>get Scripting</code> to every script without typing them. The first two are required for a script to run.</td></tr>
+          <tr><td>Light mode</td><td>Switches the editor and viewport palette.</td></tr>
+        </tbody></table>
+        <p>Settings are stored in this browser and are not part of a <code>.vnw</code> file.</p>
+        <h3 data-group="Editor guide">The script editor</h3>
+        <p>Create a Script from a space's <b>+</b> button and double-click it to open it as a tab. The editor shows line numbers on the left, your code in the middle, and warning and error markers on the right. The Output panel below shows <code>print</code> results and runtime errors. <code>Tab</code> indents.</p>
+        <p>Script properties split into <b>Execution</b> and <b>Miscellaneous</b>:</p>
+        <ul>
+          <li><b>Script type:</b> Local or Server (see Script types and running).</li>
+          <li><b>Run when:</b> Simulation start, Client join or Manual call by another script.</li>
+          <li><b>Language:</b> Vanillalua or JSON. JSON scripts hold data, are checked for valid JSON and cannot run.</li>
+        </ul>
+        <h3 data-group="Vanillalua language">1. A first script</h3>
+        <p>Every Vanillalua script should begin by loading the Scripts space and the Instance module. Add other spaces with <code>call</code> when you need to access them.</p>
+        <pre><code>call Scripts
+call World
+get Instance
+
+local block = Instance.create("prism6", World)
+block.Position = vanilla3D.Position(0, 10, 0)
+print("Created:", block)</code></pre>
+        <p><code>call World</code> loads the World space. <code>get Instance</code> loads the instance API, and <code>get Scripting</code> loads scripting utilities for UID lookup and reassignment. Setup lines belong at the top of the script.</p>
+        <h3 data-group="Vanillalua language">2. Variables: local and global</h3>
+        <p><code>local name = value</code> creates a variable scoped to the current script block. A variable assigned without <code>local</code> is a <b>global variable</b>: all scripts can read it while the simulation is running.</p>
+        <pre><code>call Scripts
+get Instance
+
+local privateCount = 1
+sharedCount = 10
+print(privateCount)
+print(sharedCount)</code></pre>
+        <p><b>Global write permissions:</b> the script that first creates a global may update it, and any Server script may update any global. Other Local scripts can read globals but cannot change them. Use a Server script for values that need to be centrally controlled. Global variables are runtime state and are cleared when a new simulation starts or the simulation stops.</p>
+        <p>Use clear, descriptive names for globals to avoid accidentally sharing the same name between scripts. Local variables are best for temporary values and implementation details.</p>
+        <pre><code># Server script
+sharedScore = 0
+
+# Any script can read this:
+print(sharedScore)
+
+# The script that created sharedScore can update it,
+# and Server scripts can update it too.
+sharedScore = sharedScore + 1</code></pre>
+        <h3 data-group="Vanillalua language">3. Values and types</h3>
+        <ul>
+          <li><b>Numbers:</b> <code>12</code>, <code>3.5</code>, <code>0.25</code>. Decimal literals support up to two digits after the decimal point.</li>
+          <li><b>Strings:</b> <code>"hello"</code> or <code>'hello'</code>. Use <code>
+</code> for a newline and <code>	</code> for a tab inside a string.</li>
+          <li><b>Booleans:</b> <code>True</code> and <code>False</code>.</li>
+          <li><b>Nil:</b> <code>nil</code> represents no value.</li>
+          <li><b>Instances:</b> references to objects in the scene, such as the result of <code>Instance.create()</code>.</li>
+          <li><b>Vectors:</b> three-number values used for positions and sizes.</li>
+        </ul>
+        <p>Comments start with <code>#</code> and continue to the end of the line.</p>
+        <h3 data-group="Vanillalua language">4. Printing output</h3>
+        <p>Use <code>print(...)</code> to send values to the Output panel. You can print strings, numbers, variables, instances, vectors, and multiple values.</p>
+        <pre><code>call World
+get Instance
+local score = 125
+local block = Instance.create("prism6", World)
+print("Score:", score)
+print("Block ID:", block)
+print("Position:", block.Position)</code></pre>
+        <p>Instances print their unique ID, such as <code>Cobalt092</code>. Multiple arguments are separated in the output. If an instance has been deleted, its printed value is <code>deleted instance</code>.</p>
+        <h3 data-group="Vanillalua language">5. Waiting and timed scripts</h3>
+        <p><code>wait(seconds)</code> pauses the current script for the specified number of seconds. The argument must be a non-negative number with up to two decimal places. Waiting yields to other scripts and the simulation; it does not freeze the whole editor.</p>
+        <pre><code>call Scripts
+call World
+get Instance
+
+local block = Instance.create("prism6", World)
+block.Position = vanilla3D.Position(0, 0, 0)
+for i in 1, 5 do
+    block.Position.Y = block.Position.Y + 1
+    print("Step", i, "Y =", block.Position.Y)
+    wait(0.5)
+end</code></pre>
+        <p>Use <code>wait(0)</code> to yield without an intentional delay. A long-running <code>while</code> loop yields between iterations, so other scripts can continue running.</p>
+        <h3 data-group="Vanillalua language">6. Operators</h3>
+        <ul>
+          <li>Math: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code></li>
+          <li>Comparisons: <code>==</code>, <code>~=</code> or <code>!=</code> (not equal), <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code></li>
+          <li>Logic: <code>and</code>, <code>or</code>, <code>not</code></li>
+          <li>Grouping: parentheses such as <code>(a + b) * 2</code></li>
+          <li>String joining: use <code>+</code> when at least one operand is a string, e.g. <code>"Score: " + score</code>.</li>
+        </ul>
+        <p>Math operators require numbers, except vector addition/subtraction and vector multiplication by a number. In conditions, <code>nil</code> and <code>False</code> are false-like; other values are true-like.</p>
+        <h3 data-group="Vanillalua language">7. Conditions</h3>
+        <pre><code>local temperature = 18
+if temperature >= 25 then
+    print("Warm")
+else
+    print("Cool")
+end</code></pre>
+        <p>Conditions use <code>if</code>, optional <code>else</code>, and <code>end</code>. Comparisons can be combined with <code>and</code>, <code>or</code>, and <code>not</code>. There is no <code>elseif</code>; nest another <code>if</code> inside <code>else</code> instead.</p>
+        <h3 data-group="Vanillalua language">8. Loops</h3>
+        <p>A numeric <code>for</code> loop includes both its start and end values:</p>
+        <pre><code>for i in 1, 4 do
+    print("Iteration", i)
+end</code></pre>
+        <p>A <code>while</code> loop repeats while its condition remains true. Make sure something changes the condition so the loop can finish.</p>
+        <pre><code>local count = 0
+while count < 3 do
+    count = count + 1
+    print(count)
+    wait(0.25)
+end</code></pre>
+        <h3 data-group="Vanillalua language">9. Spaces and instance lookup</h3>
+        <p>Available spaces are <code>World</code>, <code>Storage</code>, and <code>Scripts</code>. Load each with <code>call</code> before using it. Existing instances must be accessed by their unique ID (UID), not by their display name. Use <code>Instance.GetUID(name)</code> to find an ID by object name.</p>
+        <pre><code>call World
+get Scripting
+get Instance
+
+local blockUID = Instance.GetUID("Block")
+local block = World.blockUID
+print(block.Name)</code></pre>
+        <p>When a dot member on a Space matches a local variable, its string value is treated as the UID. Bracket lookup also works: <code>World[blockUID]</code>. You can pass the Space to <code>GetUID</code> when names are duplicated, for example <code>Instance.GetUID("Block", World)</code>.</p>
+        <h3 data-group="Vanillalua language">10. The Instance module</h3>
+        <ul>
+          <li><code>Instance.create(type, space)</code> — creates and returns an instance. Supported types: <code>"prism6"</code>, <code>"script"</code>, and <code>"worldsettings"</code>.</li>
+          <li><code>Instance.duplicate(instance)</code> — duplicates an instance in its current space.</li>
+          <li><code>Instance.duplicate(instance, space)</code> — duplicates it into a chosen loaded space.</li>
+          <li><code>Instance.delete(instance)</code> — deletes the instance. References to it become deleted references.</li>
+          <li><code>Instance.GetUID(name)</code> — returns the unique ID of an existing instance with that display name. Optionally pass a Space as the second argument to disambiguate duplicates.</li>
+          <li><code>Instance.SetUID(oldUID, newUID)</code> — changes an instance's unique ID. The new UID must be unique and contain only letters and numbers, starting with a letter.</li>
+        </ul>
+        <pre><code>call World
+get Instance
+
+local original = Instance.create("prism6", World)
+original.Position = vanilla3D.Position(0, 3, 0)
+local copy = Instance.duplicate(original, World)
+copy.Position = vanilla3D.Position(2, 3, 0)
+print("Original:", original)
+print("Copy:", copy)
+Instance.delete(copy)</code></pre>
+        <h4>Find and change a unique ID</h4>
+        <pre><code>call World
+get Scripting
+get Instance
+
+local blockUID = Instance.GetUID("Block")
+local block = World.blockUID
+
+Instance.SetUID(blockUID, "Ashburn534")
+blockUID = Instance.GetUID("Block")
+block = World.blockUID
+print(blockUID)
+print(block)</code></pre>
+        <p><code>SetUID</code> rekeys the existing instance; it does not rename the visible <code>Name</code> property. Refresh the UID variable after changing it, then retrieve the instance again. If more than one object has the same name, provide its Space to <code>GetUID</code>.</p>
+        <h3 data-group="Vanillalua language">11. Properties and vectors</h3>
+        <p>Read or set properties using <code>instance.Property</code>. Properties are validated by the engine, so a property expects the correct kind of value.</p>
+        <table class="docs-table"><thead><tr><th>Applies to</th><th>Properties</th></tr></thead><tbody>
+          <tr><td>Every instance</td><td><code>Name</code> (string), <code>Type</code> (read-only), <code>Parent</code> (a Space or an instance)</td></tr>
+          <tr><td>Prism blocks</td><td><code>Position</code>, <code>Size</code> (vectors, each axis at least 0.05 for Size), <code>Locked</code>, <code>Anchored</code>, <code>ReactsToPhysics</code>, <code>Collidable</code>, <code>Wireframe</code>, <code>FaceColoring</code>, <code>ShowLabels</code> (True or False)</td></tr>
+          <tr><td>World Settings</td><td><code>TimeOfDay</code> (0 to 24), <code>Gravity</code> (0 to 1000), <code>KillLayer</code> (number)</td></tr>
+          <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr>
+        </tbody></table>
+        <p><code>vanilla3D.Position(x, y, z)</code> and <code>vanilla3D.Size(x, y, z)</code> create three-component vectors. Vector axes are uppercase <code>X</code>, <code>Y</code>, and <code>Z</code>. For a prism, Position maps to its world coordinates; Size maps to width, height, and length respectively.</p>
+        <pre><code>call World
+get Instance
+local block = Instance.create("prism6", World)
+block.Position = vanilla3D.Position(2, 5, 0)
+block.Size = vanilla3D.Size(2, 1, 3)
+block.Anchored = True
+print(block.Position.X, block.Position.Y, block.Position.Z)</code></pre>
+        <h3 data-group="Vanillalua language">11b. Parents and the script variable</h3>
+        <p>Inside every running script, <code>script</code> is a built-in variable that always refers to the script itself. Its <code>Parent</code> is the object the script sits under, or a Space if it is not inside an object.</p>
+        <pre><code>call Scripts
+get Instance
+
+local part = script.Parent
+part.Anchored = True
+print("Controlling", part.Name)
+
+# Reparent: put a new script inside the block
+local child = Instance.create("script", World)
+child.Parent = part</code></pre>
+        <p>Read <code>Parent</code> from any instance. Assign it an instance or a Space to move it. An instance cannot become its own parent or a child of its own descendant. If a script is not inside an object, <code>script.Parent</code> is its Space, such as <code>Scripts</code>.</p>
+        <h3 data-group="Vanillalua language">12. Script types and running</h3>
+        <ul>
+          <li><b>Server:</b> trusted script type for shared/global updates. Server scripts can modify any global variable.</li>
+          <li><b>Local:</b> can read global variables and modify only globals it originally created.</li>
+          <li><b>Run When: Simulation:</b> runs when Run starts the simulation.</li>
+          <li><b>Run When: Join:</b> reserved for join-trigger behavior if supported by the current project workflow.</li>
+          <li><b>Run When: Manual:</b> starts only when manually invoked, for example through the script's Run property.</li>
+        </ul>
+        <p>When the simulation starts, Server scripts begin before Local scripts. A <b>JSON</b> script cannot be run. Stopping the simulation stops active script tasks and restores the scene snapshot from before Run. Runtime globals are cleared as part of ending the simulation.</p>
+        <h3 data-group="Vanillalua language">13. Full example: shared status and moving block</h3>
+        <pre><code># Server script
+call Scripts
+call World
+get Instance
+
+moveStatus = "Starting"
+local block = Instance.create("prism6", World)
+block.Position = vanilla3D.Position(0, 1, 0)
+moveStatus = "Moving"
+for step in 1, 6 do
+    block.Position.Y = block.Position.Y + 1
+    print(moveStatus, "step", step, "position", block.Position)
+    wait(0.25)
+end
+moveStatus = "Finished"
+print(moveStatus)</code></pre>
+        <h3 data-group="Reference">14. Common errors and fixes</h3>
+        <ul>
+          <li><b>Missing call Scripts:</b> add <code>call Scripts</code> at the top of every Vanillalua script, or turn on pre-include for it in Settings, Scripting.</li>
+          <li><b>Missing get Instance:</b> add <code>get Instance</code> at the top if you use instance functions; the editor currently requires this setup line for every Vanillalua script.</li>
+          <li><b>Space not loaded:</b> add <code>call World</code>, <code>call Storage</code>, or <code>call Scripts</code> before referencing that space.</li>
+          <li><b>Unknown variable:</b> check spelling and whether the value is local to another script. Use a global assignment (without <code>local</code>) to share a value.</li>
+          <li><b>Global write denied:</b> only the script that created the global or a Server script can update it.</li>
+          <li><b>Invalid property value:</b> check that the property name and value type match, e.g. numeric Gravity or boolean Anchored.</li>
+          <li><b>Invalid wait:</b> use one non-negative number, with no more than two decimal places.</li>
+          <li><b>Instance deleted:</b> confirm that the instance has not been deleted before reading or changing it.</li>
+        </ul>
+        <h3 data-group="Reference">15. Quick reference</h3>
+        <pre><code>call Scripts       # Load Scripts space
+call World         # Load World space
+call Storage       # Load Storage space
+get Instance       # Load instance API
+local x = 3        # Local variable
+sharedValue = 3    # Shared global variable
+print(x, sharedValue)
+wait(0.5)          # Pause for half a second
+if x > 1 then print("yes") else print("no") end
+for i in 1, 3 do print(i) end
+Instance.create("prism6", World)
+Instance.duplicate(block, World)
+Instance.delete(block)
+vanilla3D.Position(0, 1, 0)
+vanilla3D.Size(1, 2, 1)</code></pre>
+        <p><b>Tip:</b> test scripts with the Output panel open. Use short loops, add <code>print()</code> checkpoints, and introduce waits when you want to observe changes over time.</p>
+        </div></main>
       </div>
     </div>
   </div>
 
   <script>
-        const ENGINE_VERSION = '1.8.1.3';
+        const ENGINE_VERSION = '2.2.0.2';
         const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
@@ -581,6 +1181,16 @@
             scripts: { name: 'Scripts', icon: 'i-script', addable: true },
             engine:  { name: 'Engine',  icon: 'i-engine', addable: false }
         };
+        // ── Childing: an instance's parent is a space id or another instance's UID ──
+        const SPACE_KEYS = ['world', 'storage', 'scripts'];
+        function spaceOf(o) { let n = 0; while (o && !SPACE_KEYS.includes(o.parent) && n++ < 64) o = sceneObjects[o.parent]; return o ? o.parent : null; }
+        function isInside(id, ancestorId) { let o = sceneObjects[id], n = 0; while (o && n++ < 64) { if (o.parent === ancestorId) return true; o = sceneObjects[o.parent]; } return false; }
+        function pruneOrphans() {
+            let changed = true;
+            while (changed) { changed = false; for (const [id, o] of Object.entries(sceneObjects)) if (o.parent !== 'engine' && !SPACE_KEYS.includes(o.parent) && !sceneObjects[o.parent]) { delete sceneObjects[id]; physicsVelocity.delete(id); vlInstCache.delete(id); if (selectedObjectId === id) selectedObjectId = null; changed = true; } }
+        }
+        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings' })[type] || 'Instance'; }
+        function preInc(n) { return typeof settings !== 'undefined' && !!(settings.preinclude && settings.preinclude[n]); }
         function makePrism(name, parent, dims) {
             return Object.assign({
                 type: 'prism6', name, parent,
@@ -599,6 +1209,58 @@
             while (sceneObjects[id]);
             return id;
         }
+        
+        function getModelPrisms(modelId) {
+            const list = [];
+            function scan(id) {
+                for (const [k, o] of Object.entries(sceneObjects)) {
+                    if (o.parent === id) {
+                        if (o.type === 'prism6' && spaceOf(o) === 'world') list.push([k, o]);
+                        scan(k);
+                    }
+                }
+            }
+            scan(modelId);
+            return list;
+        }
+
+        function getModelBounds(modelId) {
+            const prisms = getModelPrisms(modelId);
+            if (!prisms.length) return null;
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+            let minZ = Infinity, maxZ = -Infinity;
+            for (const [, p] of prisms) {
+                minX = Math.min(minX, p.x - p.width);
+                maxX = Math.max(maxX, p.x + p.width);
+                minY = Math.min(minY, p.y - p.height);
+                maxY = Math.max(maxY, p.y + p.height);
+                minZ = Math.min(minZ, p.z - p.length);
+                maxZ = Math.max(maxZ, p.z + p.length);
+            }
+            return {
+                x: (minX + maxX) / 2,
+                y: (minY + maxY) / 2,
+                z: (minZ + maxZ) / 2,
+                width: Math.max(0.05, (maxX - minX) / 2),
+                height: Math.max(0.05, (maxY - minY) / 2),
+                length: Math.max(0.05, (maxZ - minZ) / 2),
+                minX, maxX, minY, maxY, minZ, maxZ
+            };
+        }
+
+        function topModelOf(id) {
+            let cur = sceneObjects[id];
+            let top = null, n = 0;
+            while (cur && !SPACE_KEYS.includes(cur.parent) && n++ < 64) {
+                if (sceneObjects[cur.parent] && sceneObjects[cur.parent].type === 'model') {
+                    top = cur.parent;
+                }
+                cur = sceneObjects[cur.parent];
+            }
+            return top;
+        }
+
         const esc = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
         const sceneObjects = {
@@ -606,8 +1268,8 @@
             'Onyx004': { type: 'viewfinder', name: 'Viewfinder', parent: 'engine', readOnly: true }
         };
         sceneObjects['Amber417'] = { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 };
-        const counters = { prism: 1, script: 0, worldsettings: 1 };
-        const typeIcon = { prism6: 'i-cube', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun' };
+        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1 };
+        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun' };
 
         let isLightMode = false;
         let accentCol = '#f2b134';
@@ -628,7 +1290,7 @@
 
         // Simulation properties live on the World Settings instance.
         function activeWorldSettings() {
-            for (const o of Object.values(sceneObjects)) if (o.type === 'worldsettings' && o.parent === 'world') return o;
+            for (const o of Object.values(sceneObjects)) if (o.type === 'worldsettings' && spaceOf(o) === 'world') return o;
             return null;
         }
         function currentGravity() {
@@ -642,7 +1304,7 @@
 
         function physicsBodyList() {
             return Object.entries(sceneObjects)
-                .filter(([, o]) => o.type === 'prism6' && o.parent === 'world');
+                .filter(([, o]) => o.type === 'prism6' && spaceOf(o) === 'world');
         }
 
         function physicsVelocityFor(id) {
@@ -736,7 +1398,7 @@
                     removed = true;
                 }
             }
-            if (removed) { renderExplorer(); renderProperties(); }
+            if (removed) { pruneOrphans(); renderExplorer(); renderProperties(); }
         }
 
         function takeSnapshot() {
@@ -761,11 +1423,18 @@
             physicsVelocity.clear();
             if (running) {
                 takeSnapshot();
+                outputLog.length = 0;
+                vlSharedGlobals = new Map();
                 simulationRunning = true;
+                startSimulationScripts();
             } else {
                 simulationRunning = false;
+                stopScripts();
+                vlSharedGlobals = new Map();
                 restoreSnapshot();
             }
+            updateEditorState();
+            renderOutput();
             const btn = document.getElementById('run-btn');
             btn.innerHTML = running
                 ? `<span aria-hidden="true" style="font-size:14px;line-height:1">■</span><span class="label">Stop</span>`
@@ -775,6 +1444,1046 @@
             document.getElementById('canvas-container').classList.toggle('simulating', running);
         }
         document.getElementById('run-btn').addEventListener('click', () => setSimulationRunning(!simulationRunning));
+
+        // ───────── Vanillalua ─────────
+        // A small Lua-like language. Every script starts with `call Scripts` and `get Instance`.
+        const VL_KEYWORDS = new Set(['call', 'get', 'local', 'while', 'for', 'in', 'do', 'end', 'if', 'then', 'else', 'and', 'or', 'not']);
+        const VL_SPACES = { World: 'world', Storage: 'storage', Scripts: 'scripts' };
+        const VL_MODULES = ['Instance', 'Scripting'];
+        const VL_TYPES = ['prism6', 'model', 'script', 'worldsettings'];
+        const VL_GLOBALS = ['vanilla3D', 'print', 'wait', 'script'];
+        // Runtime globals are shared by all scripts during one simulation.
+        let vlSharedGlobals = new Map();
+
+        class VLParseError extends Error { constructor(msg, line) { super(msg); this.vlLine = line; } }
+        class VLError extends Error { constructor(msg, line) { super(msg); this.vlLine = line || 0; } }
+
+        // ── Lexer ──
+        function vlLex(src, diags) {
+            const toks = [], n = src.length;
+            let i = 0, line = 1;
+            const numRe = /\d+(?:\.\d{1,2})?/y, idRe = /[A-Za-z_][A-Za-z0-9_]*/y;
+            while (i < n) {
+                const c = src[i];
+                if (c === '\n') { line++; i++; continue; }
+                if (c === ' ' || c === '\t' || c === '\r') { i++; continue; }
+                if (c === '#') { while (i < n && src[i] !== '\n') i++; continue; }
+                if (c >= '0' && c <= '9') {
+                    numRe.lastIndex = i; const m = numRe.exec(src);
+                    toks.push({ t: 'num', v: parseFloat(m[0]), line }); i += m[0].length; continue;
+                }
+                if (/[A-Za-z_]/.test(c)) {
+                    idRe.lastIndex = i; const m = idRe.exec(src);
+                    toks.push({ t: VL_KEYWORDS.has(m[0]) ? 'kw' : 'name', v: m[0], line }); i += m[0].length; continue;
+                }
+                if (c === '"' || c === "'") {
+                    let j = i + 1, out = '', closed = false;
+                    while (j < n) {
+                        const d = src[j];
+                        if (d === '\n') break;
+                        if (d === '\\' && j + 1 < n) { const e = src[j + 1]; out += e === 'n' ? '\n' : e === 't' ? '\t' : e; j += 2; continue; }
+                        if (d === c) { closed = true; j++; break; }
+                        out += d; j++;
+                    }
+                    if (!closed) diags.push({ line, sev: 'error', msg: 'This string is never closed. Add a closing ' + c + '.' });
+                    toks.push({ t: 'str', v: out, line }); i = j; continue;
+                }
+                const two = src.substr(i, 2);
+                if (two === '==' || two === '~=' || two === '!=' || two === '<=' || two === '>=') { toks.push({ t: 'op', v: two === '!=' ? '~=' : two, line }); i += 2; continue; }
+                if ('+-*/%<>=(),.[]'.includes(c)) { toks.push({ t: 'op', v: c, line }); i++; continue; }
+                diags.push({ line, sev: 'error', msg: 'Unexpected character "' + c + '".' });
+                i++;
+            }
+            toks.push({ t: 'eof', v: '', line });
+            return toks;
+        }
+
+        // ── Parser ──
+        function vlParse(toks, diags) {
+            let p = 0;
+            const isOp = (v) => toks[p].t === 'op' && toks[p].v === v;
+            const isKw = (v) => toks[p].t === 'kw' && toks[p].v === v;
+            const describe = (t) => t.t === 'eof' ? 'the end of the script' : t.t === 'str' ? '"' + t.v + '"' : '"' + t.v + '"';
+            const fail = (msg, tok) => { throw new VLParseError(msg, (tok || toks[p]).line); };
+            const expectOp = (v, what) => { if (!isOp(v)) fail('Expected "' + v + '"' + (what ? ' ' + what : '') + ' but found ' + describe(toks[p]) + '.'); return toks[p++]; };
+            const expectKw = (v, what) => { if (!isKw(v)) fail('Expected "' + v + '"' + (what ? ' ' + what : '') + ' but found ' + describe(toks[p]) + '.'); return toks[p++]; };
+            const STMT_START = ['call', 'get', 'local', 'while', 'for', 'if', 'end', 'else'];
+
+            function closeBlock(kind, line) {
+                if (isKw('end')) { p++; return; }
+                if (toks[p].t === 'eof') fail('Missing "end" to close the "' + kind + '" on line ' + line + '.', { line });
+                fail('Expected "end" to close the "' + kind + '" on line ' + line + ' but found ' + describe(toks[p]) + '.');
+            }
+            function sync(start, errLine) {
+                if (p === start) p++;
+                while (toks[p].t !== 'eof') {
+                    const t = toks[p];
+                    if (t.line > errLine) break;
+                    if (t.t === 'kw' && STMT_START.includes(t.v)) break;
+                    p++;
+                }
+            }
+            function parseBlock() {
+                const out = [];
+                for (;;) {
+                    const t = toks[p];
+                    if (t.t === 'eof' || (t.t === 'kw' && (t.v === 'end' || t.v === 'else'))) return out;
+                    const start = p;
+                    try { out.push(parseStatement()); }
+                    catch (e) {
+                        if (!(e instanceof VLParseError)) throw e;
+                        diags.push({ line: e.vlLine, sev: 'error', msg: e.message });
+                        sync(start, e.vlLine);
+                    }
+                }
+            }
+            function parseStatement() {
+                const t = toks[p];
+                if (t.t === 'kw') {
+                    if (t.v === 'call' || t.v === 'get') {
+                        p++;
+                        const nt = toks[p];
+                        if (nt.t !== 'name') fail('Expected a name after "' + t.v + '".', t);
+                        p++;
+                        return { k: t.v === 'call' ? 'useSpace' : 'useModule', name: nt.v, line: t.line };
+                    }
+                    if (t.v === 'local') {
+                        p++;
+                        const nt = toks[p];
+                        if (nt.t !== 'name') fail('Expected a variable name after "local".', t);
+                        p++;
+                        expectOp('=', 'after "local ' + nt.v + '"');
+                        return { k: 'local', name: nt.v, expr: parseExpr(), line: t.line };
+                    }
+                    if (t.v === 'while') {
+                        p++;
+                        const cond = parseExpr();
+                        expectKw('do', 'after the while condition');
+                        const body = parseBlock();
+                        closeBlock('while', t.line);
+                        return { k: 'while', cond, body, line: t.line };
+                    }
+                    if (t.v === 'for') {
+                        p++;
+                        const v = toks[p];
+                        if (v.t !== 'name') fail('Expected a loop variable name after "for".', t);
+                        p++;
+                        expectKw('in', 'after the loop variable');
+                        const from = parseExpr();
+                        expectOp(',', 'between the start and end numbers');
+                        const to = parseExpr();
+                        expectKw('do', 'after the loop range');
+                        const body = parseBlock();
+                        closeBlock('for', t.line);
+                        return { k: 'for', name: v.v, from, to, body, line: t.line };
+                    }
+                    if (t.v === 'if') {
+                        p++;
+                        const cond = parseExpr();
+                        expectKw('then', 'after the if condition');
+                        const body = parseBlock();
+                        let els = null;
+                        if (isKw('else')) { p++; els = parseBlock(); }
+                        closeBlock('if', t.line);
+                        return { k: 'if', cond, body, els, line: t.line };
+                    }
+                    fail('Unexpected "' + t.v + '".', t);
+                }
+                const e = parseSuffixed();
+                if (isOp('=')) {
+                    if (e.k !== 'name' && e.k !== 'member' && e.k !== 'index') fail('You can only assign to a variable or a property.', t);
+                    p++;
+                    return { k: 'assign', target: e, expr: parseExpr(), line: t.line };
+                }
+                if (e.k === 'callx') return { k: 'exprstmt', expr: e, line: t.line };
+                fail('This is not a statement. Expected an assignment or a function call.', t);
+            }
+            function parseExpr() { return parseOr(); }
+            function parseOr() {
+                let l = parseAnd();
+                while (isKw('or')) { const t = toks[p++]; l = { k: 'bin', op: 'or', l, r: parseAnd(), line: t.line }; }
+                return l;
+            }
+            function parseAnd() {
+                let l = parseCmp();
+                while (isKw('and')) { const t = toks[p++]; l = { k: 'bin', op: 'and', l, r: parseCmp(), line: t.line }; }
+                return l;
+            }
+            function parseCmp() {
+                let l = parseAdd();
+                while (toks[p].t === 'op' && ['==', '~=', '<', '>', '<=', '>='].includes(toks[p].v)) { const t = toks[p++]; l = { k: 'bin', op: t.v, l, r: parseAdd(), line: t.line }; }
+                return l;
+            }
+            function parseAdd() {
+                let l = parseMul();
+                while (isOp('+') || isOp('-')) { const t = toks[p++]; l = { k: 'bin', op: t.v, l, r: parseMul(), line: t.line }; }
+                return l;
+            }
+            function parseMul() {
+                let l = parseUnary();
+                while (isOp('*') || isOp('/') || isOp('%')) { const t = toks[p++]; l = { k: 'bin', op: t.v, l, r: parseUnary(), line: t.line }; }
+                return l;
+            }
+            function parseUnary() {
+                if (isKw('not')) { const t = toks[p++]; return { k: 'un', op: 'not', e: parseUnary(), line: t.line }; }
+                if (isOp('-')) { const t = toks[p++]; return { k: 'un', op: '-', e: parseUnary(), line: t.line }; }
+                return parseSuffixed();
+            }
+            function parseSuffixed() {
+                let e = parsePrimary();
+                for (;;) {
+                    if (isOp('.')) {
+                        p++;
+                        const nt = toks[p];
+                        if (nt.t !== 'name') fail('Expected a property name after ".".');
+                        p++;
+                        e = { k: 'member', obj: e, name: nt.v, line: nt.line };
+                    } else if (isOp('[')) {
+                        const t = toks[p++];
+                        const key = parseExpr();
+                        expectOp(']', 'to close the index');
+                        e = { k: 'index', obj: e, key, line: t.line };
+                    } else if (isOp('(')) {
+                        const t = toks[p++];
+                        const args = [];
+                        if (!isOp(')')) { do { args.push(parseExpr()); } while (isOp(',') && (p++, true)); }
+                        expectOp(')', 'to close the function call');
+                        e = { k: 'callx', fn: e, args, line: t.line };
+                    } else break;
+                }
+                return e;
+            }
+            function parsePrimary() {
+                const t = toks[p];
+                if (t.t === 'num') { p++; return { k: 'num', v: t.v, line: t.line }; }
+                if (t.t === 'str') { p++; return { k: 'str', v: t.v, line: t.line }; }
+                if (t.t === 'name') {
+                    p++;
+                    if (t.v === 'True') return { k: 'bool', v: true, line: t.line };
+                    if (t.v === 'False') return { k: 'bool', v: false, line: t.line };
+                    if (t.v === 'nil') return { k: 'nil', line: t.line };
+                    return { k: 'name', name: t.v, line: t.line };
+                }
+                if (isOp('(')) { p++; const e = parseExpr(); expectOp(')', 'to close the parentheses'); return e; }
+                fail('Expected a value but found ' + describe(t) + '.');
+            }
+
+            const prog = [];
+            while (toks[p].t !== 'eof') {
+                prog.push(...parseBlock());
+                if (toks[p].t === 'kw' && (toks[p].v === 'end' || toks[p].v === 'else')) {
+                    diags.push({ line: toks[p].line, sev: 'error', msg: 'Unexpected "' + toks[p].v + '". There is nothing to close here.' });
+                    p++;
+                }
+            }
+            return prog;
+        }
+
+        // ── Analyzer (errors and warnings shown in the editor margin) ──
+        function vlAnalyze(ast, diags) {
+            const called = new Set(), got = new Set();
+            const scopes = [new Map()];
+            let sawCode = false;
+            const err = (line, msg) => diags.push({ line, sev: 'error', msg });
+            const warn = (line, msg) => diags.push({ line, sev: 'warning', msg });
+            const declare = (name, line, warnUnused) => scopes[scopes.length - 1].set(name, { line, used: false, warnUnused });
+            const find = (name) => { for (let i = scopes.length - 1; i >= 0; i--) if (scopes[i].has(name)) return scopes[i].get(name); return null; };
+            const push = () => scopes.push(new Map());
+            const pop = () => {
+                for (const [name, v] of scopes.pop()) if (v.warnUnused && !v.used) warn(v.line, '"' + name + '" is declared but never used.');
+            };
+
+            function resolveName(name, line) {
+                const v = find(name);
+                if (v) { v.used = true; return; }
+                if (VL_GLOBALS.includes(name)) return;
+                if (VL_SPACES[name]) { if (!(called.has(name) || preInc(name))) err(line, '"' + name + '" is not loaded. Add "call ' + name + '" at the top of the script.'); return; }
+                if (VL_MODULES.includes(name)) { if (!(got.has(name) || preInc(name))) err(line, '"' + name + '" is not loaded. Add "get ' + name + '" at the top of the script.'); return; }
+                // This may be a global assigned by another script; the runtime checks it exists.
+            }
+            function expr(e) {
+                switch (e.k) {
+                    case 'name': resolveName(e.name, e.line); break;
+                    case 'member': expr(e.obj); break;
+                    case 'index': expr(e.obj); expr(e.key); break;
+                    case 'un': expr(e.e); break;
+                    case 'bin': expr(e.l); expr(e.r); break;
+                    case 'callx': {
+                        const f = e.fn;
+                        if (f.k === 'member' && f.obj.k === 'name' && f.obj.name === 'Instance' && !find('Instance')) {
+                            const m = f.name, n = e.args.length;
+                            if (m === 'create') {
+                                if (n !== 2) err(e.line, 'Instance.create needs 2 arguments: (type, space).');
+                                if (e.args[0] && e.args[0].k === 'str' && !VL_TYPES.includes(e.args[0].v)) err(e.line, 'Unknown instance type "' + e.args[0].v + '". Use prism6, script or worldsettings.');
+                                if (e.args[1] && (e.args[1].k === 'str' || e.args[1].k === 'num' || e.args[1].k === 'bool')) err(e.line, 'The second argument of Instance.create must be a loaded Space such as World.');
+                            } else if (m === 'delete') {
+                                if (n !== 1) err(e.line, 'Instance.delete needs 1 argument: (instance).');
+                            } else if (m === 'duplicate') {
+                                if (n < 1 || n > 2) err(e.line, 'Instance.duplicate needs (instance) or (instance, space).');
+                            } else if (m === 'GetUID') {
+                                if (n < 1 || n > 2) err(e.line, 'Instance.GetUID needs (name) or (name, space).');
+                            } else if (m === 'SetUID') {
+                                if (n !== 2) err(e.line, 'Instance.SetUID needs (oldUID, newUID).');
+                            } else {
+                                err(e.line, 'Instance has no function "' + m + '". Available: create, delete, duplicate, GetUID, SetUID.');
+                            }
+                        }
+                        expr(f);
+                        e.args.forEach(expr);
+                        break;
+                    }
+                }
+            }
+            function block(stmts, top) {
+                for (const s of stmts) {
+                    if (s.k === 'useSpace') {
+                        if (!VL_SPACES[s.name]) err(s.line, 'Unknown space "' + s.name + '". You can call: World, Storage, Scripts.');
+                        else {
+                            if (called.has(s.name)) warn(s.line, '"call ' + s.name + '" is already in this script.');
+                            called.add(s.name);
+                        }
+                        if (sawCode) warn(s.line, 'Put "call" and "get" lines at the top of the script.');
+                        continue;
+                    }
+                    if (s.k === 'useModule') {
+                        if (!VL_MODULES.includes(s.name)) err(s.line, 'Unknown module "' + s.name + '". You can get: Instance, Scripting.');
+                        else {
+                            if (got.has(s.name)) warn(s.line, '"get ' + s.name + '" is already in this script.');
+                            got.add(s.name);
+                        }
+                        if (sawCode) warn(s.line, 'Put "call" and "get" lines at the top of the script.');
+                        continue;
+                    }
+                    sawCode = true;
+                    switch (s.k) {
+                        case 'local': expr(s.expr); declare(s.name, s.line, true); break;
+                        case 'assign': {
+                            if (s.target.k === 'name') {
+                                if (!find(s.target.name) && !VL_GLOBALS.includes(s.target.name) && !VL_SPACES[s.target.name] && !VL_MODULES.includes(s.target.name)) declare(s.target.name, s.target.line, false);
+                            } else expr(s.target);
+                            expr(s.expr);
+                            break;
+                        }
+                        case 'exprstmt': expr(s.expr); break;
+                        case 'while':
+                            expr(s.cond);
+                            if (s.cond.k === 'bool' && s.cond.v === false) warn(s.line, 'This loop never runs because its condition is False.');
+                            push(); block(s.body); pop();
+                            break;
+                        case 'for':
+                            expr(s.from); expr(s.to);
+                            if (s.from.k === 'num' && s.to.k === 'num' && s.from.v > s.to.v) warn(s.line, 'This loop never runs because the start is bigger than the end.');
+                            push(); declare(s.name, s.line, false); block(s.body); pop();
+                            break;
+                        case 'if':
+                            expr(s.cond);
+                            push(); block(s.body); pop();
+                            if (s.els) { push(); block(s.els); pop(); }
+                            break;
+                    }
+                }
+            }
+            block(ast, true);
+            pop();
+            if (!(called.has('Scripts') || preInc('Scripts'))) err(1, 'Missing "call Scripts". Every script must start with call Scripts.');
+            if (!(got.has('Instance') || preInc('Instance'))) err(1, 'Missing "get Instance". Every script must get Instance.');
+        }
+
+        // ── JSON scripts: syntax check only ──
+        function jsonDiagnostics(src, diags) {
+            if (!src.trim()) return;
+            try { JSON.parse(src); }
+            catch (e) {
+                let line = 1;
+                const m = /line (\d+)/.exec(e.message), pm = /position (\d+)/.exec(e.message);
+                if (m) line = parseInt(m[1], 10);
+                else if (pm) line = src.slice(0, parseInt(pm[1], 10)).split('\n').length;
+                diags.push({ line, sev: 'error', msg: 'Invalid JSON: ' + e.message.replace(/^JSON\.parse: /, '') });
+            }
+        }
+
+        const SCRIPT_TEMPLATE = 'call Scripts\nget Instance\n\n# Write your Vanillalua here.\n';
+        function newScriptData(name, parent) {
+            return { type: 'script', name, parent, scriptType: 'Server', runWhen: 'simulation', language: 'vanillalua', source: SCRIPT_TEMPLATE };
+        }
+        function ensureScript(o) {
+            if (o.scriptType !== 'Local' && o.scriptType !== 'Server') o.scriptType = 'Server';
+            if (!['simulation', 'join', 'manual'].includes(o.runWhen)) o.runWhen = 'simulation';
+            if (o.language !== 'vanillalua' && o.language !== 'json') o.language = 'vanillalua';
+            if (typeof o.source !== 'string') o.source = SCRIPT_TEMPLATE;
+            return o;
+        }
+        function computeDiagnostics(o) {
+            const diags = [];
+            let ast = null;
+            if (o.language === 'json') jsonDiagnostics(o.source, diags);
+            else {
+                ast = vlParse(vlLex(o.source, diags), diags);
+                vlAnalyze(ast, diags);
+            }
+            diags.sort((a, b) => a.line - b.line);
+            return { ast, diags };
+        }
+
+        // ── Runtime values ──
+        class VLFn { constructor(name, fn) { this.name = name; this.fn = fn; } }
+        class VLWait { constructor(seconds) { this.seconds = seconds; } }
+        class VLModule { constructor(name, members) { this.name = name; this.members = members; } }
+        class VLSpace { constructor(name, id) { this.name = name; this.id = id; } }
+        class VLInst { constructor(id) { this.id = id; } }
+        const VL_AXES = { X: 0, Y: 1, Z: 2 };
+        class VLVec {
+            constructor(x, y, z, bind) { this.v = [x, y, z]; this.bind = bind || null; }
+            get(i) { if (this.bind) { const o = sceneObjects[this.bind.id]; if (!o) throw new VLError('This instance was deleted.'); return o[this.bind.keys[i]]; } return this.v[i]; }
+            set(i, n) { if (this.bind) { const o = sceneObjects[this.bind.id]; if (!o) throw new VLError('This instance was deleted.'); o[this.bind.keys[i]] = n; } else this.v[i] = n; }
+        }
+        class VLScope {
+            constructor(parent) { this.vars = new Map(); this.parent = parent || null; }
+            find(n) { let s = this; while (s) { if (s.vars.has(n)) return s; s = s.parent; } return null; }
+        }
+
+        const vlInstCache = new Map();
+        const vlSpaces = { world: new VLSpace('World', 'world'), storage: new VLSpace('Storage', 'storage'), scripts: new VLSpace('Scripts', 'scripts') };
+        function vlInst(id) { let r = vlInstCache.get(id); if (!r) { r = new VLInst(id); vlInstCache.set(id, r); } return r; }
+        function vlObj(inst, line) { const o = sceneObjects[inst.id]; if (!o) throw new VLError('This instance was deleted.', line); return o; }
+
+        const vlRound = (n) => Math.round(n * 1e6) / 1e6;
+        function vlTypeName(v) {
+            if (v === null || v === undefined) return 'nil';
+            if (v instanceof VLVec) return 'vector';
+            if (v instanceof VLInst) return 'instance';
+            if (v instanceof VLSpace) return 'space';
+            if (v instanceof VLFn) return 'function';
+            if (v instanceof VLModule) return 'module';
+            return typeof v;
+        }
+        function vlStr(v) {
+            if (v === null || v === undefined) return 'nil';
+            if (typeof v === 'boolean') return v ? 'True' : 'False';
+            if (typeof v === 'number') return String(vlRound(v));
+            if (v instanceof VLVec) return '(' + [0, 1, 2].map(i => vlRound(v.get(i))).join(', ') + ')';
+            if (v instanceof VLInst) return sceneObjects[v.id] ? v.id : 'deleted instance';
+            if (v instanceof VLSpace || v instanceof VLModule) return v.name;
+            if (v instanceof VLFn) return 'function ' + v.name;
+            return String(v);
+        }
+        const vlTruthy = (v) => v !== null && v !== undefined && v !== false;
+
+        const VL_PROPS = {
+            common: { Name: ['name', 'str'] },
+            model: {},
+            prism6: {
+                Locked: ['locked', 'bool'], Anchored: ['anchored', 'bool'], ReactsToPhysics: ['reactsToPhysics', 'bool'], Collidable: ['collidable', 'bool'],
+                Wireframe: ['wireframe', 'bool'], FaceColoring: ['faceColoring', 'bool'], ShowLabels: ['showLabels', 'bool']
+            },
+            worldsettings: { TimeOfDay: ['timeOfDay', 'num'], Gravity: ['gravity', 'num'], KillLayer: ['killY', 'num'] },
+            script: {}
+        };
+
+        function vlGetProp(inst, name, line) {
+            const o = vlObj(inst, line);
+            if (name === 'Type') return o.type;
+            if (name === 'Parent') return SPACE_KEYS.includes(o.parent) ? vlSpaces[o.parent] : vlInst(o.parent);
+            if (o.type === 'prism6' && name === 'Position') return new VLVec(0, 0, 0, { id: inst.id, keys: ['x', 'y', 'z'] });
+            if (o.type === 'prism6' && name === 'Size') return new VLVec(0, 0, 0, { id: inst.id, keys: ['width', 'height', 'length'] });
+            if (o.type === 'script' && name === 'Run') return new VLFn('Run', (args, ln) => { vlRunScript(inst.id, ln); return null; });
+            const def = VL_PROPS.common[name] || (VL_PROPS[o.type] || {})[name];
+            if (!def) throw new VLError('"' + name + '" is not a property of ' + o.type + '.', line);
+            if (def[0] === 'collidable') return o.collidable !== false;
+            return def[1] === 'bool' ? !!o[def[0]] : o[def[0]];
+        }
+        function vlSetProp(inst, name, v, line) {
+            const o = vlObj(inst, line);
+            if (name === 'Type') throw new VLError('Type is read-only.', line);
+            if (name === 'Parent') {
+                if (v instanceof VLSpace) o.parent = v.id;
+                else if (v instanceof VLInst) { vlObj(v, line); if (v.id === inst.id || isInside(v.id, inst.id)) throw new VLError('An instance cannot be its own parent or a child of its own descendant.', line); o.parent = v.id; }
+                else throw new VLError('Parent needs an instance or a Space such as World.', line);
+                uiDirty = true; return;
+            }
+            if (o.type === 'prism6' && (name === 'Position' || name === 'Size')) {
+                if (!(v instanceof VLVec)) throw new VLError(name + ' needs a vector, for example vanilla3D.' + name + '(0, 1, 0).', line);
+                const keys = name === 'Position' ? ['x', 'y', 'z'] : ['width', 'height', 'length'];
+                for (let i = 0; i < 3; i++) { const n = v.get(i); o[keys[i]] = name === 'Size' ? Math.max(0.05, n) : n; }
+                return;
+            }
+            const def = VL_PROPS.common[name] || (VL_PROPS[o.type] || {})[name];
+            if (!def) throw new VLError('"' + name + '" is not a property of ' + o.type + '.', line);
+            const kind = def[1];
+            if (kind === 'bool' && typeof v !== 'boolean') throw new VLError(name + ' needs True or False.', line);
+            if (kind === 'num' && (typeof v !== 'number' || !Number.isFinite(v))) throw new VLError(name + ' needs a number.', line);
+            if (kind === 'str' && typeof v !== 'string') throw new VLError(name + ' needs a string.', line);
+            if (name === 'TimeOfDay') v = Math.max(0, Math.min(24, v));
+            if (name === 'Gravity') v = Math.max(0, Math.min(GRAVITY_MAX, v));
+            o[def[0]] = v;
+            if (name === 'Anchored' && v) physicsVelocity.set(inst.id, { x: 0, y: 0, z: 0 });
+            if (name === 'Name') uiDirty = true;
+        }
+        function vlGetMember(obj, name, line) {
+            if (obj instanceof VLVec) {
+                if (!(name in VL_AXES)) throw new VLError('A vector only has X, Y and Z.', line);
+                return obj.get(VL_AXES[name]);
+            }
+            if (obj instanceof VLInst) return vlGetProp(obj, name, line);
+            if (obj instanceof VLSpace) {
+                // Spaces are indexed by unique instance ID, never by display name.
+                const o = sceneObjects[name];
+                if (o && spaceOf(o) === obj.id) return vlInst(name);
+                throw new VLError('There is no instance with UID "' + name + '" in ' + obj.name + '. Use Instance.GetUID("Object Name") to look up its UID first.', line);
+            }
+            if (obj instanceof VLModule) {
+                if (!(name in obj.members)) throw new VLError(obj.name + ' has no "' + name + '".', line);
+                return obj.members[name];
+            }
+            throw new VLError('Cannot read "' + name + '" from a ' + vlTypeName(obj) + ' value.', line);
+        }
+        function vlSetMember(obj, name, v, line) {
+            if (obj instanceof VLVec) {
+                if (!(name in VL_AXES)) throw new VLError('A vector only has X, Y and Z.', line);
+                if (typeof v !== 'number' || !Number.isFinite(v)) throw new VLError(name + ' needs a number.', line);
+                obj.set(VL_AXES[name], v);
+                return;
+            }
+            if (obj instanceof VLInst) { vlSetProp(obj, name, v, line); return; }
+            throw new VLError('Cannot set "' + name + '" on a ' + vlTypeName(obj) + ' value.', line);
+        }
+
+        // ── Instance module ──
+        function vlCreate(type, spaceId) {
+            let o;
+            if (type === 'prism6') o = makePrism(dn('prism6') + ' ' + (++counters.prism), spaceId, { length: 0.75, width: 0.75, height: 0.75 });
+            else if (type === 'model') { const n = ++counters.model; o = { type: 'model', name: dn('model') + (n === 1 ? '' : ' ' + n), parent: spaceId }; }
+            else if (type === 'worldsettings') o = { type: 'worldsettings', name: dn('worldsettings') + ' ' + (++counters.worldsettings), parent: spaceId, timeOfDay: 14, gravity: 9.8, killY: -5000 };
+            else { const n = ++counters.script; o = newScriptData(n === 1 ? dn('script') : dn('script') + ' ' + n, spaceId); }
+            const id = newId();
+            sceneObjects[id] = o;
+            uiDirty = true;
+            return id;
+        }
+        function vlDeleteInst(id) {
+            delete sceneObjects[id];
+            physicsVelocity.delete(id);
+            vlInstCache.delete(id);
+            pruneOrphans();
+            if (selectedObjectId === id) selectedObjectId = null;
+            uiDirty = true;
+        }
+        function vlGetUID(args, line) {
+            if (args.length < 1 || args.length > 2 || typeof args[0] !== 'string') throw new VLError('Instance.GetUID(name) needs an object name string; optionally pass a Space as the second argument.', line);
+            const name = args[0];
+            const space = args[1];
+            if (space !== undefined && !(space instanceof VLSpace)) throw new VLError('The second argument of Instance.GetUID must be a loaded Space.', line);
+            const matches = Object.entries(sceneObjects).filter(([id, o]) => o.name === name && (!space || spaceOf(o) === space.id));
+            if (!matches.length) throw new VLError('No instance named "' + name + '" was found' + (space ? ' in ' + space.name : '') + '.', line);
+            if (matches.length > 1) throw new VLError('More than one instance is named "' + name + '". Pass its Space as the second argument or give the instances different names.', line);
+            return matches[0][0];
+        }
+        function vlSetUID(args, line) {
+            if (args.length !== 2 || typeof args[0] !== 'string' || typeof args[1] !== 'string') throw new VLError('Instance.SetUID(oldUID, newUID) needs two strings.', line);
+            const oldId = args[0], newId = args[1];
+            if (!sceneObjects[oldId]) throw new VLError('No instance exists with UID "' + oldId + '".', line);
+            if (!/^[A-Za-z][A-Za-z0-9]*$/.test(newId)) throw new VLError('A UID must start with a letter and contain only letters and numbers, for example "Ashburn534".', line);
+            if (sceneObjects[newId] && newId !== oldId) throw new VLError('UID "' + newId + '" is already in use.', line);
+            if (newId === oldId) return newId;
+            sceneObjects[newId] = sceneObjects[oldId];
+            delete sceneObjects[oldId];
+            if (physicsVelocity.has(oldId)) { physicsVelocity.set(newId, physicsVelocity.get(oldId)); physicsVelocity.delete(oldId); }
+            if (selectedObjectId === oldId) selectedObjectId = newId;
+            const cached = vlInstCache.get(oldId);
+            if (cached) vlInstCache.delete(oldId);
+            vlInstCache.delete(newId);
+            uiDirty = true;
+            return newId;
+        }
+        const vlGetUIDFn = new VLFn('Instance.GetUID', vlGetUID);
+        const vlSetUIDFn = new VLFn('Instance.SetUID', vlSetUID);
+        const vlScriptingModule = new VLModule('Scripting', { GetUID: vlGetUIDFn, SetUID: vlSetUIDFn });
+        const vlInstanceModule = new VLModule('Instance', {
+            GetUID: vlGetUIDFn,
+            SetUID: vlSetUIDFn,
+            create: new VLFn('Instance.create', (args, line) => {
+                const [type, space] = args;
+                if (typeof type !== 'string' || !VL_TYPES.includes(type)) throw new VLError('Unknown instance type "' + vlStr(type) + '". Use prism6, script or worldsettings.', line);
+                if (!(space instanceof VLSpace)) throw new VLError('Instance.create needs a loaded Space as its second argument, for example World.', line);
+                return vlInst(vlCreate(type, space.id));
+            }),
+            delete: new VLFn('Instance.delete', (args, line) => {
+                if (!(args[0] instanceof VLInst)) throw new VLError('Instance.delete needs an instance.', line);
+                vlObj(args[0], line);
+                vlDeleteInst(args[0].id);
+                return null;
+            }),
+            duplicate: new VLFn('Instance.duplicate', (args, line) => {
+                if (!(args[0] instanceof VLInst)) throw new VLError('Instance.duplicate needs an instance.', line);
+                const o = vlObj(args[0], line);
+                if (args[1] !== undefined && !(args[1] instanceof VLSpace)) throw new VLError('The second argument of Instance.duplicate must be a loaded Space.', line);
+                const data = JSON.parse(JSON.stringify(o));
+                if (args[1]) data.parent = args[1].id;
+                const id = newId();
+                sceneObjects[id] = data;
+                uiDirty = true;
+                return vlInst(id);
+            })
+        });
+        const vlVanilla3D = new VLModule('vanilla3D', {
+            Position: new VLFn('vanilla3D.Position', (a, line) => vlVecFrom(a, line, 'Position')),
+            Size: new VLFn('vanilla3D.Size', (a, line) => vlVecFrom(a, line, 'Size'))
+        });
+        function vlVecFrom(a, line, name) {
+            if (a.length !== 3 || a.some(n => typeof n !== 'number' || !Number.isFinite(n))) throw new VLError('vanilla3D.' + name + ' needs three numbers: (x, y, z).', line);
+            return new VLVec(a[0], a[1], a[2]);
+        }
+        function vlRootScope() {
+            const s = new VLScope(null);
+            s.vars.set('vanilla3D', vlVanilla3D);
+            s.vars.set('print', new VLFn('print', (args) => { logOutput('print', args.map(vlStr).join('  ')); return null; }));
+            s.vars.set('wait', new VLFn('wait', (args, line) => {
+                if (args.length !== 1 || typeof args[0] !== 'number' || !Number.isFinite(args[0]) || args[0] < 0) throw new VLError('wait(time) needs one non-negative number of seconds.', line);
+                if (!/^\d+(?:\.\d{1,2})?$/.test(String(args[0]))) throw new VLError('wait(time) supports up to 2 decimal places.', line);
+                return new VLWait(args[0]);
+            }));
+            return s;
+        }
+
+        // ── Evaluator ──
+        function vlEq(a, b) {
+            if (a instanceof VLVec && b instanceof VLVec) return [0, 1, 2].every(i => a.get(i) === b.get(i));
+            return a === b || (a == null && b == null);
+        }
+        function vlBinary(op, a, b, line) {
+            if (op === '==') return vlEq(a, b);
+            if (op === '~=') return !vlEq(a, b);
+            if (op === '+') {
+                if (typeof a === 'number' && typeof b === 'number') return a + b;
+                if (a instanceof VLVec && b instanceof VLVec) return new VLVec(a.get(0) + b.get(0), a.get(1) + b.get(1), a.get(2) + b.get(2));
+                if (typeof a === 'string' || typeof b === 'string') return vlStr(a) + vlStr(b);
+            } else if (op === '-') {
+                if (typeof a === 'number' && typeof b === 'number') return a - b;
+                if (a instanceof VLVec && b instanceof VLVec) return new VLVec(a.get(0) - b.get(0), a.get(1) - b.get(1), a.get(2) - b.get(2));
+            } else if (op === '*') {
+                if (typeof a === 'number' && typeof b === 'number') return a * b;
+                if (a instanceof VLVec && typeof b === 'number') return new VLVec(a.get(0) * b, a.get(1) * b, a.get(2) * b);
+            } else if (op === '/' || op === '%') {
+                if (typeof a === 'number' && typeof b === 'number') return op === '/' ? a / b : a - Math.floor(a / b) * b;
+            } else {
+                if ((typeof a === 'number' && typeof b === 'number') || (typeof a === 'string' && typeof b === 'string')) {
+                    return op === '<' ? a < b : op === '>' ? a > b : op === '<=' ? a <= b : a >= b;
+                }
+            }
+            throw new VLError('Cannot use "' + op + '" with ' + vlTypeName(a) + ' and ' + vlTypeName(b) + '.', line);
+        }
+        function vlEval(e, env, ctx) {
+            switch (e.k) {
+                case 'num': case 'str': case 'bool': return e.v;
+                case 'nil': return null;
+                case 'name': {
+                    const sc = env.find(e.name);
+                    if (sc) return sc.vars.get(e.name);
+                    if (vlSharedGlobals.has(e.name)) return vlSharedGlobals.get(e.name).value;
+                    throw new VLError('Unknown variable "' + e.name + '". It is neither local nor a shared global.', e.line);
+                }
+                case 'member': { const obj = vlEval(e.obj, env, ctx); if (obj instanceof VLSpace) { const sc = env.find(e.name); if (sc) { const key = sc.vars.get(e.name); const uid = key instanceof VLInst ? key.id : key; if (typeof uid !== 'string') throw new VLError('A Space member variable must contain an instance or UID string.', e.line); return vlGetMember(obj, uid, e.line); } if (vlSharedGlobals.has(e.name)) { const key = vlSharedGlobals.get(e.name).value; const uid = key instanceof VLInst ? key.id : key; if (typeof uid !== 'string') throw new VLError('A Space member variable must contain an instance or UID string.', e.line); return vlGetMember(obj, uid, e.line); } } return vlGetMember(obj, e.name, e.line); }
+                case 'index': {
+                    const o = vlEval(e.obj, env, ctx), k = vlEval(e.key, env, ctx);
+                    if (typeof k !== 'string') throw new VLError('An index must be a string, for example World["Block 2"].', e.line);
+                    return vlGetMember(o, k, e.line);
+                }
+                case 'callx': {
+                    const f = vlEval(e.fn, env, ctx);
+                    if (!(f instanceof VLFn)) throw new VLError('This is not a function.', e.line);
+                    return f.fn(e.args.map(a => vlEval(a, env, ctx)), e.line, ctx);
+                }
+                case 'un': {
+                    const v = vlEval(e.e, env, ctx);
+                    if (e.op === 'not') return !vlTruthy(v);
+                    if (typeof v !== 'number') throw new VLError('Cannot negate a ' + vlTypeName(v) + ' value.', e.line);
+                    return -v;
+                }
+                case 'bin': {
+                    if (e.op === 'and') { const l = vlEval(e.l, env, ctx); return vlTruthy(l) ? vlEval(e.r, env, ctx) : l; }
+                    if (e.op === 'or') { const l = vlEval(e.l, env, ctx); return vlTruthy(l) ? l : vlEval(e.r, env, ctx); }
+                    return vlBinary(e.op, vlEval(e.l, env, ctx), vlEval(e.r, env, ctx), e.line);
+                }
+            }
+            throw new VLError('Cannot evaluate this expression.', e.line);
+        }
+        // Statements run as generators so a script can pause between frames.
+        // A `while` loop waits one frame per iteration, and long scripts yield every few hundred statements.
+        function* vlExec(stmts, env, ctx) {
+            for (const s of stmts) {
+                if (++ctx.steps >= 400) { ctx.steps = 0; yield; }
+                switch (s.k) {
+                    case 'useSpace': env.vars.set(s.name, vlSpaces[VL_SPACES[s.name]]); break;
+                    case 'useModule': env.vars.set(s.name, s.name === 'Scripting' ? vlScriptingModule : vlInstanceModule); break;
+                    case 'local': env.vars.set(s.name, vlEval(s.expr, env, ctx)); break;
+                    case 'assign': {
+                        const v = vlEval(s.expr, env, ctx), t = s.target;
+                        if (t.k === 'name') {
+                            const sc = env.find(t.name);
+                            if (sc) {
+                                sc.vars.set(t.name, v);
+                            } else {
+                                const existing = vlSharedGlobals.get(t.name);
+                                const scriptObj = sceneObjects[ctx.id];
+                                const isServer = !!scriptObj && scriptObj.scriptType === 'Server';
+                                if (existing && existing.ownerId !== ctx.id && !isServer) {
+                                    throw new VLError('Cannot change global "' + t.name + '". Only the script that created it or a Server script can edit it.', t.line);
+                                }
+                                if (existing) existing.value = v;
+                                else vlSharedGlobals.set(t.name, { value: v, ownerId: ctx.id });
+                            }
+                        } else if (t.k === 'member') vlSetMember(vlEval(t.obj, env, ctx), t.name, v, t.line);
+                        else {
+                            const o = vlEval(t.obj, env, ctx), k = vlEval(t.key, env, ctx);
+                            if (typeof k !== 'string') throw new VLError('An index must be a string.', t.line);
+                            vlSetMember(o, k, v, t.line);
+                        }
+                        break;
+                    }
+                    case 'exprstmt': { const result = vlEval(s.expr, env, ctx); if (result instanceof VLWait) { yield { wait: result.seconds }; } break; }
+                    case 'while':
+                        while (vlTruthy(vlEval(s.cond, env, ctx))) {
+                            yield* vlExec(s.body, new VLScope(env), ctx);
+                            yield;
+                        }
+                        break;
+                    case 'for': {
+                        const a = vlEval(s.from, env, ctx), b = vlEval(s.to, env, ctx);
+                        if (typeof a !== 'number' || typeof b !== 'number') throw new VLError('A for loop needs numbers for its start and end.', s.line);
+                        for (let i = a; i <= b; i++) {
+                            const sc = new VLScope(env);
+                            sc.vars.set(s.name, i);
+                            yield* vlExec(s.body, sc, ctx);
+                        }
+                        break;
+                    }
+                    case 'if':
+                        if (vlTruthy(vlEval(s.cond, env, ctx))) yield* vlExec(s.body, new VLScope(env), ctx);
+                        else if (s.els) yield* vlExec(s.els, new VLScope(env), ctx);
+                        break;
+                }
+            }
+        }
+        function* vlMain(ast, ctx) { yield* vlExec(ast, ctx.root, ctx); }
+
+        // ── Script tasks ──
+        const scriptTasks = [];
+        const outputLog = [];
+        let outputDirty = false;
+        let uiDirty = false;
+        function logOutput(kind, text) {
+            outputLog.push({ kind, text });
+            if (outputLog.length > 300) outputLog.shift();
+            outputDirty = true;
+        }
+        function vlStartTask(id) {
+            const o = sceneObjects[id];
+            if (!o || o.type !== 'script') return false;
+            ensureScript(o);
+            if (o.language !== 'vanillalua') return false;
+            if (scriptTasks.some(t => t.id === id && !t.done)) { logOutput('info', o.name + ' is already running.'); return false; }
+            const { ast, diags } = computeDiagnostics(o);
+            const errs = diags.filter(d => d.sev === 'error');
+            if (errs.length) {
+                logOutput('error', o.name + ' did not run. Line ' + errs[0].line + ': ' + errs[0].msg + (errs.length > 1 ? ' (+' + (errs.length - 1) + ' more)' : ''));
+                return false;
+            }
+            const ctx = { id, name: o.name, steps: 0, root: vlRootScope() };
+            ctx.root.vars.set('script', vlInst(id));
+            for (const n of ['Scripts', 'World', 'Storage']) if (preInc(n)) ctx.root.vars.set(n, vlSpaces[VL_SPACES[n]]);
+            for (const n of ['Instance', 'Scripting']) if (preInc(n)) ctx.root.vars.set(n, n === 'Scripting' ? vlScriptingModule : vlInstanceModule);
+            scriptTasks.push({ id, name: o.name, gen: vlMain(ast, ctx), done: false, nextAt: 0 });
+            return true;
+        }
+        function vlRunScript(id, line) {
+            const o = sceneObjects[id];
+            if (!o) throw new VLError('This script was deleted.', line);
+            if (o.language === 'json') throw new VLError(o.name + ' is a JSON script. JSON scripts cannot run.', line);
+            vlStartTask(id);
+        }
+        function startSimulationScripts() {
+            vlInstCache.clear();
+            let n = 0;
+            const startupScripts = Object.entries(sceneObjects)
+                .filter(([, o]) => o.type === 'script' && (spaceOf(o) === 'scripts' || spaceOf(o) === 'world'))
+                .sort((a, b) => (b[1].scriptType === 'Server' ? 1 : 0) - (a[1].scriptType === 'Server' ? 1 : 0));
+            for (const [id, o] of startupScripts) {
+                ensureScript(o);
+                if (o.runWhen === 'simulation' && o.language === 'vanillalua' && vlStartTask(id)) n++;
+            }
+            logOutput('info', n ? 'Simulation started. ' + n + ' script' + (n === 1 ? '' : 's') + ' running.' : 'Simulation started. No scripts to run.');
+        }
+        function stepScripts() {
+            for (let i = 0; i < scriptTasks.length; i++) {
+                const t = scriptTasks[i];
+                if (t.done) continue;
+                if (!sceneObjects[t.id]) { t.done = true; continue; }
+                try { if (performance.now() < t.nextAt) continue; const step = t.gen.next(); if (step.done) t.done = true; else if (step.value && typeof step.value.wait === 'number') t.nextAt = performance.now() + step.value.wait * 1000; }
+                catch (e) {
+                    t.done = true;
+                    if (e instanceof VLError) logOutput('error', t.name + (e.vlLine ? ' line ' + e.vlLine : '') + ': ' + e.message);
+                    else { console.error(e); logOutput('error', t.name + ': internal error. ' + e.message); }
+                }
+            }
+            for (let i = scriptTasks.length - 1; i >= 0; i--) if (scriptTasks[i].done) scriptTasks.splice(i, 1);
+        }
+        function stopScripts() {
+            scriptTasks.length = 0;
+            vlInstCache.clear();
+        }
+        // ───────── End Vanillalua ─────────
+
+
+        // ───────── Tabs and script editor ─────────
+        const tabbarEl = document.getElementById('tabbar');
+        const editorEl = document.getElementById('script-editor');
+        const seInput = document.getElementById('se-input');
+        const seHl = document.getElementById('se-hl');
+        const seLinesInner = document.getElementById('se-lines-inner');
+        const seMarkersInner = document.getElementById('se-markers-inner');
+        const seTitle = document.getElementById('se-title');
+        const seLang = document.getElementById('se-lang');
+        const seCounts = document.getElementById('se-counts');
+        const seNote = document.getElementById('se-note');
+        const seOutList = document.getElementById('se-out-list');
+        const SE_LH = 20;
+        const openTabs = ['world'];
+        let activeTab = 'world';
+        let editorScriptId = null;
+        let editorDiags = [];
+        let diagTimer = 0;
+        let lineCount = 0;
+
+        function renderTabs() {
+            for (let i = openTabs.length - 1; i > 0; i--) if (!sceneObjects[openTabs[i]]) openTabs.splice(i, 1);
+            if (!openTabs.includes(activeTab)) { activeTab = 'world'; applyActiveTab(); }
+            tabbarEl.innerHTML = openTabs.map(id => {
+                const isWorld = id === 'world';
+                const name = isWorld ? 'World' : sceneObjects[id].name;
+                const on = id === activeTab;
+                return `<div class="tab${on ? ' active' : ''}" role="tab" tabindex="0" aria-selected="${on}" data-tab="${id}" title="${esc(name)}">
+                    ${icon(isWorld ? 'i-world' : 'i-script')}<span class="tab-name">${esc(name)}</span>${isWorld ? '' : `<button class="tab-close" data-close-tab="${id}" aria-label="Close ${esc(name)}" title="Close">${icon('i-close')}</button>`}
+                </div>`;
+            }).join('');
+        }
+        function applyActiveTab() {
+            const isScript = activeTab !== 'world';
+            editorEl.hidden = !isScript;
+            if (isScript) loadEditor(activeTab); else editorScriptId = null;
+        }
+        function setActiveTab(id) {
+            if (id === activeTab) return;
+            activeTab = id;
+            applyActiveTab();
+            renderTabs();
+        }
+        function openScriptTab(id) {
+            const o = sceneObjects[id];
+            if (!o || o.type !== 'script') return;
+            if (!openTabs.includes(id)) openTabs.push(id);
+            activeTab = id;
+            applyActiveTab();
+            renderTabs();
+            seInput.focus();
+        }
+        function closeTab(id) {
+            const i = openTabs.indexOf(id);
+            if (i < 1) return;
+            openTabs.splice(i, 1);
+            if (activeTab === id) { activeTab = openTabs[Math.min(i, openTabs.length - 1)] || 'world'; applyActiveTab(); }
+            renderTabs();
+        }
+        tabbarEl.addEventListener('click', (e) => {
+            const close = e.target.closest('[data-close-tab]');
+            if (close) { closeTab(close.dataset.closeTab); return; }
+            const tab = e.target.closest('.tab');
+            if (tab) setActiveTab(tab.dataset.tab);
+        });
+        tabbarEl.addEventListener('auxclick', (e) => {
+            const tab = e.target.closest('.tab');
+            if (e.button === 1 && tab) { e.preventDefault(); closeTab(tab.dataset.tab); }
+        });
+        tabbarEl.addEventListener('keydown', (e) => {
+            const tab = e.target.closest('.tab');
+            if (tab && !e.target.closest('.tab-close') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setActiveTab(tab.dataset.tab); }
+        });
+
+        // ── Syntax highlighting (a coloured copy of the text sits behind the transparent textarea) ──
+        const HL_BUILTINS = new Set(['Instance', 'vanilla3D', 'World', 'Storage', 'Scripts', 'print']);
+        const HL_LITERALS = new Set(['True', 'False', 'nil']);
+        function hlVanillalua(src) {
+            const re = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|(\d+(?:\.\d+)?)|([A-Za-z_][A-Za-z0-9_]*)|([\s\S])/g;
+            let out = '', m, prev = '';
+            while ((m = re.exec(src))) {
+                if (m[1] !== undefined) out += `<span class="tk-com">${esc(m[1])}</span>`;
+                else if (m[2] !== undefined) out += `<span class="tk-str">${esc(m[2])}</span>`;
+                else if (m[3] !== undefined) out += `<span class="tk-num">${m[3]}</span>`;
+                else if (m[4] !== undefined) {
+                    const w = m[4];
+                    const cls = prev === '.' ? 'tk-prop' : VL_KEYWORDS.has(w) ? 'tk-kw' : HL_LITERALS.has(w) ? 'tk-lit' : HL_BUILTINS.has(w) ? 'tk-bi' : '';
+                    out += cls ? `<span class="${cls}">${w}</span>` : w;
+                } else out += esc(m[5]);
+                if (m[5] !== undefined) { if (!/\s/.test(m[5])) prev = m[5]; } else prev = 'x';
+            }
+            return out;
+        }
+        function hlJson(src) {
+            const re = /("(?:[^"\\\n]|\\.)*"?)(\s*:)?|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|\b(true|false|null)\b|([\s\S])/g;
+            let out = '', m;
+            while ((m = re.exec(src))) {
+                if (m[1] !== undefined) out += `<span class="${m[2] ? 'tk-prop' : 'tk-str'}">${esc(m[1])}</span>${m[2] ? esc(m[2]) : ''}`;
+                else if (m[3] !== undefined) out += `<span class="tk-num">${m[3]}</span>`;
+                else if (m[4] !== undefined) out += `<span class="tk-lit">${m[4]}</span>`;
+                else out += esc(m[5]);
+            }
+            return out;
+        }
+
+        // ── Editor view ──
+        function loadEditor(id) {
+            const o = sceneObjects[id];
+            if (!o) return;
+            ensureScript(o);
+            editorScriptId = id;
+            seInput.value = o.source;
+            seInput.scrollTop = 0;
+            seInput.scrollLeft = 0;
+            lineCount = 0;
+            refreshEditor();
+            updateEditorState();
+        }
+        function refreshEditor() {
+            const o = sceneObjects[editorScriptId];
+            if (!o) return;
+            const src = seInput.value;
+            seTitle.textContent = o.name;
+            seLang.textContent = o.language === 'json' ? 'JSON' : 'Vanillalua';
+            seHl.innerHTML = (o.language === 'json' ? hlJson(src) : settings.syntax === false ? esc(src) : hlVanillalua(src)) + '\n ';
+            renderLineNumbers(src);
+            runDiagnostics();
+            syncEditorScroll();
+        }
+        function renderLineNumbers(src) {
+            const n = src.split('\n').length;
+            if (n !== lineCount) {
+                lineCount = n;
+                let html = '';
+                for (let i = 1; i <= n; i++) html += `<div>${i}</div>`;
+                seLinesInner.innerHTML = html;
+                seMarkersInner.style.height = (n * SE_LH + 56) + 'px';
+            }
+            updateActiveLine();
+        }
+        function updateActiveLine() {
+            const line = seInput.value.slice(0, seInput.selectionStart).split('\n').length;
+            const prev = seLinesInner.querySelector('.cur');
+            if (prev) prev.classList.remove('cur');
+            const el = seLinesInner.children[line - 1];
+            if (el) el.classList.add('cur');
+        }
+        function syncEditorScroll() {
+            seHl.scrollTop = seInput.scrollTop;
+            seHl.scrollLeft = seInput.scrollLeft;
+            const t = `translateY(${-seInput.scrollTop}px)`;
+            seLinesInner.style.transform = t;
+            seMarkersInner.style.transform = t;
+        }
+        function runDiagnostics() {
+            const o = sceneObjects[editorScriptId];
+            if (!o) return;
+            editorDiags = computeDiagnostics({ language: o.language, source: seInput.value }).diags;
+            const byLine = new Map();
+            for (const d of editorDiags) {
+                if (!byLine.has(d.line)) byLine.set(d.line, []);
+                byLine.get(d.line).push(d);
+            }
+            let html = '';
+            for (const [line, list] of byLine) {
+                const sev = list.some(d => d.sev === 'error') ? 'error' : 'warning';
+                const text = list.map(d => (d.sev === 'error' ? 'Error: ' : 'Warning: ') + d.msg).join('\n');
+                html += `<button class="se-marker ${sev}" style="top:${8 + (line - 1) * SE_LH}px" data-line="${line}" title="${esc(text)}" aria-label="${esc(text)}">${icon(sev === 'error' ? 'i-err' : 'i-warn')}</button>`;
+            }
+            seMarkersInner.innerHTML = html;
+            const errs = editorDiags.filter(d => d.sev === 'error').length, warns = editorDiags.length - errs;
+            seCounts.innerHTML = errs || warns
+                ? `${errs ? `<span class="se-count error"><i></i>${errs} error${errs === 1 ? '' : 's'}</span>` : ''}${warns ? `<span class="se-count warning"><i></i>${warns} warning${warns === 1 ? '' : 's'}</span>` : ''}`
+                : `<span class="se-count ok"><i></i>No problems</span>`;
+        }
+        function updateEditorState() {
+            seInput.readOnly = simulationRunning;
+            seNote.hidden = !simulationRunning;
+        }
+        function jumpToLine(line) {
+            const v = seInput.value;
+            let pos = 0;
+            for (let i = 1; i < line; i++) { const nl = v.indexOf('\n', pos); if (nl === -1) break; pos = nl + 1; }
+            seInput.focus();
+            seInput.setSelectionRange(pos, pos);
+            const top = (line - 1) * SE_LH;
+            if (top < seInput.scrollTop || top > seInput.scrollTop + seInput.clientHeight - 60) seInput.scrollTop = Math.max(0, top - seInput.clientHeight / 3);
+            updateActiveLine();
+        }
+        seMarkersInner.addEventListener('click', (e) => {
+            const m = e.target.closest('.se-marker');
+            if (m) jumpToLine(parseInt(m.dataset.line, 10));
+        });
+        seInput.addEventListener('input', () => {
+            const o = sceneObjects[editorScriptId];
+            if (!o || simulationRunning) return;
+            o.source = seInput.value;
+            const src = seInput.value;
+            seHl.innerHTML = (o.language === 'json' ? hlJson(src) : settings.syntax === false ? esc(src) : hlVanillalua(src)) + '\n ';
+            renderLineNumbers(src);
+            syncEditorScroll();
+            clearTimeout(diagTimer);
+            diagTimer = setTimeout(runDiagnostics, 150);
+        });
+        seInput.addEventListener('scroll', syncEditorScroll);
+        ['keyup', 'click', 'focus'].forEach(ev => seInput.addEventListener(ev, updateActiveLine));
+
+        function seInsert(text) {
+            seInput.focus();
+            if (!document.execCommand('insertText', false, text)) {
+                seInput.setRangeText(text, seInput.selectionStart, seInput.selectionEnd, 'end');
+                seInput.dispatchEvent(new Event('input'));
+            }
+        }
+        seInput.addEventListener('keydown', (e) => {
+            if (seInput.readOnly) return;
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const v = seInput.value, s = seInput.selectionStart, en = seInput.selectionEnd;
+                const multi = v.slice(s, en).includes('\n');
+                if (!e.shiftKey && !multi) { seInsert('  '); return; }
+                const ls = v.lastIndexOf('\n', s - 1) + 1;
+                let le = v.indexOf('\n', en);
+                if (le === -1) le = v.length;
+                const out = v.slice(ls, le).split('\n').map(l => e.shiftKey ? l.replace(/^( {1,2}|\t)/, '') : '  ' + l).join('\n');
+                seInput.setSelectionRange(ls, le);
+                seInsert(out);
+                seInput.setSelectionRange(ls, ls + out.length);
+            } else if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                const o = sceneObjects[editorScriptId];
+                const v = seInput.value, s = seInput.selectionStart;
+                const ls = v.lastIndexOf('\n', s - 1) + 1;
+                const before = v.slice(ls, s);
+                const indent = before.match(/^[ \t]*/)[0];
+                const opens = o && o.language === 'json' ? /[{\[]\s*$/.test(before) : /(\bdo|\bthen|\belse)\s*$/.test(before);
+                seInsert('\n' + indent + (opens ? '  ' : ''));
+            }
+        });
+
+        // ── Output panel ──
+        function renderOutput() {
+            seOutList.innerHTML = outputLog.length
+                ? outputLog.map(l => `<div class="out-line ${l.kind}">${esc(l.text)}</div>`).join('')
+                : '<div class="out-empty">Output from running scripts appears here.</div>';
+            seOutList.scrollTop = seOutList.scrollHeight;
+        }
+        document.getElementById('se-out-clear').addEventListener('click', () => { outputLog.length = 0; renderOutput(); });
+        renderOutput();
+
 
         let accentRGB = [0.95, 0.69, 0.2];
         function refreshTheme() {
@@ -789,13 +2498,16 @@
                 const n = ++counters.prism;
                 const k = n - 2;
                 const offset = (k % 2 === 0 ? 1 : -1) * 3 * (Math.floor(k / 2) + 1);
-                obj = makePrism('Block ' + n, space, { x: offset, length: 0.75, width: 0.75, height: 0.75 });
+                obj = makePrism(dn('prism6') + ' ' + n, space, { x: offset, length: 0.75, width: 0.75, height: 0.75 });
+            } else if (kind === 'model') {
+                const n = ++counters.model;
+                obj = { type: 'model', name: dn('model') + (n === 1 ? '' : ' ' + n), parent: space };
             } else if (kind === 'worldsettings') {
                 const n = ++counters.worldsettings;
-                obj = { type: 'worldsettings', name: 'Settings ' + n, parent: space, timeOfDay: 14, gravity: 9.8, killY: -5000 };
+                obj = { type: 'worldsettings', name: dn('worldsettings') + ' ' + n, parent: space, timeOfDay: 14, gravity: 9.8, killY: -5000 };
             } else {
                 const n = ++counters.script;
-                obj = { type: 'script', name: n === 1 ? 'Script' : 'Script ' + n, parent: space };
+                obj = newScriptData(n === 1 ? dn('script') : dn('script') + ' ' + n, space);
             }
             sceneObjects[id] = obj;
             collapsed.delete(space);
@@ -818,11 +2530,16 @@
         const statFaces = document.getElementById('stat-faces');
 
         // Camera control settings (saved in this browser)
-        const settings = { leftDrag: true, rightClick: false, gizmoOffset: 0.5 };
+        const settings = { leftDrag: true, rightClick: false, gizmoOffset: 0.5, showUid: false, syntax: true, defaultNames: {}, preinclude: {} };
         try { Object.assign(settings, JSON.parse(localStorage.getItem('vanilla-editor-settings') || '{}')); } catch (e) {}
         function applySettings() {
-            document.getElementById('opt-left-drag').checked = settings.leftDrag;
-            document.getElementById('opt-right-click').checked = settings.rightClick;
+            if (typeof settings.defaultNames !== 'object' || !settings.defaultNames) settings.defaultNames = {};
+            if (typeof settings.preinclude !== 'object' || !settings.preinclude) settings.preinclude = {};
+            document.getElementById('set-cam').value = settings.rightClick && !settings.leftDrag ? 'right' : 'drag';
+            document.getElementById('opt-uid').checked = !!settings.showUid;
+            document.getElementById('opt-syntax').checked = settings.syntax !== false;
+            ['prism6', 'model', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el && el !== document.activeElement) el.value = dn(t); });
+            ['Scripts', 'Instance', 'World', 'Storage', 'Scripting'].forEach(n => { document.getElementById('pre-' + n).checked = !!settings.preinclude[n]; });
             canvas.classList.toggle('no-grab', !settings.leftDrag);
             const look = document.getElementById('hint-look');
             look.hidden = !settings.leftDrag && !settings.rightClick;
@@ -832,8 +2549,16 @@
             applySettings();
             try { localStorage.setItem('vanilla-editor-settings', JSON.stringify(settings)); } catch (e) {}
         }
-        document.getElementById('opt-left-drag').addEventListener('change', (e) => { settings.leftDrag = e.target.checked; saveSettings(); });
-        document.getElementById('opt-right-click').addEventListener('change', (e) => { settings.rightClick = e.target.checked; saveSettings(); });
+        const reCheckEditor = () => { if (typeof activeTab !== 'undefined' && activeTab !== 'world') seInput.dispatchEvent(new Event('input')); };
+        document.getElementById('set-cam').addEventListener('change', (e) => { settings.leftDrag = e.target.value === 'drag'; settings.rightClick = e.target.value === 'right'; saveSettings(); });
+        document.getElementById('opt-uid').addEventListener('change', (e) => { settings.showUid = e.target.checked; saveSettings(); renderExplorer(); });
+        document.getElementById('opt-syntax').addEventListener('change', (e) => { settings.syntax = e.target.checked; saveSettings(); reCheckEditor(); });
+        ['prism6', 'model', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el) el.addEventListener('change', () => { const v = el.value.trim().slice(0, 24); if (v) settings.defaultNames[t] = v; else delete settings.defaultNames[t]; el.value = dn(t); saveSettings(); }); });
+        ['Scripts', 'Instance', 'World', 'Storage', 'Scripting'].forEach(n => document.getElementById('pre-' + n).addEventListener('change', (e) => { settings.preinclude[n] = e.target.checked; saveSettings(); reCheckEditor(); }));
+        document.querySelectorAll('.set-tab').forEach(b => b.addEventListener('click', () => {
+            document.querySelectorAll('.set-tab').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+            document.querySelectorAll('.set-pane').forEach(p => p.hidden = p.id !== 'set-' + b.dataset.pane);
+        }));
 
         // Offset: the step the Move and Scale gizmos snap to (Vanillameters). 0 means free movement.
         const offsetEl = document.getElementById('offset-input');
@@ -871,26 +2596,238 @@
             openModal('modal-version');
         });
         document.getElementById('settings-btn').addEventListener('click', () => openModal('modal-settings', '#theme-toggle'));
+        document.getElementById('script-docs-btn').addEventListener('click', () => openDocs('settings'));
+        // Build the docs: grouped sidebar, search, highlighting, copy buttons.
+        let docsFrom = 'settings';
+        function openDocs(from) {
+            docsFrom = from;
+            document.getElementById('docs-return-label').textContent = from === 'file' ? 'Back to editor' : 'Return to Settings';
+            document.querySelectorAll('.modal-overlay.active').forEach(x => x.classList.remove('active'));
+            openModal('modal-script-docs', '#docs-search');
+        }
+        document.getElementById('script-docs-btn').onclick = null;
+        const docsArticle = document.getElementById('docs-article');
+        const docsNav = document.getElementById('docs-nav');
+        const docsMain = document.querySelector('.docs-main');
+        const docsHeadings = Array.from(docsArticle.querySelectorAll('h3'));
+        document.getElementById('docs-foot').textContent = 'Engine v' + ENGINE_VERSION;
+        docsArticle.querySelectorAll('.ver-chip').forEach(c => c.textContent = ENGINE_VERSION);
+        let lastGroup = null;
+        docsHeadings.forEach((heading, index) => {
+            heading.id = 'docs-section-' + (index + 1);
+            heading.textContent = heading.textContent.replace(/^\d+\.\s*/, '');
+            const group = heading.dataset.group || '';
+            if (group !== lastGroup) { lastGroup = group; const g = document.createElement('div'); g.className = 'docs-nav-group'; g.textContent = group; g.dataset.group = group; docsNav.appendChild(g); }
+            let text = heading.textContent.toLowerCase();
+            for (let n = heading.nextElementSibling; n && n.tagName !== 'H3'; n = n.nextElementSibling) text += ' ' + n.textContent.toLowerCase();
+            const button = document.createElement('button');
+            button.type = 'button'; button.className = 'docs-nav-btn' + (index === 0 ? ' active' : ''); button.dataset.group = group; button.dataset.q = text;
+            button.textContent = heading.textContent;
+            button.addEventListener('click', () => {
+                docsNav.querySelectorAll('.docs-nav-btn').forEach(b => b.classList.toggle('active', b === button));
+                heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            docsNav.appendChild(button);
+        });
+        document.getElementById('docs-search').addEventListener('input', (e) => {
+            const q = e.target.value.trim().toLowerCase(); const shown = new Set();
+            docsNav.querySelectorAll('.docs-nav-btn').forEach(b => { const hit = !q || b.dataset.q.includes(q); b.hidden = !hit; if (hit) shown.add(b.dataset.group); });
+            docsNav.querySelectorAll('.docs-nav-group').forEach(g => g.hidden = !shown.has(g.dataset.group));
+        });
+        docsArticle.querySelectorAll('pre').forEach(pre => {
+            const code = pre.querySelector('code');
+            if (code) code.innerHTML = hlVanillalua(code.textContent);
+            const copy = document.createElement('button');
+            copy.type = 'button'; copy.className = 'docs-copy'; copy.textContent = 'Copy';
+            copy.addEventListener('click', async () => {
+                try { await navigator.clipboard.writeText(code ? code.textContent : ''); copy.textContent = 'Copied'; copy.classList.add('copied'); }
+                catch (_) { copy.textContent = 'Select to copy'; }
+                setTimeout(() => { copy.textContent = 'Copy'; copy.classList.remove('copied'); }, 1500);
+            });
+            pre.appendChild(copy);
+        });
+        docsMain.addEventListener('scroll', () => {
+            let activeIndex = 0;
+            docsHeadings.forEach((heading, index) => { if (heading.getBoundingClientRect().top < 170) activeIndex = index; });
+            docsNav.querySelectorAll('.docs-nav-btn').forEach((b, index) => b.classList.toggle('active', index === activeIndex));
+        }, { passive: true });
+                document.getElementById('docs-return-settings').addEventListener('click', () => {
+            document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+            if (docsFrom === 'settings') { document.getElementById('modal-settings').classList.add('active'); document.getElementById('theme-toggle').focus(); }
+            else if (lastFocus) lastFocus.focus();
+        });
         document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModals));
         document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('mousedown', (e) => { if (e.target === m) closeModals(); }));
         document.getElementById('status-version').textContent = 'v' + ENGINE_VERSION;
 
+        // ───────── Vanilla World (.vnw) save/import ─────────
+        const VN_WORLD_SAVE_KEY = 'vanilla-engine-world-save-v1';
+        const fileBtn = document.getElementById('file-btn');
+        const fileMenu = document.getElementById('file-menu');
+        const fileStatus = document.getElementById('file-status');
+        const vnwInput = document.getElementById('vnw-file-input');
+        const SPACE_IDS = ['world', 'storage', 'scripts'];
+        function toast(msg, kind) {
+            const el = document.createElement('div');
+            el.className = 'toast ' + (kind || '');
+            el.innerHTML = icon(kind === 'bad' ? 'i-err' : kind === 'warn' ? 'i-warn' : 'i-check') + '<span>' + esc(msg) + '</span>';
+            document.getElementById('toast-host').appendChild(el);
+            setTimeout(() => el.remove(), 3200);
+        }
+        function confirmDialog(title, text, okLabel, danger) {
+            return new Promise(resolve => {
+                const ov = document.getElementById('confirm-overlay'), ok = document.getElementById('cf-ok'), no = document.getElementById('cf-cancel');
+                document.getElementById('cf-title').textContent = title;
+                document.getElementById('cf-text').textContent = text;
+                ok.textContent = okLabel; ok.classList.toggle('danger', !!danger);
+                const prev = document.activeElement;
+                const done = (v) => { ov.classList.remove('active'); ok.onclick = no.onclick = null; document.removeEventListener('keydown', onKey, true); if (prev && prev.focus) prev.focus(); resolve(v); };
+                const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); } };
+                ok.onclick = () => done(true); no.onclick = () => done(false);
+                ov.onmousedown = (e) => { if (e.target === ov) done(false); };
+                document.addEventListener('keydown', onKey, true);
+                ov.classList.add('active'); no.focus();
+            });
+        }
+        function readBrowserSave() { try { return JSON.parse(localStorage.getItem(VN_WORLD_SAVE_KEY) || 'null'); } catch (e) { return null; } }
+        function refreshFileStatus() {
+            const saved = readBrowserSave();
+            const importBtn = fileMenu.querySelector('[data-file-act="import-browser"]');
+            importBtn.disabled = !saved;
+            fileStatus.textContent = saved && saved.savedAt ? 'Browser save: ' + new Date(saved.savedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'No browser save yet';
+        }
+        function toggleFileMenu(force) {
+            const show = typeof force === 'boolean' ? force : fileMenu.hidden;
+            if (show) refreshFileStatus();
+            fileMenu.hidden = !show;
+            fileBtn.setAttribute('aria-expanded', String(show));
+            if (show) fileMenu.querySelector('.menu-item:not(:disabled)').focus();
+        }
+        function buildWorldFile() {
+            const objects = {};
+            for (const [uid, obj] of Object.entries(sceneObjects)) if (SPACE_IDS.includes(spaceOf(obj))) objects[uid] = JSON.parse(JSON.stringify(obj));
+            return { format: 'VanillaWorld', formatVersion: 1, engineVersion: ENGINE_VERSION, savedAt: new Date().toISOString(), spaces: SPACE_IDS, objects };
+        }
+        // Engine-owned objects (the Viewfinder) are built in and never come from a file: strip them, and re-key any file object that reuses an engine UID.
+        function sanitizeWorldFile(data) {
+            const objs = data.objects, isEngineObj = (o) => !o || o.type === 'viewfinder' || o.readOnly || o.parent === 'engine';
+            for (const uid of Object.keys(objs)) if (isEngineObj(objs[uid])) delete objs[uid];
+            const engineIds = new Set(Object.entries(sceneObjects).filter(([, o]) => o.parent === 'engine' || o.readOnly).map(([k]) => k));
+            const remap = {};
+            for (const uid of Object.keys(objs)) if (engineIds.has(uid)) {
+                let nid; do { nid = newId(); } while (objs[nid] || engineIds.has(nid));
+                remap[uid] = nid;
+            }
+            for (const [old, nid] of Object.entries(remap)) { objs[nid] = objs[old]; delete objs[old]; }
+            for (const o of Object.values(objs)) {
+                if (remap[o.parent]) o.parent = remap[o.parent];
+                if (o && typeof o === 'object' && !SPACE_IDS.includes(o.parent) && !objs[o.parent]) o.parent = 'world'; // parent was removed: fall back to World
+            }
+        }
+        function validateWorldFile(data) {
+            if (!data || data.format !== 'VanillaWorld' || data.formatVersion !== 1 || !data.objects || typeof data.objects !== 'object' || Array.isArray(data.objects)) throw new Error('This is not a supported .vnw Vanilla World file.');
+            sanitizeWorldFile(data);
+            for (const [uid, obj] of Object.entries(data.objects)) {
+                if (!/^[A-Za-z][A-Za-z0-9]*$/.test(uid) || !obj || typeof obj !== 'object' || !(SPACE_IDS.includes(obj.parent) || (data.objects[obj.parent] && obj.parent !== uid))) throw new Error('The file contains an invalid object or UID: ' + uid);
+                if (!['prism6', 'model', 'worldsettings', 'script'].includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
+            }
+            for (const [uid, obj] of Object.entries(data.objects)) { let p = obj, n = 0; while (p && !SPACE_IDS.includes(p.parent) && n++ < 64) p = data.objects[p.parent]; if (!p) throw new Error('Object ' + uid + ' has a circular parent chain.'); }
+            return data;
+        }
+        function applyWorldFile(raw) {
+            const data = validateWorldFile(raw);
+            for (const [uid, obj] of Object.entries(sceneObjects)) if (SPACE_IDS.includes(spaceOf(obj))) delete sceneObjects[uid];
+            for (const [uid, obj] of Object.entries(data.objects)) {
+                if (obj.type === 'script') {
+                    if (obj.scriptType !== 'Local' && obj.scriptType !== 'Server') obj.scriptType = 'Server';
+                    if (!['simulation', 'join', 'manual'].includes(obj.runWhen)) obj.runWhen = 'simulation';
+                    if (obj.language !== 'vanillalua' && obj.language !== 'json') obj.language = 'vanillalua';
+                    if (typeof obj.source !== 'string') obj.source = '';
+                }
+                sceneObjects[uid] = obj;
+            }
+            vlInstCache.clear(); physicsVelocity.clear(); selectedObjectId = null; renamingId = null; menuItemId = null;
+            for (const [k, t] of [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings']]) counters[k] = Object.values(sceneObjects).filter(o => o.type === t).length;
+            uiDirty = true;
+            renderTabs(); renderExplorer(); renderProperties();
+        }
+        function downloadWorldFile() {
+            const blob = new Blob([JSON.stringify(buildWorldFile(), null, 2)], { type: 'application/vnd.vanilla.world+json' });
+            const url = URL.createObjectURL(blob); const a = document.createElement('a');
+            a.href = url; a.download = 'World.vnw'; document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        function saveInBrowser() {
+            try { localStorage.setItem(VN_WORLD_SAVE_KEY, JSON.stringify(buildWorldFile())); toast('World saved in this browser.'); }
+            catch (err) { toast('Could not save: browser storage is full or disabled.', 'bad'); }
+        }
+        async function runFileAction(action) {
+            if (action === 'docs') { openDocs('file'); return; }
+            if (simulationRunning) { toast('Stop the simulation first. Stop restores your world.', 'warn'); return; }
+            if (action === 'save-browser') saveInBrowser();
+            else if (action === 'save-file') { downloadWorldFile(); toast('Downloaded World.vnw.'); }
+            else if (action === 'import-file') vnwInput.click();
+            else if (action === 'import-browser') {
+                const saved = readBrowserSave();
+                if (!saved) { toast('No browser save found. Use Save in browser first.', 'warn'); return; }
+                try { validateWorldFile(saved); } catch (err) { toast('Browser save is damaged: ' + err.message, 'bad'); return; }
+                if (!(await confirmDialog('Open browser save?', 'This replaces everything in World, Storage and Scripts. Unsaved changes will be lost.', 'Open', true))) return;
+                try { applyWorldFile(saved); toast('Browser save opened.'); } catch (err) { toast('Could not open: ' + err.message, 'bad'); }
+            } else if (action === 'new-world') {
+                if (!(await confirmDialog('Start a new world?', 'This clears World, Storage and Scripts. Unsaved changes will be lost.', 'Clear world', true))) return;
+                applyWorldFile({ format: 'VanillaWorld', formatVersion: 1, objects: { Amber417: { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 } } });
+                toast('New empty world.');
+            }
+        }
+        fileBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFileMenu(); });
+        document.addEventListener('click', (e) => { if (!e.target.closest('.file-menu-wrap')) toggleFileMenu(false); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !fileMenu.hidden) { toggleFileMenu(false); fileBtn.focus(); }
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 's') { e.preventDefault(); runFileAction(e.shiftKey ? 'save-file' : 'save-browser'); }
+        });
+        fileMenu.addEventListener('keydown', (e) => {
+            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+            e.preventDefault();
+            const items = Array.from(fileMenu.querySelectorAll('.menu-item:not(:disabled)')); const i = items.indexOf(document.activeElement);
+            items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+        });
+        fileMenu.querySelectorAll('[data-file-act]').forEach(item => item.addEventListener('click', () => { toggleFileMenu(false); runFileAction(item.dataset.fileAct); }));
+        vnwInput.addEventListener('change', async () => {
+            const file = vnwInput.files && vnwInput.files[0]; if (!file) return;
+            try {
+                const data = validateWorldFile(JSON.parse(await file.text()));
+                if (!(await confirmDialog('Open "' + file.name + '"?', 'This replaces everything in World, Storage and Scripts. Unsaved changes will be lost.', 'Open', true))) return;
+                applyWorldFile(data); toast('Opened ' + file.name + '.');
+            } catch (err) { toast('Could not open file: ' + (err instanceof SyntaxError ? 'it is not valid JSON.' : err.message), 'bad'); }
+            finally { vnwInput.value = ''; }
+        });
+
         // ───────── Explorer ─────────
         const explorerEl = document.getElementById('explorer-content');
         const collapsed = new Set();
+        let lastItemClick = { id: null, t: 0 };
+        const multiSel = new Set(); let anchorId = null;
         let renamingId = null, menuItemId = null;
 
+        function rowHtml(id, o, depth) {
+            const kids = Object.entries(sceneObjects).filter(([, k]) => k.parent === id);
+            const open = !collapsed.has(id);
+            let h = `<div class="tree-item${id === selectedObjectId || multiSel.has(id) ? ' selected' : ''}${id === menuItemId ? ' menu-open' : ''}" style="--depth:${depth}" role="treeitem" ${o.readOnly ? '' : 'draggable="true"'} tabindex="0" data-id="${id}">
+                ${kids.length ? `<button class="tree-twist${open ? ' open' : ''}" data-twist="${id}" tabindex="-1" aria-label="${open ? 'Collapse' : 'Expand'} children">${icon('i-chev')}</button>` : '<span class="tree-twist"></span>'}${icon(typeIcon[o.type])}${id === renamingId
+                    ? `<input class="rename-input" type="text" maxlength="48" value="${esc(o.name)}" aria-label="Rename">`
+                    : `<span class="tree-name">${esc(settings.showUid ? id : o.name)}</span>`}${o.type === 'viewfinder' ? '' : `<span class="tree-id">${o.type}</span>`}${o.readOnly ? ''
+                    : `<button class="item-more" data-more="${id}" aria-label="More options for ${esc(o.name)}" aria-haspopup="menu" title="More options">${icon('i-more')}</button>`}
+            </div>`;
+            if (kids.length && open) for (const [k, c] of kids) h += rowHtml(k, c, depth + 1);
+            return h;
+        }
         function renderExplorer() {
+            for (const k of [...multiSel]) if (!sceneObjects[k]) multiSel.delete(k);
+            if (!selectedObjectId) multiSel.clear();
             explorerEl.innerHTML = Object.entries(spaces).map(([sid, sp]) => {
                 const kids = Object.entries(sceneObjects).filter(([, o]) => o.parent === sid);
                 const open = !collapsed.has(sid);
-                const rows = kids.length ? kids.map(([id, o]) => `
-                    <div class="tree-item${id === selectedObjectId ? ' selected' : ''}${id === menuItemId ? ' menu-open' : ''}" role="treeitem" tabindex="0" data-id="${id}">
-                        ${icon(typeIcon[o.type])}${id === renamingId
-                            ? `<input class="rename-input" type="text" maxlength="48" value="${esc(o.name)}" aria-label="Rename">`
-                            : `<span class="tree-name">${esc(o.name)}</span>`}${o.type === 'viewfinder' ? '' : `<span class="tree-id">${o.type}</span>`}${o.readOnly ? ''
-                            : `<button class="item-more" data-more="${id}" aria-label="More options for ${esc(o.name)}" aria-haspopup="menu" title="More options">${icon('i-more')}</button>`}
-                    </div>`).join('')
+                const rows = kids.length ? kids.map(([id, o]) => rowHtml(id, o, 0)).join('')
                     : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : 'Empty'}</div>`;
                 return `
                     <div class="tree-space">
@@ -903,10 +2840,13 @@
             }).join('');
             const ri = explorerEl.querySelector('.rename-input');
             if (ri) { ri.focus(); ri.select(); }
+            renderTabs();
         }
 
         explorerEl.addEventListener('click', (e) => {
             if (e.target.closest('.rename-input')) return;
+            const tw = e.target.closest('[data-twist]');
+            if (tw) { const k = tw.dataset.twist; collapsed.has(k) ? collapsed.delete(k) : collapsed.add(k); renderExplorer(); return; }
             const more = e.target.closest('.item-more');
             if (more) {
                 const id = more.dataset.more;
@@ -925,8 +2865,39 @@
                 return;
             }
             const item = e.target.closest('.tree-item');
-            if (item) selectItem(item.dataset.id);
+            if (item) {
+                const id = item.dataset.id, now = performance.now();
+                const again = lastItemClick.id === id && now - lastItemClick.t < 450;
+                lastItemClick = { id, t: now };
+                if (again && sceneObjects[id] && sceneObjects[id].type === 'script') { openScriptTab(id); return; }
+                if (e.shiftKey) { toggleMulti(id); return; }
+                if (e.ctrlKey || e.metaKey) { rangeSelect(id); return; }
+                selectItem(id);
+            }
         });
+        // Shift-click adds or removes one object; Ctrl-click selects everything between the anchor and the clicked row.
+        function toggleMulti(id) {
+            if (!sceneObjects[id] || sceneObjects[id].readOnly) return;
+            if (!multiSel.size && selectedObjectId) multiSel.add(selectedObjectId);
+            if (multiSel.has(id)) { multiSel.delete(id); selectedObjectId = selectedObjectId === id ? ([...multiSel].pop() || null) : selectedObjectId; }
+            else { multiSel.add(id); selectedObjectId = id; }
+            anchorId = id; renderExplorer(); renderProperties();
+        }
+        function rangeSelect(id) {
+            const rows = [...explorerEl.querySelectorAll('.tree-item')].map(r => r.dataset.id);
+            const a = rows.indexOf(anchorId || selectedObjectId), b = rows.indexOf(id);
+            if (a < 0 || b < 0) { selectItem(id); return; }
+            if (!multiSel.size && selectedObjectId) multiSel.add(selectedObjectId);
+            for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (!sceneObjects[rows[i]].readOnly) multiSel.add(rows[i]);
+            selectedObjectId = id; renderExplorer(); renderProperties();
+        }
+        // Actions from the item menu apply to the whole selection when the clicked item is part of it.
+        function menuTargets(id) { return multiSel.size > 1 && multiSel.has(id) ? [...multiSel].filter(k => sceneObjects[k] && !sceneObjects[k].readOnly) : [id]; }
+        function topRoots(ids) { return ids.filter(t => !ids.some(u => u !== t && isInside(t, u))); }
+        function makeClip(ids, cut) {
+            const one = (id) => ({ data: cloneData(sceneObjects[id]), rootId: id, kids: collectTree(id), cut, pastes: 0 });
+            const roots = topRoots(ids); return roots.length === 1 ? one(roots[0]) : { multi: roots.map(one), cut };
+        }
         explorerEl.addEventListener('keydown', (e) => {
             if (e.target.closest('.rename-input')) {
                 if (e.key === 'Enter') { e.preventDefault(); commitRename(true); }
@@ -950,7 +2921,7 @@
             if (typeof itemMenu !== 'undefined' && !itemMenu.hidden) closeItemMenu(false);
             menuBtn = btn;
             addMenu.dataset.space = btn.dataset.add;
-            document.getElementById('add-menu-title').textContent = 'Add to ' + spaces[btn.dataset.add].name;
+            document.getElementById('add-menu-title').textContent = spaces[btn.dataset.add] ? 'Add to ' + spaces[btn.dataset.add].name : 'Add inside ' + ((sceneObjects[btn.dataset.add] || {}).name || 'object');
             addMenu.hidden = false;
             const r = btn.getBoundingClientRect();
             const mw = addMenu.offsetWidth, mh = addMenu.offsetHeight;
@@ -1009,7 +2980,9 @@
             off('cut', !!o.locked);
             off('delete', !!o.locked);
             off('paste', !clipboard);
-            off('camera', !(o.type === 'prism6' && o.parent === 'world'));
+            off('camera', !((o.type === 'prism6' || o.type === 'model') && spaceOf(o) === 'world'));
+            off('ungroup', o.type !== 'model');
+            off('group', !menuTargets(id).length);
             itemMenu.hidden = false;
             renderExplorer();
             placeMenu(itemMenu, rect, alignLeft);
@@ -1063,30 +3036,85 @@
             renamingId = null;
             const o = sceneObjects[id];
             const inp = explorerEl.querySelector('.rename-input');
-            if (o && commit && inp) o.name = inp.value.trim() || defaultNames[o.type] || 'Instance';
+            if (o && commit && inp) o.name = inp.value.trim() || dn(o.type);
             renderExplorer();
             if (id === selectedObjectId) renderProperties();
         }
+        
+        function groupSelected() {
+            const targets = (multiSel.size > 0 ? [...multiSel] : (selectedObjectId ? [selectedObjectId] : []))
+                .filter(id => sceneObjects[id] && !sceneObjects[id].readOnly);
+            if (!targets.length) return;
+            const roots = topRoots(targets);
+            if (!roots.length) return;
+            const parentSpace = sceneObjects[roots[0]].parent;
+            const modelId = newId();
+            const n = ++counters.model;
+            const name = dn('model') + (n === 1 ? '' : ' ' + n);
+            sceneObjects[modelId] = { type: 'model', name, parent: parentSpace };
+            for (const id of roots) sceneObjects[id].parent = modelId;
+            collapsed.delete(parentSpace); collapsed.delete(modelId);
+            selectItem(modelId);
+            toast('Grouped ' + roots.length + ' item' + (roots.length === 1 ? '' : 's') + ' into ' + name + '.');
+        }
+
+        function ungroupSelected() {
+            const id = selectedObjectId;
+            const o = sceneObjects[id];
+            if (!o || o.type !== 'model' || o.readOnly) return;
+            const parent = o.parent;
+            const kids = Object.entries(sceneObjects).filter(([, c]) => c.parent === id).map(([k]) => k);
+            for (const cid of kids) sceneObjects[cid].parent = parent;
+            delete sceneObjects[id];
+            physicsVelocity.delete(id);
+            pruneOrphans();
+            multiSel.clear(); for (const cid of kids) multiSel.add(cid);
+            selectedObjectId = kids[0] || null;
+            renderExplorer(); renderProperties();
+            toast('Ungrouped ' + o.name + '.');
+        }
+
         function deleteItem(id) {
             delete sceneObjects[id];
             physicsVelocity.delete(id);
+            pruneOrphans();
             if (renamingId === id) renamingId = null;
             if (selectedObjectId === id) selectedObjectId = null;
             renderExplorer();
             renderProperties();
         }
+        function collectTree(id) { const out = []; (function w(i) { for (const [k, o] of Object.entries(sceneObjects)) if (o.parent === i) { out.push([k, cloneData(o)]); w(k); } })(id); return out; }
+        function reparent(id, target) {
+            const o = sceneObjects[id], t = SPACE_KEYS.includes(target) ? true : sceneObjects[target];
+            if (!o || !t || o.readOnly || id === target || isInside(target, id) || (sceneObjects[target] && sceneObjects[target].readOnly) || o.parent === target) return;
+            o.parent = target; collapsed.delete(target); renderExplorer(); renderProperties();
+        }
         function pasteInto(space) {
             const c = clipboard;
             if (!c) return;
+            if (c.multi) { const list = c.multi, cut = c.cut; for (const sub of list) { clipboard = sub; pasteInto(space); } clipboard = cut ? null : { multi: list, cut: false }; return; }
             const data = cloneData(c.data);
             data.parent = space;
-            if (!c.cut && data.type === 'prism6') {
-                // Copies land beside the original; cut-and-paste keeps the exact position.
+            if (!c.cut) {
                 c.pastes++;
-                data.x = Math.round((data.x + c.pastes * (2 * data.width + 0.5)) * 100) / 100;
+                if (data.type === 'prism6') {
+                    data.x = Math.round((data.x + c.pastes * (2 * data.width + 0.5)) * 100) / 100;
+                } else if (data.type === 'model') {
+                    let w = 1.0, minX = Infinity, maxX = -Infinity;
+                    for (const [, kd] of (c.kids || [])) {
+                        if (kd.type === 'prism6') { minX = Math.min(minX, kd.x - kd.width); maxX = Math.max(maxX, kd.x + kd.width); }
+                    }
+                    if (minX !== Infinity) w = (maxX - minX) / 2;
+                    const shiftX = Math.round(c.pastes * (2 * w + 0.5) * 100) / 100;
+                    for (const [, kd] of (c.kids || [])) {
+                        if (kd.type === 'prism6') kd.x = Math.round((kd.x + shiftX) * 100) / 100;
+                    }
+                }
             }
             const id = newId();
             sceneObjects[id] = data;
+            const map = { [c.rootId]: id };
+            for (const [oldId, kd] of (c.kids || [])) { const nid = newId(); const d = cloneData(kd); d.parent = map[kd.parent] || id; map[oldId] = nid; sceneObjects[nid] = d; }
             if (c.cut) clipboard = null;
             collapsed.delete(space);
             selectItem(id);
@@ -1094,8 +3122,13 @@
         function moveCameraTo(id) {
             const o = sceneObjects[id];
             if (!o) return;
+            let target = o;
+            if (o.type === 'model') {
+                const b = getModelBounds(id);
+                if (b) target = b; else return;
+            }
             updateTrig();
-            const d = Math.hypot(o.width, o.height, o.length) * 2.5 + 2;
+            const d = Math.hypot(target.width, target.height, target.length) * 2.5 + 2;
             camPosX = o.x - fwdX * d;
             camPosY = o.y - fwdY * d;
             camPosZ = o.z - fwdZ * d;
@@ -1105,23 +3138,81 @@
             const o = sceneObjects[id];
             if (!o) return;
             if (act === 'rename') { renamingId = id; renderExplorer(); }
-            else if (act === 'copy') clipboard = { data: cloneData(o), cut: false, pastes: 0 };
-            else if (act === 'cut') { clipboard = { data: cloneData(o), cut: true, pastes: 0 }; deleteItem(id); }
+            else if (act === 'copy') clipboard = makeClip(menuTargets(id), false);
+            else if (act === 'cut') { const t = menuTargets(id).filter(k => !sceneObjects[k].locked); if (t.length) { clipboard = makeClip(t, true); t.forEach(k => sceneObjects[k] && deleteItem(k)); } }
             else if (act === 'paste') pasteInto(o.parent);
-            else if (act === 'delete') deleteItem(id);
+            else if (act === 'pastechild') { if (clipboard) pasteInto(id); else toast('Nothing to paste. Copy or cut an object first.', 'warn'); }
+            else if (act === 'addchild') { const row = explorerEl.querySelector('[data-id="' + id + '"]'); const fake = { dataset: { add: id }, focus() {}, getBoundingClientRect: () => row.getBoundingClientRect() }; openAddMenu(fake); }
+            else if (act === 'delete') menuTargets(id).filter(k => sceneObjects[k] && !sceneObjects[k].locked).forEach(k => sceneObjects[k] && deleteItem(k));
+            else if (act === 'group') groupSelected();
+            else if (act === 'ungroup') ungroupSelected();
             else if (act === 'camera') moveCameraTo(id);
         }
 
         window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g' && !isTyping()) {
+                e.preventDefault();
+                if (e.shiftKey) ungroupSelected(); else groupSelected();
+                return;
+            }
             if (e.key !== 'Escape') return;
             if (!itemMenu.hidden) { closeItemMenu(true); return; }
             if (!addMenu.hidden) closeAddMenu(true);
             closeModals();
         });
 
-        // ───────── Selection & properties ─────────
+        // Drag rows to reorder them (top or bottom edge of a row) or to make them children (middle of a row).
+        let dragIds = [];
+        const clearDrop = () => explorerEl.querySelectorAll('.drop-target, .drop-before, .drop-after').forEach(x => x.classList.remove('drop-target', 'drop-before', 'drop-after'));
+        function dropInfo(e) {
+            const t = e.target.closest('.tree-item, .tree-group'); if (!t || !dragIds.length) return null;
+            if (t.classList.contains('tree-group')) { const sp = t.dataset.space; return sp === 'engine' ? null : { el: t, where: 'child', target: sp }; }
+            const o = sceneObjects[t.dataset.id]; if (!o || o.readOnly) return null;
+            const r = t.getBoundingClientRect(), f = (e.clientY - r.top) / r.height;
+            const where = f < 0.28 ? 'before' : f > 0.72 ? 'after' : 'child';
+            const target = where === 'child' ? t.dataset.id : o.parent;
+            if (dragIds.some(id => id === t.dataset.id || id === target || isInside(target, id))) return null;
+            return { el: t, where, target, ref: t.dataset.id };
+        }
+        function moveInOrder(ids, info) {
+            const roots = topRoots(ids).filter(id => sceneObjects[id] && !sceneObjects[id].readOnly);
+            if (!roots.length) return;
+            const entries = Object.entries(sceneObjects);
+            const moved = entries.filter(([k]) => roots.includes(k)), rest = entries.filter(([k]) => !roots.includes(k));
+            moved.forEach(([, o]) => { o.parent = info.target; });
+            let at = rest.length;
+            if (info.where !== 'child') { const i = rest.findIndex(([k]) => k === info.ref); at = info.where === 'before' ? i : i + 1; }
+            rest.splice(at, 0, ...moved);
+            for (const k of Object.keys(sceneObjects)) delete sceneObjects[k];
+            for (const [k, o] of rest) sceneObjects[k] = o;
+            collapsed.delete(info.target); roots.forEach(k => multiSel.add(k));
+            renderExplorer(); renderProperties();
+        }
+        explorerEl.addEventListener('dragstart', (e) => {
+            const it = e.target.closest('.tree-item[draggable]'); if (!it) return;
+            dragIds = multiSel.size > 1 && multiSel.has(it.dataset.id) ? [...multiSel] : [it.dataset.id];
+            e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragIds.join(','));
+        });
+        explorerEl.addEventListener('dragover', (e) => {
+            clearDrop(); const d = dropInfo(e); if (!d) return;
+            e.preventDefault(); d.el.classList.add(d.where === 'child' ? 'drop-target' : 'drop-' + d.where);
+        });
+        explorerEl.addEventListener('dragleave', (e) => { if (!explorerEl.contains(e.relatedTarget)) clearDrop(); });
+        explorerEl.addEventListener('drop', (e) => { const d = dropInfo(e); clearDrop(); if (!d) return; e.preventDefault(); const ids = dragIds; dragIds = []; moveInOrder(ids, d); });
+        explorerEl.addEventListener('dragend', () => { dragIds = []; clearDrop(); });
+
+                // ───────── Selection & properties ─────────
+        function uncollapseAncestors(id) {
+            let o = sceneObjects[id], n = 0;
+            while (o && n++ < 64) {
+                if (collapsed.has(o.parent)) collapsed.delete(o.parent);
+                o = sceneObjects[o.parent];
+            }
+        }
         function selectItem(id) {
             selectedObjectId = id || null;
+            if (id) uncollapseAncestors(id);
+            multiSel.clear(); if (id) multiSel.add(id); anchorId = id || null;
             renderExplorer();
             renderProperties();
         }
@@ -1130,7 +3221,7 @@
         const objHead = (id, o, ic, extra = '') =>
             `<div class="obj-head">${icon(ic)}<div class="obj-meta"><div class="obj-name">${esc(o.name)}</div>
                 <div class="obj-id"><span title="Instance type">${o.type}</span><span class="uid" title="Unique ID">${id}</span></div></div>${extra}</div>`;
-        const defaultNames = { prism6: 'Block', script: 'Script', worldsettings: 'Settings' };
+        const defaultNames = { prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings' };
         const nameField = (o, dis = '') =>
             `<div class="field-label">Name</div><input class="text" type="text" id="prop-name" maxlength="48" value="${esc(o.name)}" aria-label="Name" ${dis}>`;
         function bindName(obj) {
@@ -1143,7 +3234,7 @@
             };
             nameEl.addEventListener('input', () => { obj.name = nameEl.value; refresh(); });
             nameEl.addEventListener('change', () => {
-                obj.name = nameEl.value.trim() || defaultNames[obj.type] || 'Instance';
+                obj.name = nameEl.value.trim() || dn(obj.type);
                 nameEl.value = obj.name;
                 refresh();
             });
@@ -1176,6 +3267,15 @@
 
             if (obj.readOnly) {
                 container.innerHTML = `<div class="empty">${icon('i-lock')}<p>${esc(obj.name)}</p><span>This is an engine component and can’t be edited.</span></div>`;
+                return;
+            }
+
+            if (obj.type === 'model') {
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, 'i-model')}
+                    ${section('Editor', nameField(obj))}
+                `;
+                bindName(obj);
                 return;
             }
 
@@ -1245,11 +3345,36 @@
             }
 
             if (obj.type === 'script') {
+                ensureScript(obj);
+                const opts = (list, cur) => list.map(([v, l]) => `<option value="${v}"${v === cur ? ' selected' : ''}>${l}</option>`).join('');
+                const runNotes = { simulation: '', join: 'Nothing can join inside the editor yet, so this never runs here.', manual: 'Runs when another script calls Run() on this script.' };
                 container.innerHTML = `
                     ${objHead(selectedObjectId, obj, 'i-script')}
+                    <div class="sec-body"><button class="btn btn-outline" id="prop-open-script" style="width:100%;justify-content:center">${icon('i-script')}<span>Open script</span></button></div>
                     ${section('Editor', nameField(obj))}
-                    <div class="empty">${icon('i-script')}<p>Blank script</p><span>Scripts run inside the simulation. Code editing isn’t available yet.</span></div>`;
+                    ${section('Execution', `
+                        <div class="field-label">Script type</div>
+                        <select class="text" id="prop-script-type" aria-label="Script type">${opts([['Local', 'Local'], ['Server', 'Server']], obj.scriptType)}</select>
+                        <div class="field-label">Run when</div>
+                        <select class="text" id="prop-run-when" aria-label="Run when">${opts([['simulation', 'Simulation start'], ['join', 'Client join'], ['manual', 'Manual call by other script']], obj.runWhen)}</select>
+                        <div class="field-note" id="prop-run-note">${runNotes[obj.runWhen]}</div>
+                    `)}
+                    ${section('Miscellaneous', `
+                        <div class="field-label">Language</div>
+                        <select class="text" id="prop-language" aria-label="Language">${opts([['vanillalua', 'Vanillalua'], ['json', 'JSON']], obj.language)}</select>
+                    `)}`;
                 bindName(obj);
+                const id = selectedObjectId;
+                document.getElementById('prop-open-script').addEventListener('click', () => openScriptTab(id));
+                document.getElementById('prop-script-type').addEventListener('change', (e) => { obj.scriptType = e.target.value; });
+                document.getElementById('prop-run-when').addEventListener('change', (e) => {
+                    obj.runWhen = e.target.value;
+                    document.getElementById('prop-run-note').textContent = runNotes[obj.runWhen];
+                });
+                document.getElementById('prop-language').addEventListener('change', (e) => {
+                    obj.language = e.target.value;
+                    if (editorScriptId === id) refreshEditor();
+                });
                 return;
             }
 
@@ -1509,7 +3634,7 @@
             return m ? Math.min(23, +m[1]) + Math.min(59, +m[2]) / 60 : null;
         }
         function getTimeOfDay() {
-            for (const o of Object.values(sceneObjects)) if (o.type === 'worldsettings' && o.parent === 'world') return o.timeOfDay;
+            for (const o of Object.values(sceneObjects)) if (o.type === 'worldsettings' && spaceOf(o) === 'world') return o.timeOfDay;
             return 14;
         }
 
@@ -1622,7 +3747,10 @@
 
         function canEditHandles() {
             const o = sceneObjects[selectedObjectId];
-            return mode !== 'select' && o && o.type === 'prism6' && o.parent === 'world' && !o.locked;
+            if (mode === 'select' || !o || spaceOf(o) !== 'world') return false;
+            if (o.type === 'prism6') return !o.locked;
+            if (o.type === 'model') return getModelPrisms(selectedObjectId).length > 0;
+            return false;
         }
 
         function buildHandles(o) {
@@ -1970,7 +4098,7 @@ void main() { o = texture(uTex, vT); }`;
                     if (f.normal.x * (cam[0] - cxw) + f.normal.y * (cam[1] - cyw) + f.normal.z * (cam[2] - czw) > 0) visible++;
                 });
                 gl.uniform3fv(P.u.uColors, colors);
-                const sel = id === selectedObjectId;
+                const sel = id === selectedObjectId || (selectedObjectId && isInside(id, selectedObjectId));
                 let wire = 0, edge = [0, 0, 0], edgeA = 0.5, w = 0.9;
                 if (sel) { edge = accentRGB; edgeA = 1; w = 1.9; wire = o.wireframe ? 1 : 0; }
                 else if (o.wireframe) { wire = o.faceColoring ? 2 : 1; edge = wireRGB; w = 1.0; }
@@ -2089,7 +4217,7 @@ void main() { o = texture(uTex, vT); }`;
             lastFaces = visibleFaces;   // already in draw order: far prisms first
 
             for (const face of visibleFaces) {
-                const obj = face.obj, sel = face.id === selectedObjectId;
+                const obj = face.obj, sel = face.id === selectedObjectId || (selectedObjectId && isInside(face.id, selectedObjectId));
                 ctx.beginPath(); ctx.moveTo(face.pts[0].x, face.pts[0].y);
                 for (let j = 1; j < face.pts.length; j++) ctx.lineTo(face.pts[j].x, face.pts[j].y);
                 ctx.closePath();
@@ -2134,6 +4262,7 @@ void main() { o = texture(uTex, vT); }`;
                 if (!physicsLastTime) physicsLastTime = frameStart;
                 let remaining = Math.min(0.05, Math.max(0, (frameStart - physicsLastTime) / 1000));
                 physicsLastTime = frameStart;
+                stepScripts();
                 while (remaining > 0) {
                     const step = Math.min(PHYSICS_MAX_STEP, remaining);
                     physicsStep(step);
@@ -2141,6 +4270,14 @@ void main() { o = texture(uTex, vT); }`;
                 }
                 syncPropInputs();
             }
+            if (uiDirty) {
+                uiDirty = false;
+                const missing = selectedObjectId && !sceneObjects[selectedObjectId];
+                if (missing) selectedObjectId = null;
+                renderExplorer();
+                if (missing) renderProperties();
+            }
+            if (outputDirty) { outputDirty = false; renderOutput(); }
 
             updateTrig();
 
@@ -2160,11 +4297,31 @@ void main() { o = texture(uTex, vT); }`;
             renderViewfinder();
 
             ctx.clearRect(0, 0, width, height);
-            const prisms = Object.entries(sceneObjects).filter(([, o]) => o.type === 'prism6' && o.parent === 'world');
+            const prisms = Object.entries(sceneObjects).filter(([, o]) => o.type === 'prism6' && spaceOf(o) === 'world');
             const visibleCount = GL ? drawGL(prisms) : drawFallback(prisms);
 
             // Handles are drawn last so they sit above every shape (only the UI is above them)
-            lastHandles = canEditHandles() ? buildHandles(sceneObjects[selectedObjectId]) : [];
+            // Model bounding box in 3D
+            if (selectedObjectId && sceneObjects[selectedObjectId] && sceneObjects[selectedObjectId].type === 'model') {
+                const b = getModelBounds(selectedObjectId);
+                if (b) {
+                    const verts = getVerts(b);
+                    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+                    ctx.save();
+                    ctx.lineWidth = 1.5; ctx.strokeStyle = accentCol; ctx.setLineDash([4, 4]);
+                    for (const [i1, i2] of edges) {
+                        const p1 = project(verts[i1]), p2 = project(verts[i2]);
+                        if (p1.z < 0.1 || p2.z < 0.1) continue;
+                        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            }
+
+            const handleTarget = (selectedObjectId && sceneObjects[selectedObjectId] && sceneObjects[selectedObjectId].type === 'model')
+                ? getModelBounds(selectedObjectId)
+                : (selectedObjectId ? sceneObjects[selectedObjectId] : null);
+            lastHandles = canEditHandles() && handleTarget ? buildHandles(handleTarget) : [];
             if (hoverKey && !lastHandles.some(h => h.key === hoverKey)) hoverKey = null;
             const ordered = lastHandles.slice().sort((a, b) => b.z - a.z);
             ordered.sort((a, b) => (a.key === hoverKey) - (b.key === hoverKey));
@@ -2201,7 +4358,7 @@ void main() { o = texture(uTex, vT); }`;
             const d = [r.x / len, r.y / len, r.z / len], o = [camPosX, camPosY, camPosZ];
             let best = null, bestT = Infinity;
             for (const [id, p] of Object.entries(sceneObjects)) {
-                if (p.type !== 'prism6' || p.parent !== 'world') continue;
+                if (p.type !== 'prism6' || spaceOf(p) !== 'world') continue;
                 const mn = [p.x - p.width, p.y - p.height, p.z - p.length], mx = [p.x + p.width, p.y + p.height, p.z + p.length];
                 let tmin = -Infinity, tmax = Infinity, ok = true;
                 for (let k = 0; k < 3; k++) {
@@ -2219,9 +4376,21 @@ void main() { o = texture(uTex, vT); }`;
 
         function startManip(h, m) {
             const o = sceneObjects[selectedObjectId];
+            const isModel = o && o.type === 'model';
             const t0 = axisParam(h.center, h.d, m.x, m.y);
             if (t0 === null) return;
-            manip = { h, o, t0, start: { x: o.x, y: o.y, z: o.z, width: o.width, height: o.height, length: o.length } };
+            if (isModel) {
+                const bounds = getModelBounds(selectedObjectId);
+                if (!bounds) return;
+                const prisms = getModelPrisms(selectedObjectId);
+                const startPrisms = {};
+                for (const [id, p] of prisms) {
+                    startPrisms[id] = { x: p.x, y: p.y, z: p.z, width: p.width, height: p.height, length: p.length };
+                }
+                manip = { h, o, isModel: true, t0, startBounds: bounds, startPrisms };
+            } else {
+                manip = { h, o, isModel: false, t0, start: { x: o.x, y: o.y, z: o.z, width: o.width, height: o.height, length: o.length } };
+            }
             canvas.style.cursor = 'grabbing';
         }
         function updateManip(m) {
@@ -2230,13 +4399,42 @@ void main() { o = texture(uTex, vT); }`;
             let delta = Math.max(-500, Math.min(500, t - manip.t0));
             const step = settings.gizmoOffset;
             if (step > 0) delta = Math.round(delta / step) * step;
-            const { o, start, h } = manip;
+            const { o, h, isModel } = manip;
             const r2 = (v) => Math.round(v * 10000) / 10000;
+
+            if (isModel) {
+                const { startBounds, startPrisms } = manip;
+                const half = HALF_KEY[h.axis];
+                if (h.type === 'move') {
+                    const moveDelta = h.sign * delta;
+                    for (const [id, s] of Object.entries(startPrisms)) {
+                        const p = sceneObjects[id]; if (!p) continue;
+                        p[h.axis] = r2(s[h.axis] + moveDelta);
+                        if (physicsVelocity.has(id)) physicsVelocity.set(id, { x: 0, y: 0, z: 0 });
+                    }
+                } else {
+                    const startTotal = startBounds[half] * 2;
+                    const grow = Math.max(delta, -(startTotal - 0.05));
+                    const newTotal = startTotal + grow;
+                    const scaleFactor = newTotal / startTotal;
+                    const fixedEdge = startBounds[h.axis] - h.sign * startBounds[half];
+
+                    for (const [id, s] of Object.entries(startPrisms)) {
+                        const p = sceneObjects[id]; if (!p) continue;
+                        p[half] = r2(Math.max(0.025, s[half] * scaleFactor));
+                        p[h.axis] = r2(fixedEdge + (s[h.axis] - fixedEdge) * scaleFactor);
+                        if (physicsVelocity.has(id)) physicsVelocity.set(id, { x: 0, y: 0, z: 0 });
+                    }
+                }
+                return;
+            }
+
+            const { start } = manip;
             if (h.type === 'move') {
                 o[h.axis] = r2(start[h.axis] + h.sign * delta);
             } else {
                 const half = HALF_KEY[h.axis];
-                const grow = Math.max(delta, -(2 * start[half] - 0.1));   // keep a sliver of size
+                const grow = Math.max(delta, -(2 * start[half] - 0.1));
                 o[half] = r2(start[half] + grow / 2);
                 o[h.axis] = r2(start[h.axis] + h.sign * grow / 2);
             }
@@ -2287,8 +4485,13 @@ void main() { o = texture(uTex, vT); }`;
             if (camDrag && e.button === camDrag.button) {
                 if (!camDrag.moved && camDrag.button === 0) {
                     const m = canvasPos(e);
-                    const id = pickInstance(m.x, m.y);
-                    if (id !== selectedObjectId) selectItem(id);
+                    const clickedId = pickInstance(m.x, m.y);
+                    let toSelect = clickedId;
+                    if (clickedId && !e.altKey) {
+                        const top = topModelOf(clickedId);
+                        if (top && selectedObjectId !== top) toSelect = top;
+                    }
+                    if (toSelect !== selectedObjectId) selectItem(toSelect);
                 }
                 camDrag = null;
             }

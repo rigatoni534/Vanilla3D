@@ -1,0 +1,2308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vanilla Engine – Editor</title>
+<style>
+  :root {
+    --bg: #171a21;
+    --panel: #1d212a;
+    --panel-2: #252a36;
+    --viewport: #12151b;
+    --line: #2d3340;
+    --line-soft: #252a35;
+    --text: #e4e8ef;
+    --text-2: #aab2c0;
+    --muted: #7b8495;
+    --accent: #f2b134;
+    --accent-hover: #f7c25c;
+    --accent-ink: #2a1d00;
+    --accent-soft: rgba(242, 177, 52, 0.15);
+    --axis-x: #ef6b6b;
+    --axis-y: #4ed08a;
+    --axis-z: #5a9cf5;
+    --good: #4ed08a;
+    --warn: #f2b134;
+    --bad: #ef6b6b;
+    --hover: rgba(255, 255, 255, 0.06);
+    --scrim: rgba(8, 10, 14, 0.62);
+    --shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+    --ui: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  body.light-theme {
+    --bg: #e8ebf0;
+    --panel: #f5f6f8;
+    --panel-2: #ffffff;
+    --viewport: #fcfcfd;
+    --line: #d2d7e0;
+    --line-soft: #e2e5eb;
+    --text: #1b2030;
+    --text-2: #444c5e;
+    --muted: #768093;
+    --accent: #b86f00;
+    --accent-hover: #a36100;
+    --accent-ink: #ffffff;
+    --accent-soft: rgba(184, 111, 0, 0.12);
+    --axis-x: #d64545;
+    --axis-y: #1f9d5b;
+    --axis-z: #2f72d6;
+    --good: #1f9d5b;
+    --warn: #b86f00;
+    --bad: #d64545;
+    --hover: rgba(20, 30, 50, 0.06);
+    --scrim: rgba(230, 233, 240, 0.7);
+    --shadow: 0 16px 40px rgba(30, 40, 60, 0.18);
+  }
+
+  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+  input { user-select: text; -webkit-user-select: text; }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+  body {
+    display: flex; flex-direction: column;
+    background: var(--bg); color: var(--text);
+    font: 13px/1.4 var(--ui);
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .ic.fill { fill: currentColor; stroke: none; }
+
+  /* ───── Toolbar ───── */
+  #toolbar {
+    flex: none; height: 46px; padding: 0 12px;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    background: var(--panel); border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand .mark { color: var(--accent); width: 20px; height: 20px; }
+  .brand-name { font-weight: 650; font-size: 14px; letter-spacing: -0.01em; white-space: nowrap; }
+  .brand-sub { color: var(--muted); font-size: 13px; padding-left: 10px; border-left: 1px solid var(--line); white-space: nowrap; }
+  .toolbar-end { display: flex; justify-content: flex-end; gap: 4px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px;
+    background: transparent; border: 1px solid transparent; border-radius: 6px;
+    color: var(--text-2); font-weight: 550; cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn:hover { background: var(--hover); color: var(--text); }
+  .btn:active { background: var(--line-soft); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); padding: 0 16px 0 13px; font-weight: 650; }
+  .btn-primary:hover { background: var(--accent-hover); color: var(--accent-ink); }
+  .btn-primary:active { background: var(--accent); filter: brightness(.94); }
+  .icon-btn { width: 28px; height: 28px; padding: 0; justify-content: center; }
+
+  /* ───── Workspace ───── */
+  #workspace { flex: 1; min-height: 0; display: flex; }
+  #main-column { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  #canvas-container { flex: 1; min-height: 0; position: relative; background: var(--viewport); overflow: hidden; }
+  canvas.layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+  canvas#screen { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+  canvas#screen:active { cursor: grabbing; }
+  canvas#screen.no-grab, canvas#screen.no-grab:active { cursor: default; }
+
+  #viewfinder-container {
+    position: absolute; top: 14px; right: 14px; width: 90px; height: 90px;
+    border-radius: 10px; background: color-mix(in srgb, var(--panel) 72%, transparent);
+    border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    pointer-events: none; z-index: 5;
+  }
+  #viewfinder-canvas { width: 100%; height: 100%; display: block; }
+
+  #hint {
+    position: absolute; left: 14px; bottom: 14px; z-index: 5; pointer-events: none;
+    display: flex; align-items: center; gap: 14px; padding: 6px 12px;
+    background: color-mix(in srgb, var(--panel) 80%, transparent); border: 1px solid var(--line);
+    border-radius: 8px; color: var(--text-2); font-size: 12px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  #hint .group { display: flex; align-items: center; gap: 6px; }
+  kbd {
+    font: 600 11px/1 var(--mono); color: var(--text); background: var(--panel-2);
+    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 3px 5px; min-width: 20px; text-align: center;
+  }
+  .keys { display: flex; gap: 3px; }
+
+  /* ───── Sidebar ───── */
+  #sidebar { width: 300px; flex: none; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--line); }
+  .pane { display: flex; flex-direction: column; min-height: 0; }
+  #explorer-pane { flex: 0 0 36%; min-height: 150px; border-bottom: 1px solid var(--line); }
+  #properties-pane { flex: 1; }
+  .pane-header {
+    flex: none; height: 36px; padding: 0 14px; display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 650; color: var(--text); border-bottom: 1px solid var(--line-soft);
+  }
+  .pane-header .ic { color: var(--muted); }
+  .pane-content { flex: 1; min-height: 0; overflow-y: auto; padding: 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  #properties-content { padding: 0; }
+
+  /* Explorer tree */
+  .tree-group {
+    width: 100%; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px 0 4px;
+    background: none; border: 0; border-radius: 5px; color: var(--text); font-weight: 600; text-align: left; cursor: pointer;
+  }
+  .tree-group:hover { background: var(--hover); }
+  .tree-group .chev { width: 14px; height: 14px; color: var(--muted); transition: transform .15s; }
+  .tree-group[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  .tree-group .kind { color: var(--muted); }
+  .tree-children { margin: 0 0 4px 13px; padding-left: 8px; border-left: 1px solid var(--line-soft); }
+  .tree-children[hidden] { display: none; }
+  .tree-item {
+    position: relative; display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px;
+    border-radius: 5px; color: var(--text-2); cursor: pointer;
+  }
+  .tree-item .ic { color: var(--muted); }
+  .tree-item .tree-id { margin-left: auto; font: 11px var(--mono); color: var(--muted); }
+  .tree-item:hover { background: var(--hover); color: var(--text); }
+  .tree-item.selected { background: var(--accent-soft); color: var(--text); }
+  .tree-item.selected::before { content: ""; position: absolute; left: -9px; top: 5px; bottom: 5px; width: 2px; border-radius: 2px; background: var(--accent); }
+  .tree-item.selected .ic { color: var(--accent); }
+  .tree-empty { height: 26px; padding: 0 8px; display: flex; align-items: center; color: var(--muted); font-style: italic; }
+
+  /* Properties */
+  .obj-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line-soft); }
+  .obj-head .ic { width: 20px; height: 20px; color: var(--accent); }
+  .obj-name { font-weight: 650; line-height: 1.2; }
+  .obj-meta { min-width: 0; }
+  .obj-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .obj-id { display: flex; align-items: center; gap: 6px; font: 11px var(--mono); color: var(--muted); }
+  .obj-id .uid { color: var(--text-2); user-select: all; -webkit-user-select: all; cursor: text; }
+  .obj-id .uid::before { content: "·"; margin-right: 6px; color: var(--muted); }
+  input.text {
+    width: 100%; height: 30px; padding: 0 9px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    color: var(--text); font: 13px var(--ui); transition: border-color .15s, box-shadow .15s;
+  }
+  input.text:hover { border-color: color-mix(in srgb, var(--line) 60%, var(--muted)); }
+  input.text:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  input.text:disabled { color: var(--muted); background: transparent; border-style: dashed; cursor: not-allowed; }
+  .switch-stack { margin-top: 8px; }
+  .chip { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11.5px; font-weight: 600; }
+  .chip .ic { width: 12px; height: 12px; }
+
+  details.sec { border-bottom: 1px solid var(--line-soft); }
+  details.sec > summary {
+    list-style: none; display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px 0 10px;
+    font-weight: 600; color: var(--text); cursor: pointer;
+  }
+  details.sec > summary::-webkit-details-marker { display: none; }
+  details.sec > summary:hover { background: var(--hover); }
+  details.sec > summary .chev { width: 14px; height: 14px; color: var(--muted); transition: transform .15s; }
+  details.sec[open] > summary .chev { transform: rotate(90deg); }
+  .sec-body { padding: 4px 14px 14px; }
+  .field-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+
+  .num {
+    display: flex; align-items: center; height: 30px; min-width: 0;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; transition: border-color .15s, box-shadow .15s;
+  }
+  .num:hover { border-color: color-mix(in srgb, var(--line) 60%, var(--muted)); }
+  .num:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .num .tag { flex: none; width: 24px; text-align: center; font: 700 11px var(--mono); }
+  .tag.x { color: var(--axis-x); } .tag.y { color: var(--axis-y); } .tag.z { color: var(--axis-z); }
+  .num input {
+    flex: 1; min-width: 0; height: 100%; padding: 0 6px 0 0; background: transparent; border: 0; outline: none;
+    color: var(--text); font: 12px var(--mono); -moz-appearance: textfield;
+  }
+  .num input::-webkit-inner-spin-button, .num input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .num input:disabled { color: var(--muted); cursor: not-allowed; }
+  .num:has(input:disabled) { background: transparent; border-style: dashed; }
+  .field-label { margin-bottom: 6px; color: var(--muted); font-size: 12px; }
+  .field-label:not(:first-child) { margin-top: 12px; }
+
+  label.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; cursor: pointer; color: var(--text-2); }
+  label.row:hover { color: var(--text); }
+  label.row.is-disabled { opacity: .45; cursor: not-allowed; }
+  input.switch {
+    appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 30px; height: 18px; margin: 0; cursor: inherit;
+    border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); transition: background .15s, border-color .15s;
+  }
+  input.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
+  input.switch:checked { background: var(--accent); border-color: var(--accent); }
+  input.switch:checked::after { transform: translateX(12px); background: var(--accent-ink); }
+
+  .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 36px 24px; color: var(--muted); }
+  .empty .ic { width: 22px; height: 22px; margin-bottom: 6px; }
+  .empty p { margin: 0; color: var(--text); font-weight: 600; }
+  .empty span { max-width: 210px; }
+
+  /* ───── Status bar ───── */
+  #statusbar {
+    flex: none; height: 28px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    background: var(--panel); border-top: 1px solid var(--line); font: 11.5px var(--mono); color: var(--text-2);
+  }
+  .stats { display: flex; align-items: center; gap: 20px; min-width: 0; overflow: hidden; }
+  .stat { display: inline-flex; gap: 6px; white-space: nowrap; }
+  .stat-label { color: var(--muted); }
+  .stat-value { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #stat-fps::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; background: var(--good); }
+  #stat-fps[data-state="warn"]::before { background: var(--warn); }
+  #stat-fps[data-state="bad"]::before { background: var(--bad); }
+  #status-version { color: var(--muted); }
+
+  /* ───── Modals ───── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+    background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    opacity: 0; pointer-events: none; transition: opacity .18s ease;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+  .modal-card {
+    width: min(380px, 92vw); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
+    transform: translateY(6px); transition: transform .18s ease;
+  }
+  .modal-overlay.active .modal-card { transform: none; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 12px 18px; border-bottom: 1px solid var(--line-soft); }
+  .modal-title { margin: 0; font-size: 15px; font-weight: 650; }
+  .modal-body { padding: 6px 18px 18px; }
+  .info-row { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line-soft); }
+  .info-row:last-child { border-bottom: 0; }
+  .info-row dt { color: var(--muted); }
+  .info-row dd { margin: 0; font: 600 13px var(--mono); }
+  dl { margin: 0; }
+  .setting { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 0; cursor: pointer; }
+  .setting + .setting { border-top: 1px solid var(--line-soft); }
+  .setting-title { font-weight: 600; }
+  .setting-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+
+  /* ───── Mode palette ───── */
+  #tools {
+    position: absolute; top: 14px; left: 14px; z-index: 6; display: flex; flex-direction: column; gap: 2px; padding: 4px;
+    background: color-mix(in srgb, var(--panel) 80%, transparent); border: 1px solid var(--line); border-radius: 10px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .tool {
+    position: relative; width: 34px; height: 34px; display: grid; place-items: center; padding: 0;
+    background: transparent; border: 0; border-radius: 7px; color: var(--text-2); cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .tool .ic { width: 18px; height: 18px; }
+  .tool:hover { background: var(--hover); color: var(--text); }
+  .tool[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  .tool-key { position: absolute; right: 4px; bottom: 2px; font: 600 9px var(--mono); color: var(--muted); }
+  .tool[aria-pressed="true"] .tool-key { color: var(--accent); }
+
+  /* ───── Explorer add buttons & creator menu ───── */
+  .tree-row { display: flex; align-items: center; gap: 2px; }
+  .tree-row .tree-group { width: auto; flex: 1; min-width: 0; }
+  .add-btn {
+    flex: none; width: 26px; height: 26px; display: grid; place-items: center; padding: 0;
+    background: transparent; border: 0; border-radius: 5px; color: var(--muted); cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .add-btn:hover { background: var(--hover); color: var(--accent); }
+  .menu {
+    position: fixed; z-index: 90; width: 232px; padding: 4px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow);
+  }
+  .menu[hidden] { display: none; }
+  .menu-title { padding: 6px 10px 4px; color: var(--muted); font-size: 12px; }
+  .menu-item {
+    width: 100%; display: flex; align-items: center; gap: 9px; height: 32px; padding: 0 10px;
+    background: transparent; border: 0; border-radius: 6px; color: var(--text); text-align: left; cursor: pointer;
+  }
+  .menu-item .ic { color: var(--muted); }
+  .menu-item:hover, .menu-item:focus-visible { background: var(--accent-soft); outline: none; }
+  .menu-item:hover .ic, .menu-item:focus-visible .ic { color: var(--accent); }
+  .menu-meta { margin-left: auto; font: 11px var(--mono); color: var(--muted); }
+
+  /* ───── Time of day ───── */
+  .tod-row { display: flex; align-items: center; gap: 10px; }
+  input.tod {
+    appearance: none; -webkit-appearance: none; flex: 1; min-width: 0; height: 12px; margin: 0; padding: 0;
+    border: 1px solid var(--line); border-radius: 999px; cursor: pointer; background: var(--panel-2);
+  }
+  input.tod::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+    border: 3px solid var(--accent); box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+  }
+  input.tod::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); }
+  input.time {
+    flex: none; width: 96px; height: 30px; padding: 0 8px; background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 6px; color: var(--text); font: 12px var(--mono); color-scheme: dark;
+  }
+  body.light-theme input.time { color-scheme: light; }
+  input.time:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .pill-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; }
+  .pill {
+    height: 28px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    color: var(--text-2); font-size: 12px; font-weight: 550; cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+  }
+  .pill:hover { color: var(--text); border-color: var(--muted); }
+  .pill[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+
+  /* ───── Explorer item actions ───── */
+  .tree-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tree-item .item-more {
+    display: none; margin-left: auto; flex: none; width: 22px; height: 22px; padding: 0; place-items: center;
+    background: transparent; border: 0; border-radius: 5px; color: var(--text-2); cursor: pointer;
+  }
+  .tree-item .item-more .ic { color: inherit; stroke-width: 2.4; }
+  .tree-item .item-more:hover { background: var(--hover); color: var(--text); }
+  .tree-item:hover .item-more, .tree-item:focus-within .item-more, .tree-item.menu-open .item-more { display: grid; }
+  .tree-item:hover .tree-id, .tree-item:focus-within .tree-id, .tree-item.menu-open .tree-id { display: none; }
+  .tree-item.menu-open { background: var(--hover); color: var(--text); }
+  input.rename-input {
+    flex: 1; min-width: 0; height: 22px; padding: 0 6px; margin: 0 -2px; background: var(--panel-2);
+    border: 1px solid var(--accent); border-radius: 4px; color: var(--text); font: 13px var(--ui); outline: none;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  #item-menu { width: 196px; }
+  .menu-item:disabled { opacity: .4; cursor: not-allowed; }
+  .menu-item:disabled:hover { background: transparent; }
+  .menu-item:disabled:hover .ic { color: var(--muted); }
+  .menu-item.danger:not(:disabled):hover, .menu-item.danger:not(:disabled):focus-visible { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+  .menu-item.danger:not(:disabled):hover .ic, .menu-item.danger:not(:disabled):focus-visible .ic { color: var(--bad); }
+
+  /* ───── Offset (gizmo increment) ───── */
+  .run-group { display: flex; align-items: center; gap: 10px; }
+  .offset-field {
+    flex: none; display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 4px 0 10px; cursor: text;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--text-2); font-weight: 550;
+    transition: border-color .15s, box-shadow .15s, color .15s;
+  }
+  .offset-field .ic { color: var(--muted); transition: color .15s; }
+  .offset-field:hover { border-color: color-mix(in srgb, var(--line) 60%, var(--muted)); color: var(--text); }
+  .offset-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); color: var(--text); }
+  .offset-field:focus-within .ic { color: var(--accent); }
+  .offset-field input {
+    width: 48px; height: 100%; padding: 0 6px; background: transparent; border: 0; outline: none; text-align: right;
+    color: var(--text); font: 12px var(--mono); -moz-appearance: textfield;
+  }
+  .offset-field input::-webkit-inner-spin-button, .offset-field input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+  /* ───── Simulation ───── */
+  select.text {
+    width: 100%; height: 30px; padding: 0 9px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    color: var(--text); font: 13px var(--ui); cursor: pointer; color-scheme: dark; transition: border-color .15s, box-shadow .15s;
+  }
+  body.light-theme select.text { color-scheme: light; }
+  select.text:hover { border-color: color-mix(in srgb, var(--line) 60%, var(--muted)); }
+  select.text:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .num.grav { flex: none; width: 112px; }
+  .num.grav input { padding-left: 8px; }
+  .num.grav .tag { width: auto; padding: 0 8px 0 0; color: var(--muted); font: 11px var(--mono); }
+  .field-note { margin-top: 6px; color: var(--muted); font-size: 12px; }
+  #canvas-container.simulating::after {
+    content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none;
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+  #sim-badge {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 6; display: none; align-items: center; gap: 7px;
+    height: 26px; padding: 0 12px; border-radius: 999px; background: var(--accent); color: var(--accent-ink);
+    font-size: 12px; font-weight: 650; pointer-events: none;
+  }
+  #sim-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: simpulse 1.2s ease-in-out infinite; }
+  #canvas-container.simulating #sim-badge { display: inline-flex; }
+  @keyframes simpulse { 50% { opacity: .3; } }
+
+  /* ───── Narrow screens ───── */
+  @media (max-width: 760px) {
+    #workspace { flex-direction: column; }
+    #sidebar { width: 100%; height: 42%; flex-direction: row; border-left: 0; border-top: 1px solid var(--line); }
+    #sidebar .pane { flex: 1 1 50%; min-height: 0; }
+    #explorer-pane { border-bottom: 0; border-right: 1px solid var(--line); }
+    #hint, .brand-sub, .btn .label, .offset-label { display: none; }
+    .stats { gap: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+  <!-- Icon sprite -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-cube" viewBox="0 0 16 16"><path d="M8 1.5 14 4.75v6.5L8 14.5 2 11.25v-6.5z"/><path d="M2 4.75 8 8l6-3.25M8 8v6.5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 16 16"><path d="M4.5 2.75v10.5L13 8z"/></symbol>
+    <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.25"/><path d="M8 7.25v4M8 4.75v.01"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 16 16"><path d="M2.5 5h5.5M11.5 5h2M2.5 11h2M8 11h5.5"/><circle cx="9.75" cy="5" r="1.75"/><circle cx="6.25" cy="11" r="1.75"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5.25a2.5 2.5 0 0 1 5 0V7"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 16 16"><path d="m6 3.5 4.5 4.5L6 12.5"/></symbol>
+    <symbol id="i-world" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.8 1.8 2.7 3.9 2.7 6.25S9.8 12.45 8 14.25C6.2 12.45 5.3 10.35 5.3 8S6.2 3.55 8 1.75z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 16 16"><path d="M2 4.5a1 1 0 0 1 1-1h3l1.5 1.75H13a1 1 0 0 1 1 1V11.5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-script" viewBox="0 0 16 16"><path d="M4.5 2.5h5l3 3v8h-8z"/><path d="M9.5 2.5v3h3M6.5 8.5h4M6.5 11h4"/></symbol>
+    <symbol id="i-close" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
+    <symbol id="i-pointer" viewBox="0 0 16 16"><path d="m3.5 2.5 8.5 4.2-3.6 1.2L7.2 11.7z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 16 16"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.75"/><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.05 1.05M11.55 11.55l1.05 1.05M3.4 12.6l1.05-1.05M11.55 4.45l1.05-1.05"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+    <symbol id="i-move" viewBox="0 0 16 16"><path d="M8 1.75v12.5M1.75 8h12.5M8 1.75 6.25 3.5M8 1.75 9.75 3.5M8 14.25 6.25 12.5M8 14.25 9.75 12.5M1.75 8 3.5 6.25M1.75 8 3.5 9.75M14.25 8 12.5 6.25M14.25 8 12.5 9.75"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 16 16"><rect x="2.5" y="6.5" width="7" height="7" rx="1"/><path d="M8.5 7.5 13 3M9 3h4v4"/></symbol>
+    <symbol id="i-more" viewBox="0 0 16 16"><path d="M8 3.25h.01M8 8h.01M8 12.75h.01"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 16 16"><path d="m10.5 2.5 3 3-8 8H2.5v-3z M9 4l3 3"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5"/></symbol>
+    <symbol id="i-paste" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5"/><path d="M6 3v-.5h4V3M6 7.5h4M6 10.5h4"/></symbol>
+    <symbol id="i-cut" viewBox="0 0 16 16"><circle cx="4.5" cy="11.5" r="1.75"/><circle cx="11.5" cy="11.5" r="1.75"/><path d="M5.6 10 12.5 2.5M10.4 10 3.5 2.5"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5M7 7v4M9 7v4"/></symbol>
+    <symbol id="i-target" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.75"/><circle cx="8" cy="8" r="1.25"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/></symbol>
+    <symbol id="i-ruler" viewBox="0 0 16 16"><path d="M2 10.5 10.5 2 14 5.5 5.5 14z M5 8l1.5 1.5M7 6l1.5 1.5M9 4l1.5 1.5"/></symbol>
+    <symbol id="i-engine" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1.5"/><path d="M6.5 1.75V4M9.5 1.75V4M6.5 12v2.25M9.5 12v2.25M1.75 6.5H4M1.75 9.5H4M12 6.5h2.25M12 9.5h2.25"/></symbol>
+  </svg>
+
+  <!-- Toolbar -->
+  <header id="toolbar">
+    <div class="brand">
+      <svg class="ic mark"><use href="#i-cube"/></svg>
+      <span class="brand-name">Vanilla Engine</span>
+      <span class="brand-sub">Editor</span>
+    </div>
+    <div class="run-group">
+      <button id="run-btn" class="btn btn-primary" title="Run the simulation.">
+        <svg class="ic fill"><use href="#i-play"/></svg><span class="label">Run</span>
+      </button>
+      <label class="offset-field" title="Offset: how far the Move and Scale gizmos step, in Vanillameters (0 = free)">
+        <svg class="ic"><use href="#i-ruler"/></svg><span class="offset-label">Offset</span>
+        <input type="number" id="offset-input" min="0" step="0.1" value="0.5" aria-label="Gizmo offset in Vanillameters">
+      </label>
+    </div>
+    <div class="toolbar-end">
+      <button id="version-btn" class="btn" title="Version info"><svg class="ic"><use href="#i-info"/></svg><span class="label">Version</span></button>
+      <button id="settings-btn" class="btn" title="Settings"><svg class="ic"><use href="#i-sliders"/></svg><span class="label">Settings</span></button>
+    </div>
+  </header>
+
+  <div id="workspace">
+    <div id="main-column">
+      <div id="canvas-container">
+        <canvas id="sky-canvas" class="layer"></canvas>
+        <canvas id="gl-canvas" class="layer"></canvas>
+        <canvas id="screen"></canvas>
+
+        <div id="tools" role="toolbar" aria-label="Edit mode">
+          <button class="tool" data-mode="select" aria-pressed="true" title="Select (1)"><svg class="ic"><use href="#i-pointer"/></svg><span class="tool-key">1</span></button>
+          <button class="tool" data-mode="move" aria-pressed="false" title="Move (2)"><svg class="ic"><use href="#i-move"/></svg><span class="tool-key">2</span></button>
+          <button class="tool" data-mode="scale" aria-pressed="false" title="Scale (3)"><svg class="ic"><use href="#i-scale"/></svg><span class="tool-key">3</span></button>
+        </div>
+
+        <div id="sim-badge" aria-live="polite">Simulating – Stop restores the world</div>
+
+        <div id="viewfinder-container"><canvas id="viewfinder-canvas" width="90" height="90"></canvas></div>
+
+        <div id="hint">
+          <span class="group" id="hint-mode"></span>
+          <span class="group" id="hint-look"><kbd></kbd> rotate view</span>
+          <span class="group"><span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span> move</span>
+        </div>
+      </div>
+    </div>
+
+    <aside id="sidebar">
+      <section class="pane" id="explorer-pane">
+        <div class="pane-header"><svg class="ic"><use href="#i-list"/></svg>Explorer</div>
+        <div class="pane-content" id="explorer-content" role="tree"></div>
+      </section>
+
+      <section class="pane" id="properties-pane">
+        <div class="pane-header"><svg class="ic"><use href="#i-sliders"/></svg>Properties</div>
+        <div class="pane-content" id="properties-content"></div>
+      </section>
+    </aside>
+  </div>
+
+  <footer id="statusbar">
+    <div class="stats">
+      <span class="stat"><span class="stat-label">FPS</span><span id="stat-fps" class="stat-value" data-state="good">60</span></span>
+      <span class="stat"><span class="stat-label">CPU</span><span id="stat-cpu" class="stat-value">0.00 ms</span></span>
+      <span class="stat"><span class="stat-label">Memory</span><span id="stat-mem" class="stat-value">N/A</span></span>
+      <span class="stat"><span class="stat-label">Vertices</span><span id="stat-verts" class="stat-value">8</span></span>
+      <span class="stat"><span class="stat-label">Faces</span><span id="stat-faces" class="stat-value">0 / 6</span></span>
+    </div>
+    <span id="status-version"></span>
+  </footer>
+
+  <!-- Instance creator -->
+  <div id="add-menu" class="menu" role="menu" hidden>
+    <div class="menu-title" id="add-menu-title">Add</div>
+    <button class="menu-item" role="menuitem" data-kind="prism6"><svg class="ic"><use href="#i-cube"/></svg>Rectangular Prism<span class="menu-meta">prism6</span></button>
+    <button class="menu-item" role="menuitem" data-kind="worldsettings"><svg class="ic"><use href="#i-sun"/></svg>World Settings</button>
+    <button class="menu-item" role="menuitem" data-kind="script"><svg class="ic"><use href="#i-script"/></svg>Script</button>
+  </div>
+
+  <!-- Explorer item menu -->
+  <div id="item-menu" class="menu" role="menu" aria-label="Instance options" hidden>
+    <button class="menu-item" role="menuitem" data-act="rename"><svg class="ic"><use href="#i-edit"/></svg>Rename</button>
+    <button class="menu-item" role="menuitem" data-act="copy"><svg class="ic"><use href="#i-copy"/></svg>Copy</button>
+    <button class="menu-item" role="menuitem" data-act="paste"><svg class="ic"><use href="#i-paste"/></svg>Paste</button>
+    <button class="menu-item" role="menuitem" data-act="cut"><svg class="ic"><use href="#i-cut"/></svg>Cut</button>
+    <button class="menu-item danger" role="menuitem" data-act="delete"><svg class="ic"><use href="#i-trash"/></svg>Delete</button>
+    <button class="menu-item" role="menuitem" data-act="camera"><svg class="ic"><use href="#i-target"/></svg>Move Camera To</button>
+  </div>
+
+  <!-- Modals -->
+  <div id="modal-version" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mv-title">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title" id="mv-title">About Vanilla Engine</h2>
+        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <dl>
+          <div class="info-row"><dt>Engine</dt><dd>Vanilla Engine</dd></div>
+          <div class="info-row"><dt>Version</dt><dd id="info-version"></dd></div>
+          <div class="info-row"><dt>Renderer</dt><dd>Canvas 2D</dd></div>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-settings" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ms-title">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title" id="ms-title">Settings</h2>
+        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <label class="setting" for="theme-toggle">
+          <div><div class="setting-title">Light mode</div><div class="setting-desc">Use a light palette for the editor and viewport.</div></div>
+          <input type="checkbox" id="theme-toggle" class="switch">
+        </label>
+        <label class="setting" for="opt-left-drag">
+          <div><div class="setting-title">Drag to move</div><div class="setting-desc">Rotate the camera by dragging with the left mouse button.</div></div>
+          <input type="checkbox" id="opt-left-drag" class="switch" checked>
+        </label>
+        <label class="setting" for="opt-right-click">
+          <div><div class="setting-title">Right click to move</div><div class="setting-desc">Rotate the camera by dragging with the right mouse button.</div></div>
+          <input type="checkbox" id="opt-right-click" class="switch">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <script>
+        const ENGINE_VERSION = '1.8.1.3';
+        const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
+
+        // ───────── Scene data ─────────
+        const spaces = {
+            world:   { name: 'World',   icon: 'i-world',  addable: true },
+            storage: { name: 'Storage', icon: 'i-folder', addable: true },
+            scripts: { name: 'Scripts', icon: 'i-script', addable: true },
+            engine:  { name: 'Engine',  icon: 'i-engine', addable: false }
+        };
+        function makePrism(name, parent, dims) {
+            return Object.assign({
+                type: 'prism6', name, parent,
+                x: 0, y: 0, z: 0, length: 1, width: 1, height: 1,
+                faceColoring: false, showLabels: false, wireframe: false, locked: false, reactsToPhysics: false, collidable: true, anchored: false
+            }, dims);
+        }
+        // Every instance has a type (its label, e.g. "prism6", shared by all of that kind)
+        // and a unique id (Word + 3 digits, e.g. "Cobalt092") the engine uses to tell instances apart.
+        const ID_WORDS = ['Cobalt', 'Amber', 'Falcon', 'Ember', 'Quartz', 'Willow', 'Zephyr', 'Onyx', 'Meadow', 'Raven', 'Indigo', 'Saffron',
+            'Juniper', 'Cinder', 'Marble', 'Tundra', 'Lotus', 'Harbor', 'Velvet', 'Granite', 'Coral', 'Sparrow', 'Maple', 'Topaz', 'Aurora',
+            'Basalt', 'Cedar', 'Dune', 'Fjord', 'Glacier', 'Horizon', 'Ivory', 'Lagoon', 'Mistral', 'Nimbus', 'Orchid', 'Pebble', 'Quill', 'Rowan', 'Summit'];
+        function newId() {
+            let id;
+            do { id = ID_WORDS[Math.floor(Math.random() * ID_WORDS.length)] + String(Math.floor(Math.random() * 1000)).padStart(3, '0'); }
+            while (sceneObjects[id]);
+            return id;
+        }
+        const esc = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+        const sceneObjects = {
+            'Cobalt092': makePrism('Block', 'world', { length: 1.8, width: 1.0, height: 0.8 }),
+            'Onyx004': { type: 'viewfinder', name: 'Viewfinder', parent: 'engine', readOnly: true }
+        };
+        sceneObjects['Amber417'] = { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 };
+        const counters = { prism: 1, script: 0, worldsettings: 1 };
+        const typeIcon = { prism6: 'i-cube', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun' };
+
+        let isLightMode = false;
+        let accentCol = '#f2b134';
+        let selectedObjectId = null;
+        let mode = 'select';
+
+        // Rigid-body simulation for World prisms.
+        // Run works like Roblox Studio: the world is snapshotted, everything runs live, and Stop restores the snapshot.
+        let simulationRunning = false;
+        let simSnapshot = null;
+        let physicsLastTime = 0;
+        const physicsVelocity = new Map();
+        const PHYSICS_MAX_STEP = 1 / 120;
+        const DEFAULT_GRAVITY = 9.8;          // meters per second squared (Earth)
+        const GRAVITY_MAX = 1000;
+        const GRAVITY_PRESETS = [['Earth', 9.8], ['Moon', 1.62], ['Space', 0], ['Jupiter', 24.8]];
+        const DEFAULT_KILL_Y = -5000;
+
+        // Simulation properties live on the World Settings instance.
+        function activeWorldSettings() {
+            for (const o of Object.values(sceneObjects)) if (o.type === 'worldsettings' && o.parent === 'world') return o;
+            return null;
+        }
+        function currentGravity() {
+            const ws = activeWorldSettings();
+            return -(ws && Number.isFinite(ws.gravity) ? ws.gravity : DEFAULT_GRAVITY);
+        }
+        function currentKillY() {
+            const ws = activeWorldSettings();
+            return ws && Number.isFinite(ws.killY) ? ws.killY : DEFAULT_KILL_Y;
+        }
+
+        function physicsBodyList() {
+            return Object.entries(sceneObjects)
+                .filter(([, o]) => o.type === 'prism6' && o.parent === 'world');
+        }
+
+        function physicsVelocityFor(id) {
+            if (!physicsVelocity.has(id)) physicsVelocity.set(id, { x: 0, y: 0, z: 0 });
+            return physicsVelocity.get(id);
+        }
+
+        // A body moves under physics only when it reacts to physics and is not anchored.
+        const isMovable = (o) => o.reactsToPhysics && !o.anchored;
+
+        function resolvePhysicsCollisions(bodies) {
+            // Every collidable prism blocks movers. There is no ground plane: things fall until they land on something.
+            const colliders = bodies.filter(([, o]) => o.collidable !== false);
+
+            // Resolve each pair once. Fixed bodies (anchored or not reacting) never move but still block movers.
+            for (let i = 0; i < colliders.length; i++) {
+                const [idA, a] = colliders[i];
+                for (let j = i + 1; j < colliders.length; j++) {
+                    const [idB, b] = colliders[j];
+                    const aMoves = isMovable(a);
+                    const bMoves = isMovable(b);
+                    if (!aMoves && !bMoves) continue;
+
+                    const dx = (a.width + b.width) - Math.abs(a.x - b.x);
+                    const dy = (a.height + b.height) - Math.abs(a.y - b.y);
+                    const dz = (a.length + b.length) - Math.abs(a.z - b.z);
+                    if (dx <= 0 || dy <= 0 || dz <= 0) continue;
+
+                    const signX = a.x < b.x ? -1 : 1;
+                    const signY = a.y < b.y ? -1 : 1;
+                    const signZ = a.z < b.z ? -1 : 1;
+                    const av = physicsVelocityFor(idA);
+                    const bv = physicsVelocityFor(idB);
+                    const shareA = aMoves && bMoves ? 0.5 : (aMoves ? 1 : 0);
+                    const shareB = aMoves && bMoves ? 0.5 : (bMoves ? 1 : 0);
+
+                    if (dy <= dx && dy <= dz) {
+                        a.y += signY * dy * shareA;
+                        b.y -= signY * dy * shareB;
+                        if (av.y * signY < 0) av.y = 0;
+                        if (bv.y * signY > 0) bv.y = 0;
+                    } else if (dx <= dz) {
+                        a.x += signX * dx * shareA;
+                        b.x -= signX * dx * shareB;
+                        if (av.x * signX < 0) av.x = 0;
+                        if (bv.x * signX > 0) bv.x = 0;
+                    } else {
+                        a.z += signZ * dz * shareA;
+                        b.z -= signZ * dz * shareB;
+                        if (av.z * signZ < 0) av.z = 0;
+                        if (bv.z * signZ > 0) bv.z = 0;
+                    }
+                }
+            }
+        }
+
+        function physicsStep(dt) {
+            if (!simulationRunning) return;
+            const g = currentGravity(), killY = currentKillY();
+            const bodies = physicsBodyList();
+
+            // Long falls get fast, so split the step to keep a body from skipping through thin objects.
+            let maxSpeed = 0;
+            for (const [id, o] of bodies) {
+                if (!isMovable(o)) continue;
+                const v = physicsVelocityFor(id);
+                maxSpeed = Math.max(maxSpeed, Math.abs(v.x), Math.abs(v.y) + Math.abs(g) * dt, Math.abs(v.z));
+            }
+            const subSteps = Math.max(1, Math.min(64, Math.ceil(maxSpeed * dt / 0.1)));
+            const h = dt / subSteps;
+            for (let s = 0; s < subSteps; s++) {
+                for (const [id, o] of bodies) {
+                    if (!isMovable(o)) continue;
+                    const v = physicsVelocityFor(id);
+                    v.y += g * h;
+                    o.x += v.x * h;
+                    o.y += v.y * h;
+                    o.z += v.z * h;
+                }
+                // A few passes help stacked boxes settle without obvious overlap.
+                for (let pass = 0; pass < 3; pass++) resolvePhysicsCollisions(bodies);
+            }
+
+            // Kill layer: anything that falls below it is deleted from the world.
+            let removed = false;
+            for (const [id, o] of bodies) {
+                if (isMovable(o) && o.y < killY) {
+                    delete sceneObjects[id];
+                    physicsVelocity.delete(id);
+                    if (selectedObjectId === id) selectedObjectId = null;
+                    removed = true;
+                }
+            }
+            if (removed) { renderExplorer(); renderProperties(); }
+        }
+
+        function takeSnapshot() {
+            simSnapshot = { objects: JSON.parse(JSON.stringify(sceneObjects)), counters: Object.assign({}, counters) };
+        }
+        function restoreSnapshot() {
+            if (!simSnapshot) return;
+            for (const k of Object.keys(sceneObjects)) delete sceneObjects[k];
+            Object.assign(sceneObjects, JSON.parse(JSON.stringify(simSnapshot.objects)));
+            Object.assign(counters, simSnapshot.counters);
+            simSnapshot = null;
+            physicsVelocity.clear();
+            manip = null;
+            if (selectedObjectId && !sceneObjects[selectedObjectId]) selectedObjectId = null;
+            renderExplorer();
+            renderProperties();
+        }
+
+        function setSimulationRunning(running) {
+            if (running === simulationRunning) return;
+            physicsLastTime = 0;
+            physicsVelocity.clear();
+            if (running) {
+                takeSnapshot();
+                simulationRunning = true;
+            } else {
+                simulationRunning = false;
+                restoreSnapshot();
+            }
+            const btn = document.getElementById('run-btn');
+            btn.innerHTML = running
+                ? `<span aria-hidden="true" style="font-size:14px;line-height:1">■</span><span class="label">Stop</span>`
+                : `${icon('i-play')}<span class="label">Run</span>`;
+            btn.title = running ? 'Stop and restore the world to how it was before Run.' : 'Run the simulation.';
+            btn.setAttribute('aria-pressed', String(running));
+            document.getElementById('canvas-container').classList.toggle('simulating', running);
+        }
+        document.getElementById('run-btn').addEventListener('click', () => setSimulationRunning(!simulationRunning));
+
+        let accentRGB = [0.95, 0.69, 0.2];
+        function refreshTheme() {
+            accentCol = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#f2b134';
+            if (/^#[0-9a-f]{6}$/i.test(accentCol)) accentRGB = [1, 3, 5].map(i => parseInt(accentCol.slice(i, i + 2), 16) / 255);
+        }
+
+        function addInstance(kind, space) {
+            const id = newId();
+            let obj;
+            if (kind === 'prism6') {
+                const n = ++counters.prism;
+                const k = n - 2;
+                const offset = (k % 2 === 0 ? 1 : -1) * 3 * (Math.floor(k / 2) + 1);
+                obj = makePrism('Block ' + n, space, { x: offset, length: 0.75, width: 0.75, height: 0.75 });
+            } else if (kind === 'worldsettings') {
+                const n = ++counters.worldsettings;
+                obj = { type: 'worldsettings', name: 'Settings ' + n, parent: space, timeOfDay: 14, gravity: 9.8, killY: -5000 };
+            } else {
+                const n = ++counters.script;
+                obj = { type: 'script', name: n === 1 ? 'Script' : 'Script ' + n, parent: space };
+            }
+            sceneObjects[id] = obj;
+            collapsed.delete(space);
+            selectItem(id);
+        }
+
+        // ───────── Canvas & UI elements ─────────
+        const canvas = document.getElementById('screen');
+        const ctx = canvas.getContext('2d');
+        const skyCanvas = document.getElementById('sky-canvas');
+        const skyCtx = skyCanvas.getContext('2d');
+        const glCanvas = document.getElementById('gl-canvas');
+        const vfCanvas = document.getElementById('viewfinder-canvas');
+        const vfCtx = vfCanvas.getContext('2d');
+
+        const statFps = document.getElementById('stat-fps');
+        const statCpu = document.getElementById('stat-cpu');
+        const statMem = document.getElementById('stat-mem');
+        const statVerts = document.getElementById('stat-verts');
+        const statFaces = document.getElementById('stat-faces');
+
+        // Camera control settings (saved in this browser)
+        const settings = { leftDrag: true, rightClick: false, gizmoOffset: 0.5 };
+        try { Object.assign(settings, JSON.parse(localStorage.getItem('vanilla-editor-settings') || '{}')); } catch (e) {}
+        function applySettings() {
+            document.getElementById('opt-left-drag').checked = settings.leftDrag;
+            document.getElementById('opt-right-click').checked = settings.rightClick;
+            canvas.classList.toggle('no-grab', !settings.leftDrag);
+            const look = document.getElementById('hint-look');
+            look.hidden = !settings.leftDrag && !settings.rightClick;
+            look.querySelector('kbd').textContent = settings.leftDrag && settings.rightClick ? 'Drag / Right-drag' : settings.rightClick ? 'Right-drag' : 'Drag';
+        }
+        function saveSettings() {
+            applySettings();
+            try { localStorage.setItem('vanilla-editor-settings', JSON.stringify(settings)); } catch (e) {}
+        }
+        document.getElementById('opt-left-drag').addEventListener('change', (e) => { settings.leftDrag = e.target.checked; saveSettings(); });
+        document.getElementById('opt-right-click').addEventListener('change', (e) => { settings.rightClick = e.target.checked; saveSettings(); });
+
+        // Offset: the step the Move and Scale gizmos snap to (Vanillameters). 0 means free movement.
+        const offsetEl = document.getElementById('offset-input');
+        const parseOffset = (v) => { const n = parseFloat(v); return Number.isFinite(n) && n >= 0 ? n : null; };
+        if (parseOffset(settings.gizmoOffset) === null) settings.gizmoOffset = 0.5;
+        offsetEl.value = settings.gizmoOffset;
+        const persistOffset = () => { try { localStorage.setItem('vanilla-editor-settings', JSON.stringify(settings)); } catch (e) {} };
+        offsetEl.addEventListener('input', () => { const n = parseOffset(offsetEl.value); if (n !== null) { settings.gizmoOffset = n; persistOffset(); } });
+        offsetEl.addEventListener('change', () => { offsetEl.value = settings.gizmoOffset; });
+        offsetEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') offsetEl.blur(); });
+
+        // Theme toggle
+        document.getElementById('theme-toggle').addEventListener('change', (e) => {
+            isLightMode = e.target.checked;
+            document.body.classList.toggle('light-theme', isLightMode);
+            refreshTheme();
+        });
+
+        // Modals
+        let lastFocus = null;
+        function openModal(id, focusSel) {
+            lastFocus = document.activeElement;
+            const m = document.getElementById(id);
+            m.classList.add('active');
+            (m.querySelector(focusSel) || m.querySelector('[data-close]')).focus();
+        }
+        function closeModals() {
+            const open = document.querySelector('.modal-overlay.active');
+            if (!open) return;
+            open.classList.remove('active');
+            if (lastFocus) lastFocus.focus();
+        }
+        document.getElementById('version-btn').addEventListener('click', () => {
+            document.getElementById('info-version').textContent = ENGINE_VERSION;
+            openModal('modal-version');
+        });
+        document.getElementById('settings-btn').addEventListener('click', () => openModal('modal-settings', '#theme-toggle'));
+        document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModals));
+        document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('mousedown', (e) => { if (e.target === m) closeModals(); }));
+        document.getElementById('status-version').textContent = 'v' + ENGINE_VERSION;
+
+        // ───────── Explorer ─────────
+        const explorerEl = document.getElementById('explorer-content');
+        const collapsed = new Set();
+        let renamingId = null, menuItemId = null;
+
+        function renderExplorer() {
+            explorerEl.innerHTML = Object.entries(spaces).map(([sid, sp]) => {
+                const kids = Object.entries(sceneObjects).filter(([, o]) => o.parent === sid);
+                const open = !collapsed.has(sid);
+                const rows = kids.length ? kids.map(([id, o]) => `
+                    <div class="tree-item${id === selectedObjectId ? ' selected' : ''}${id === menuItemId ? ' menu-open' : ''}" role="treeitem" tabindex="0" data-id="${id}">
+                        ${icon(typeIcon[o.type])}${id === renamingId
+                            ? `<input class="rename-input" type="text" maxlength="48" value="${esc(o.name)}" aria-label="Rename">`
+                            : `<span class="tree-name">${esc(o.name)}</span>`}${o.type === 'viewfinder' ? '' : `<span class="tree-id">${o.type}</span>`}${o.readOnly ? ''
+                            : `<button class="item-more" data-more="${id}" aria-label="More options for ${esc(o.name)}" aria-haspopup="menu" title="More options">${icon('i-more')}</button>`}
+                    </div>`).join('')
+                    : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : 'Empty'}</div>`;
+                return `
+                    <div class="tree-space">
+                        <div class="tree-row">
+                            <button class="tree-group" data-space="${sid}" aria-expanded="${open}">${icon('i-chev', 'chev')}${icon(sp.icon, 'kind')}${sp.name}</button>
+                            ${sp.addable ? `<button class="add-btn" data-add="${sid}" aria-label="Add to ${sp.name}" title="Add to ${sp.name}">${icon('i-plus')}</button>` : ''}
+                        </div>
+                        <div class="tree-children"${open ? '' : ' hidden'}>${rows}</div>
+                    </div>`;
+            }).join('');
+            const ri = explorerEl.querySelector('.rename-input');
+            if (ri) { ri.focus(); ri.select(); }
+        }
+
+        explorerEl.addEventListener('click', (e) => {
+            if (e.target.closest('.rename-input')) return;
+            const more = e.target.closest('.item-more');
+            if (more) {
+                const id = more.dataset.more;
+                (!itemMenu.hidden && menuItemId === id) ? closeItemMenu(true) : openItemMenu(id, more.getBoundingClientRect(), false);
+                return;
+            }
+            const add = e.target.closest('[data-add]');
+            if (add) { (!addMenu.hidden && menuBtn === add) ? closeAddMenu(true) : openAddMenu(add); return; }
+            const grp = e.target.closest('.tree-group');
+            if (grp) {
+                const sid = grp.dataset.space;
+                collapsed.has(sid) ? collapsed.delete(sid) : collapsed.add(sid);
+                renderExplorer();
+                const again = explorerEl.querySelector(`.tree-group[data-space="${sid}"]`);
+                if (again) again.focus();
+                return;
+            }
+            const item = e.target.closest('.tree-item');
+            if (item) selectItem(item.dataset.id);
+        });
+        explorerEl.addEventListener('keydown', (e) => {
+            if (e.target.closest('.rename-input')) {
+                if (e.key === 'Enter') { e.preventDefault(); commitRename(true); }
+                else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); commitRename(false); }
+                return;
+            }
+            if (e.target.closest('.item-more')) return;
+            const item = e.target.closest('.tree-item');
+            if (item && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                selectItem(item.dataset.id);
+                const again = explorerEl.querySelector(`.tree-item[data-id="${item.dataset.id}"]`);
+                if (again) again.focus();
+            }
+        });
+
+        // ───────── Instance creator menu ─────────
+        const addMenu = document.getElementById('add-menu');
+        let menuBtn = null;
+        function openAddMenu(btn) {
+            if (typeof itemMenu !== 'undefined' && !itemMenu.hidden) closeItemMenu(false);
+            menuBtn = btn;
+            addMenu.dataset.space = btn.dataset.add;
+            document.getElementById('add-menu-title').textContent = 'Add to ' + spaces[btn.dataset.add].name;
+            addMenu.hidden = false;
+            const r = btn.getBoundingClientRect();
+            const mw = addMenu.offsetWidth, mh = addMenu.offsetHeight;
+            const left = Math.min(Math.max(8, r.right - mw), window.innerWidth - mw - 8);
+            let top = r.bottom + 4;
+            if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 4);
+            addMenu.style.left = left + 'px';
+            addMenu.style.top = top + 'px';
+            addMenu.querySelector('.menu-item').focus();
+        }
+        function closeAddMenu(restoreFocus) {
+            if (addMenu.hidden) return;
+            addMenu.hidden = true;
+            if (restoreFocus && menuBtn && document.contains(menuBtn)) menuBtn.focus();
+        }
+        addMenu.addEventListener('click', (e) => {
+            const it = e.target.closest('.menu-item');
+            if (!it) return;
+            const space = addMenu.dataset.space;
+            closeAddMenu(false);
+            addInstance(it.dataset.kind, space);
+        });
+        addMenu.addEventListener('keydown', (e) => {
+            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+            e.preventDefault();
+            const items = [...addMenu.querySelectorAll('.menu-item')];
+            const i = items.indexOf(document.activeElement);
+            items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+        });
+        document.addEventListener('mousedown', (e) => {
+            if (!addMenu.hidden && !addMenu.contains(e.target) && !e.target.closest('.add-btn')) closeAddMenu(false);
+        });
+
+        // ───────── Explorer item context menu ─────────
+        const itemMenu = document.getElementById('item-menu');
+        let clipboard = null;   // { data, cut, pastes }
+        const cloneData = (o) => JSON.parse(JSON.stringify(o));
+
+        function placeMenu(menu, rect, alignLeft) {
+            const mw = menu.offsetWidth, mh = menu.offsetHeight;
+            let left = alignLeft ? rect.left : rect.right - mw;
+            left = Math.min(Math.max(8, left), window.innerWidth - mw - 8);
+            let top = rect.bottom + 4;
+            if (top + mh > window.innerHeight - 8) top = Math.max(8, rect.top - mh - 4);
+            menu.style.left = left + 'px';
+            menu.style.top = top + 'px';
+        }
+        function openItemMenu(id, rect, alignLeft) {
+            const o = sceneObjects[id];
+            if (!o || o.readOnly) return;
+            closeAddMenu(false);
+            menuItemId = id;
+            itemMenu.dataset.id = id;
+            const off = (act, v) => { itemMenu.querySelector(`[data-act="${act}"]`).disabled = v; };
+            off('rename', !!o.locked);
+            off('cut', !!o.locked);
+            off('delete', !!o.locked);
+            off('paste', !clipboard);
+            off('camera', !(o.type === 'prism6' && o.parent === 'world'));
+            itemMenu.hidden = false;
+            renderExplorer();
+            placeMenu(itemMenu, rect, alignLeft);
+            const first = itemMenu.querySelector('.menu-item:not(:disabled)');
+            if (first) first.focus();
+        }
+        function closeItemMenu(restoreFocus) {
+            if (itemMenu.hidden) return;
+            itemMenu.hidden = true;
+            const id = menuItemId;
+            menuItemId = null;
+            renderExplorer();
+            if (restoreFocus) {
+                const btn = explorerEl.querySelector(`[data-more="${id}"]`);
+                if (btn) btn.focus();
+            }
+        }
+        itemMenu.addEventListener('click', (e) => {
+            const it = e.target.closest('.menu-item');
+            if (!it || it.disabled) return;
+            const id = itemMenu.dataset.id;
+            closeItemMenu(false);
+            runItemAction(it.dataset.act, id);
+        });
+        itemMenu.addEventListener('keydown', (e) => {
+            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+            e.preventDefault();
+            const items = [...itemMenu.querySelectorAll('.menu-item:not(:disabled)')];
+            if (!items.length) return;
+            const i = items.indexOf(document.activeElement);
+            items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+        });
+        document.addEventListener('mousedown', (e) => {
+            if (!itemMenu.hidden && !itemMenu.contains(e.target) && !e.target.closest('.item-more')) closeItemMenu(false);
+        });
+        explorerEl.addEventListener('contextmenu', (e) => {
+            const item = e.target.closest('.tree-item');
+            if (!item || e.target.closest('.rename-input')) return;
+            const o = sceneObjects[item.dataset.id];
+            if (!o || o.readOnly) return;
+            e.preventDefault();
+            openItemMenu(item.dataset.id, { left: e.clientX, right: e.clientX, top: e.clientY, bottom: e.clientY - 4 }, true);
+        });
+        explorerEl.addEventListener('focusout', (e) => {
+            if (e.target.classList && e.target.classList.contains('rename-input')) commitRename(true);
+        });
+
+        function commitRename(commit) {
+            if (!renamingId) return;
+            const id = renamingId;
+            renamingId = null;
+            const o = sceneObjects[id];
+            const inp = explorerEl.querySelector('.rename-input');
+            if (o && commit && inp) o.name = inp.value.trim() || defaultNames[o.type] || 'Instance';
+            renderExplorer();
+            if (id === selectedObjectId) renderProperties();
+        }
+        function deleteItem(id) {
+            delete sceneObjects[id];
+            physicsVelocity.delete(id);
+            if (renamingId === id) renamingId = null;
+            if (selectedObjectId === id) selectedObjectId = null;
+            renderExplorer();
+            renderProperties();
+        }
+        function pasteInto(space) {
+            const c = clipboard;
+            if (!c) return;
+            const data = cloneData(c.data);
+            data.parent = space;
+            if (!c.cut && data.type === 'prism6') {
+                // Copies land beside the original; cut-and-paste keeps the exact position.
+                c.pastes++;
+                data.x = Math.round((data.x + c.pastes * (2 * data.width + 0.5)) * 100) / 100;
+            }
+            const id = newId();
+            sceneObjects[id] = data;
+            if (c.cut) clipboard = null;
+            collapsed.delete(space);
+            selectItem(id);
+        }
+        function moveCameraTo(id) {
+            const o = sceneObjects[id];
+            if (!o) return;
+            updateTrig();
+            const d = Math.hypot(o.width, o.height, o.length) * 2.5 + 2;
+            camPosX = o.x - fwdX * d;
+            camPosY = o.y - fwdY * d;
+            camPosZ = o.z - fwdZ * d;
+            selectItem(id);
+        }
+        function runItemAction(act, id) {
+            const o = sceneObjects[id];
+            if (!o) return;
+            if (act === 'rename') { renamingId = id; renderExplorer(); }
+            else if (act === 'copy') clipboard = { data: cloneData(o), cut: false, pastes: 0 };
+            else if (act === 'cut') { clipboard = { data: cloneData(o), cut: true, pastes: 0 }; deleteItem(id); }
+            else if (act === 'paste') pasteInto(o.parent);
+            else if (act === 'delete') deleteItem(id);
+            else if (act === 'camera') moveCameraTo(id);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (!itemMenu.hidden) { closeItemMenu(true); return; }
+            if (!addMenu.hidden) closeAddMenu(true);
+            closeModals();
+        });
+
+        // ───────── Selection & properties ─────────
+        function selectItem(id) {
+            selectedObjectId = id || null;
+            renderExplorer();
+            renderProperties();
+        }
+        window.selectItem = selectItem;
+
+        const objHead = (id, o, ic, extra = '') =>
+            `<div class="obj-head">${icon(ic)}<div class="obj-meta"><div class="obj-name">${esc(o.name)}</div>
+                <div class="obj-id"><span title="Instance type">${o.type}</span><span class="uid" title="Unique ID">${id}</span></div></div>${extra}</div>`;
+        const defaultNames = { prism6: 'Block', script: 'Script', worldsettings: 'Settings' };
+        const nameField = (o, dis = '') =>
+            `<div class="field-label">Name</div><input class="text" type="text" id="prop-name" maxlength="48" value="${esc(o.name)}" aria-label="Name" ${dis}>`;
+        function bindName(obj) {
+            const nameEl = document.getElementById('prop-name');
+            if (!nameEl || nameEl.disabled) return;
+            const refresh = () => {
+                const head = document.querySelector('#properties-content .obj-name');
+                if (head) head.textContent = obj.name;
+                renderExplorer();
+            };
+            nameEl.addEventListener('input', () => { obj.name = nameEl.value; refresh(); });
+            nameEl.addEventListener('change', () => {
+                obj.name = nameEl.value.trim() || defaultNames[obj.type] || 'Instance';
+                nameEl.value = obj.name;
+                refresh();
+            });
+            nameEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') nameEl.blur(); });
+        }
+        const numField = (id, tag, axis, title, value, dis) =>
+            `<label class="num" title="${title}"><span class="tag ${axis}">${tag}</span><input type="number" id="${id}" step="0.1" value="${value}" aria-label="${title}" ${dis}></label>`;
+        const switchRow = (id, label, checked, dis) =>
+            `<label class="row${dis ? ' is-disabled' : ''}"><span>${label}</span><input class="switch" type="checkbox" id="${id}" ${checked ? 'checked' : ''} ${dis}></label>`;
+        const section = (title, body) =>
+            `<details class="sec" open><summary>${icon('i-chev', 'chev')}${title}</summary><div class="sec-body">${body}</div></details>`;
+
+        const propFields = [['prop-x', 'x'], ['prop-y', 'y'], ['prop-z', 'z'], ['prop-length', 'length'], ['prop-width', 'width'], ['prop-height', 'height']];
+        function syncPropInputs() {
+            const o = sceneObjects[selectedObjectId];
+            if (!o || o.type !== 'prism6') return;
+            for (const [elId, key] of propFields) {
+                const el = document.getElementById(elId);
+                if (el && document.activeElement !== el) el.value = o[key];
+            }
+        }
+
+        function renderProperties() {
+            const container = document.getElementById('properties-content');
+            if (!selectedObjectId) {
+                container.innerHTML = `<div class="empty">${icon('i-pointer')}<p>Nothing selected</p><span>Pick an item in the explorer or click one in the viewport.</span></div>`;
+                return;
+            }
+            const obj = sceneObjects[selectedObjectId];
+
+            if (obj.readOnly) {
+                container.innerHTML = `<div class="empty">${icon('i-lock')}<p>${esc(obj.name)}</p><span>This is an engine component and can’t be edited.</span></div>`;
+                return;
+            }
+
+            if (obj.type === 'worldsettings') {
+                const presets = [['Dawn', 6], ['Noon', 12], ['Dusk', 18], ['Night', 0]];
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, 'i-sun')}
+                    ${section('Editor', nameField(obj))}
+                    ${section('Lighting', `
+                        <div class="field-label">Time of day</div>
+                        <div class="tod-row">
+                            <input type="range" class="tod" id="prop-tod-range" min="0" max="24" step="0.05" value="${obj.timeOfDay}" aria-label="Time of day">
+                            <input type="time" class="time" id="prop-tod" value="${fmtTime(obj.timeOfDay)}" aria-label="Time of day (24 hour clock)">
+                        </div>
+                        <div class="pill-row">${presets.map(([n, h]) => `<button class="pill" data-tod="${h}" aria-pressed="false">${n}</button>`).join('')}</div>
+                    `)}
+                    ${section('Simulation', `
+                        <div class="field-label">Gravity</div>
+                        <div class="tod-row">
+                            <input type="range" class="tod" id="prop-grav-range" min="0" max="30" step="0.1" value="${Math.min(30, Number.isFinite(obj.gravity) ? obj.gravity : DEFAULT_GRAVITY)}" aria-label="Gravity">
+                            <label class="num grav" title="Gravity in meters per second squared"><input type="number" id="prop-grav" min="0" max="${GRAVITY_MAX}" step="0.1" value="${Number.isFinite(obj.gravity) ? obj.gravity : DEFAULT_GRAVITY}" aria-label="Gravity (m/s²)"><span class="tag">m/s²</span></label>
+                        </div>
+                        <div class="pill-row">${GRAVITY_PRESETS.map(([n, g]) => `<button class="pill" data-grav="${g}" aria-pressed="false" title="${g} m/s²">${n}</button>`).join('')}</div>
+                        <div class="field-label">Kill layer height</div>
+                        <label class="num" title="Kill layer height (Y)"><span class="tag y">Y</span><input type="number" id="prop-killy" step="100" value="${Number.isFinite(obj.killY) ? obj.killY : DEFAULT_KILL_Y}" aria-label="Kill layer height"></label>
+                        <div class="field-note">Simulated objects that fall below this height are deleted from the world.</div>
+                    `)}`;
+                const range = document.getElementById('prop-tod-range'), time = document.getElementById('prop-tod');
+                range.style.background = 'linear-gradient(to right,' + Array.from({ length: 13 }, (_, i) => { const c = skyAt(i * 2); return rgbStr(mixRGB(c.top, c.hor, 0.5)); }).join(',') + ')';
+                const pills = [...container.querySelectorAll('.pill')];
+                const sync = () => {
+                    pills.forEach(b => b.setAttribute('aria-pressed', String(Math.abs((obj.timeOfDay % 24) - Number(b.dataset.tod)) < 0.01)));
+                };
+                const setT = (h) => {
+                    obj.timeOfDay = Math.max(0, Math.min(24, h));
+                    if (document.activeElement !== range) range.value = obj.timeOfDay;
+                    if (document.activeElement !== time) time.value = fmtTime(obj.timeOfDay);
+                    sync();
+                };
+                range.addEventListener('input', () => setT(parseFloat(range.value) || 0));
+                time.addEventListener('input', () => { const h = parseTime(time.value); if (h !== null) { obj.timeOfDay = h; range.value = h; sync(); } });
+                pills.forEach(b => b.addEventListener('click', () => setT(Number(b.dataset.tod))));
+                sync();
+                const gRange = document.getElementById('prop-grav-range'), gNum = document.getElementById('prop-grav');
+                const gPills = [...container.querySelectorAll('[data-grav]')];
+                const gSync = () => gPills.forEach(b => b.setAttribute('aria-pressed', String(Math.abs(obj.gravity - Number(b.dataset.grav)) < 0.005)));
+                const setG = (g) => {
+                    obj.gravity = Math.max(0, Math.min(GRAVITY_MAX, Math.round(g * 100) / 100));
+                    if (document.activeElement !== gRange) gRange.value = Math.min(30, obj.gravity);
+                    if (document.activeElement !== gNum) gNum.value = obj.gravity;
+                    gSync();
+                };
+                gRange.addEventListener('input', () => setG(parseFloat(gRange.value) || 0));
+                gNum.addEventListener('input', () => { const g = parseFloat(gNum.value); if (Number.isFinite(g)) setG(g); });
+                gNum.addEventListener('change', () => { const g = parseFloat(gNum.value); setG(Number.isFinite(g) ? g : DEFAULT_GRAVITY); gNum.value = obj.gravity; });
+                gPills.forEach(b => b.addEventListener('click', () => setG(Number(b.dataset.grav))));
+                gSync();
+                const killEl = document.getElementById('prop-killy');
+                killEl.addEventListener('input', () => { const v = parseFloat(killEl.value); if (Number.isFinite(v)) obj.killY = v; });
+                killEl.addEventListener('change', () => {
+                    const v = parseFloat(killEl.value);
+                    obj.killY = Number.isFinite(v) ? v : DEFAULT_KILL_Y;
+                    killEl.value = obj.killY;
+                });
+                bindName(obj);
+                return;
+            }
+
+            if (obj.type === 'script') {
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, 'i-script')}
+                    ${section('Editor', nameField(obj))}
+                    <div class="empty">${icon('i-script')}<p>Blank script</p><span>Scripts run inside the simulation. Code editing isn’t available yet.</span></div>`;
+                bindName(obj);
+                return;
+            }
+
+            const dis = obj.locked ? 'disabled' : '';
+            container.innerHTML = `
+                ${objHead(selectedObjectId, obj, 'i-cube', obj.locked ? `<span class="chip">${icon('i-lock')}Locked</span>` : '')}
+                ${section('Position', `<div class="field-row">
+                    ${numField('prop-x', 'X', 'x', 'X', obj.x, dis)}
+                    ${numField('prop-y', 'Y', 'y', 'Y', obj.y, dis)}
+                    ${numField('prop-z', 'Z', 'z', 'Z', obj.z, dis)}
+                </div>`)}
+                ${section('Size', `<div class="field-row">
+                    ${numField('prop-length', 'L', 'z', 'Length (Z)', obj.length, dis)}
+                    ${numField('prop-width', 'W', 'x', 'Width (X)', obj.width, dis)}
+                    ${numField('prop-height', 'H', 'y', 'Height (Y)', obj.height, dis)}
+                </div>`)}
+                ${section('Editor', `
+                    ${nameField(obj, dis)}
+                    <div class="switch-stack">
+                    ${switchRow('prop-locked', 'Locked', obj.locked, '')}
+                    ${switchRow('prop-face-coloring', 'Face coloring', obj.faceColoring, dis)}
+                    ${switchRow('prop-labels', 'Face labels', obj.showLabels, dis)}
+                    </div>
+                `)}
+                ${section('Render', switchRow('prop-wireframe', 'Wireframe', obj.wireframe, dis))}
+                ${section('Simulation', `
+                    ${switchRow('prop-physics', 'Reacts to physics', obj.reactsToPhysics, dis)}
+                    ${switchRow('prop-collidable', 'Collidable', obj.collidable !== false, dis)}
+                    ${switchRow('prop-anchored', 'Anchored', !!obj.anchored, dis)}
+                `)}
+            `;
+
+            document.getElementById('prop-locked').addEventListener('change', (e) => { obj.locked = e.target.checked; renderProperties(); });
+
+            if (!obj.locked) {
+                bindName(obj);
+                for (const [elId, key] of propFields) {
+                    document.getElementById(elId).addEventListener('input', (e) => { obj[key] = parseFloat(e.target.value) || 0; });
+                }
+                document.getElementById('prop-face-coloring').addEventListener('change', (e) => { obj.faceColoring = e.target.checked; });
+                document.getElementById('prop-labels').addEventListener('change', (e) => { obj.showLabels = e.target.checked; });
+                document.getElementById('prop-wireframe').addEventListener('change', (e) => { obj.wireframe = e.target.checked; });
+                document.getElementById('prop-physics').addEventListener('change', (e) => {
+                    obj.reactsToPhysics = e.target.checked;
+                    renderProperties();
+                });
+                document.getElementById('prop-collidable').addEventListener('change', (e) => { obj.collidable = e.target.checked; });
+                document.getElementById('prop-anchored').addEventListener('change', (e) => {
+                    obj.anchored = e.target.checked;
+                    if (obj.anchored) physicsVelocity.set(selectedObjectId, { x: 0, y: 0, z: 0 });
+                });
+            }
+        }
+
+        // ───────── Modes ─────────
+        const hintText = { select: 'Click an instance to select it', move: 'Drag an arrow to move', scale: 'Drag a sphere to resize' };
+        function setMode(m) {
+            mode = m;
+            document.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+            document.getElementById('hint-mode').textContent = hintText[m];
+            hoverKey = null;
+            canvas.style.cursor = '';
+        }
+        document.querySelectorAll('.tool').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+        // ───────── Resize ─────────
+        let width, height, cx, cy;
+        function resize() {
+            const container = document.getElementById('canvas-container');
+            width = container.clientWidth;
+            height = container.clientHeight;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            for (const c of [canvas, skyCanvas, glCanvas]) { c.width = Math.round(width * dpr); c.height = Math.round(height * dpr); }
+            ctx.scale(dpr, dpr);
+            skyCtx.scale(dpr, dpr);
+            cx = width / 2; cy = height / 2;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+        new ResizeObserver(resize).observe(document.getElementById('canvas-container'));
+        setTimeout(resize, 0);
+
+        // ───────── 3D math ─────────
+        class Vec3 {
+            constructor(x, y, z) { this.x = x; this.y = y; this.z = z; }
+            dot(v) { return this.x * v.x + this.y * v.y + this.z * v.z; }
+            normalize() { const len = Math.hypot(this.x, this.y, this.z) || 1; return new Vec3(this.x / len, this.y / len, this.z / len); }
+        }
+
+        function getVerts(o) {
+            const l = o.length, w = o.width, h = o.height, ox = o.x || 0, oy = o.y || 0, oz = o.z || 0;
+            return [
+                new Vec3(ox - w, oy - h, oz - l), new Vec3(ox + w, oy - h, oz - l), new Vec3(ox + w, oy + h, oz - l), new Vec3(ox - w, oy + h, oz - l),
+                new Vec3(ox - w, oy - h, oz + l), new Vec3(ox + w, oy - h, oz + l), new Vec3(ox + w, oy + h, oz + l), new Vec3(ox - w, oy + h, oz + l)
+            ];
+        }
+
+        const vfVertices = [
+            new Vec3(-0.5, -0.5, -0.5), new Vec3(0.5, -0.5, -0.5), new Vec3(0.5, 0.5, -0.5), new Vec3(-0.5, 0.5, -0.5),
+            new Vec3(-0.5, -0.5, 0.5), new Vec3(0.5, -0.5, 0.5), new Vec3(0.5, 0.5, 0.5), new Vec3(-0.5, 0.5, 0.5)
+        ];
+
+        const faces = [
+            { indices: [4, 5, 6, 7], label: 'Front',  color: '#ef4444', normal: new Vec3( 0,  0,  1), up: new Vec3( 0,  1,  0), right: new Vec3( 1,  0,  0) },
+            { indices: [1, 0, 3, 2], label: 'Back',   color: '#22c55e', normal: new Vec3( 0,  0, -1), up: new Vec3( 0,  1,  0), right: new Vec3(-1,  0,  0) },
+            { indices: [5, 1, 2, 6], label: 'Right',  color: '#3b82f6', normal: new Vec3( 1,  0,  0), up: new Vec3( 0,  1,  0), right: new Vec3( 0,  0, -1) },
+            { indices: [0, 4, 7, 3], label: 'Left',   color: '#eab308', normal: new Vec3(-1,  0,  0), up: new Vec3( 0,  1,  0), right: new Vec3( 0,  0,  1) },
+            { indices: [3, 2, 6, 7], label: 'Top',    color: '#a855f7', normal: new Vec3( 0,  1,  0), up: new Vec3( 0,  0, -1), right: new Vec3( 1,  0,  0) },
+            { indices: [0, 1, 5, 4], label: 'Bottom', color: '#f97316', normal: new Vec3( 0, -1,  0), up: new Vec3( 0,  0,  1), right: new Vec3( 1,  0,  0) }
+        ];
+
+        let angleX = -0.3, angleY = -0.6;
+        let camPosX = -4.5 * Math.cos(angleX) * Math.sin(angleY), camPosY = -4.5 * Math.sin(angleX), camPosZ = 4.5 * Math.cos(angleX) * Math.cos(angleY);
+        const keyState = {};
+        const FOV = 450;
+        const lightDir = new Vec3(-0.5, -0.8, -1.0).normalize();
+
+        // Camera basis for a level, y-up world: angleY = yaw (turn), angleX = pitch (positive looks up)
+        let sinX = 0, cosX = 1, sinY = 0, cosY = 1;
+        let fwdX = 0, fwdY = 0, fwdZ = -1, rgtX = 1, rgtZ = 0, upX = 0, upY = 1, upZ = 0;
+        function updateTrig() {
+            sinX = Math.sin(angleX); cosX = Math.cos(angleX); sinY = Math.sin(angleY); cosY = Math.cos(angleY);
+            fwdX = cosX * sinY; fwdY = sinX; fwdZ = -cosX * cosY;
+            rgtX = cosY; rgtZ = sinY;
+            upX = -sinY * sinX; upY = cosX; upZ = cosY * sinX;
+        }
+
+        // World (x right, y UP, z toward viewer) -> camera space; y is returned as "down" for the screen
+        function transformPoint(p) {
+            const rx = p.x - camPosX, ry = p.y - camPosY, rz = p.z - camPosZ;
+            return new Vec3(rx * rgtX + rz * rgtZ, -(rx * upX + ry * upY + rz * upZ), rx * fwdX + ry * fwdY + rz * fwdZ);
+        }
+        function rotateVector(v) {
+            return new Vec3(v.x * rgtX + v.z * rgtZ, -(v.x * upX + v.y * upY + v.z * upZ), v.x * fwdX + v.y * fwdY + v.z * fwdZ);
+        }
+        function project(p) {
+            const t = transformPoint(p), s = FOV / t.z;
+            return { x: t.x * s + cx, y: t.y * s + cy, z: t.z };
+        }
+        // World-space direction of the camera ray through screen point (sx, sy)
+        function rayDir(sx, sy) {
+            updateTrig();
+            const a = sx - cx, b = -(sy - cy);
+            return new Vec3(a * rgtX + b * upX + FOV * fwdX, b * upY + FOV * fwdY, a * rgtZ + b * upZ + FOV * fwdZ);
+        }
+        // Where along the line (A + t·d) the mouse ray comes closest; null when the line points straight at the camera
+        function axisParam(A, d, sx, sy) {
+            const r = rayDir(sx, sy);
+            const w0 = new Vec3(A.x - camPosX, A.y - camPosY, A.z - camPosZ);
+            const b = d.dot(r), c = r.dot(r), dd = d.dot(w0), e = r.dot(w0);
+            const den = c - b * b;
+            if (den < 1e-3 * c) return null;
+            return (b * e - c * dd) / den;
+        }
+
+        function isTyping() {
+            const el = document.activeElement;
+            return !!el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type !== 'checkbox'));
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (isTyping()) return;
+            const k = e.key.toLowerCase();
+            if (['w', 'a', 's', 'd'].includes(k)) keyState[k] = true;
+            if (!manip && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (k === '1') setMode('select');
+                else if (k === '2') setMode('move');
+                else if (k === '3') setMode('scale');
+            }
+        });
+        window.addEventListener('keyup', (e) => { keyState[e.key.toLowerCase()] = false; });
+        window.addEventListener('blur', () => { for (const k in keyState) keyState[k] = false; });
+
+        function shadeRGB(hex, b) {
+            const k = 0.2 + b * 0.8;
+            return [1, 3, 5].map(i => Math.min(1, parseInt(hex.slice(i, i + 2), 16) / 255 * k));
+        }
+        function applyLighting(hexColor, brightness) {
+            return `rgb(${shadeRGB(hexColor, brightness).map(v => Math.round(v * 255)).join(', ')})`;
+        }
+
+        // ───────── Viewfinder ─────────
+        function renderViewfinder() {
+            vfCtx.clearRect(0, 0, 90, 90);
+            const vfCx = 45, vfCy = 45, vfZoom = 32;
+            function vfTransform(p) {
+                const x2 = p.x * rgtX + p.z * rgtZ, y2 = -(p.x * upX + p.y * upY + p.z * upZ), z2 = p.x * fwdX + p.y * fwdY + p.z * fwdZ;
+                return { x: (x2 * vfZoom) + vfCx, y: (y2 * vfZoom) + vfCy, z: z2 };
+            }
+            const vfTransformed = vfVertices.map(v => vfTransform(v));
+            const vfVisibleFaces = [];
+            for (let face of faces) {
+                const normTransformed = rotateVector(face.normal);
+                let cz = 0;
+                for (let idx of face.indices) { cz += vfTransformed[idx].z; }
+                cz /= face.indices.length;
+                if (normTransformed.z < 0) vfVisibleFaces.push({ ...face, depth: cz });
+            }
+            vfVisibleFaces.sort((a, b) => b.depth - a.depth);
+            for (let face of vfVisibleFaces) {
+                const pts = face.indices.map(idx => vfTransformed[idx]);
+                vfCtx.beginPath();
+                vfCtx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) vfCtx.lineTo(pts[i].x, pts[i].y);
+                vfCtx.closePath();
+                vfCtx.fillStyle = face.color;
+                vfCtx.fill();
+                vfCtx.lineWidth = 1.5;
+                vfCtx.strokeStyle = '#ffffff';
+                vfCtx.stroke();
+                let avgX = 0, avgY = 0;
+                for (let p of pts) { avgX += p.x; avgY += p.y; }
+                avgX /= pts.length; avgY /= pts.length;
+                vfCtx.fillStyle = '#ffffff';
+                vfCtx.font = 'bold 9px -apple-system, sans-serif';
+                vfCtx.textAlign = 'center';
+                vfCtx.textBaseline = 'middle';
+                vfCtx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+                vfCtx.shadowBlur = 3;
+                vfCtx.fillText(face.label, avgX, avgY);
+                vfCtx.shadowBlur = 0;
+            }
+        }
+
+        // ───────── Sky & time of day ─────────
+        const SKY_KEYS = [
+            [0,    [5, 8, 22],     [14, 20, 48]],
+            [5,    [14, 20, 52],   [40, 40, 90]],
+            [6,    [52, 74, 140],  [244, 160, 96]],
+            [7.5,  [74, 138, 214], [190, 222, 245]],
+            [12,   [47, 128, 216], [176, 218, 248]],
+            [16.5, [64, 140, 218], [196, 224, 244]],
+            [18,   [60, 90, 170],  [248, 170, 100]],
+            [19,   [30, 38, 95],   [200, 96, 80]],
+            [20.5, [10, 14, 40],   [38, 32, 78]],
+            [24,   [5, 8, 22],     [14, 20, 48]]
+        ];
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const mixRGB = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+        const rgbStr = (c, a = 1) => `rgba(${Math.round(c[0])}, ${Math.round(c[1])}, ${Math.round(c[2])}, ${a})`;
+        const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+        function skyAt(t) {
+            t = ((t % 24) + 24) % 24;
+            for (let i = 0; i < SKY_KEYS.length - 1; i++) {
+                const a = SKY_KEYS[i], b = SKY_KEYS[i + 1];
+                if (t <= b[0]) { const u = (t - a[0]) / (b[0] - a[0]); return { top: mixRGB(a[1], b[1], u), hor: mixRGB(a[2], b[2], u) }; }
+            }
+            return { top: SKY_KEYS[0][1], hor: SKY_KEYS[0][2] };
+        }
+        function fmtTime(h) {
+            let hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+            if (mm === 60) { hh++; mm = 0; }
+            return String(hh % 24).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+        }
+        function parseTime(str) {
+            const m = /^(\d{1,2}):(\d{2})/.exec(str || '');
+            return m ? Math.min(23, +m[1]) + Math.min(59, +m[2]) / 60 : null;
+        }
+        function getTimeOfDay() {
+            for (const o of Object.values(sceneObjects)) if (o.type === 'worldsettings' && o.parent === 'world') return o.timeOfDay;
+            return 14;
+        }
+
+        const stars = (() => {
+            let seed = 1337;
+            const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+            const out = [];
+            for (let i = 0; i < 150; i++) {
+                const th = rnd() * Math.PI * 2, y = 0.05 + rnd() * 0.95, rr = Math.sqrt(1 - y * y);
+                out.push({ v: new Vec3(rr * Math.cos(th), y, rr * Math.sin(th)), size: 0.6 + rnd() * 1.1, a: 0.35 + rnd() * 0.65 });
+            }
+            return out;
+        })();
+
+        let skyBright = true;
+        const sky = { top: [0, 0, 0], hor: [0, 0, 0], sunDir: new Vec3(0, 1, 0), moonDir: new Vec3(0, -1, 0), sunElev: 1, nightAmt: 0, lightWorld: new Vec3(0, 1, 0), lightStrength: 1, ambient: 0.5 };
+
+        function updateSky() {
+            const t = getTimeOfDay();
+            const c = skyAt(t);
+            sky.top = c.top; sky.hor = c.hor;
+            const a = (t - 6) / 24 * Math.PI * 2;
+            sky.sunDir = new Vec3(Math.cos(a), Math.sin(a), 0.35).normalize();
+            sky.moonDir = new Vec3(-sky.sunDir.x, -sky.sunDir.y, -sky.sunDir.z);
+            sky.sunElev = sky.sunDir.y;
+            const day = smooth(-0.08, 0.3, sky.sunElev);
+            sky.nightAmt = 1 - smooth(-0.2, 0.05, sky.sunElev);
+            if (sky.sunElev > 0) { sky.lightWorld = sky.sunDir; sky.lightStrength = 0.1 + 0.9 * smooth(0, 0.25, sky.sunElev); }
+            else { sky.lightWorld = sky.moonDir; sky.lightStrength = 0.35 * smooth(0, 0.25, -sky.sunElev); }
+            sky.ambient = 0.2 + 0.3 * day;
+            const mid = mixRGB(c.top, c.hor, 0.5);
+            skyBright = (0.2126 * mid[0] + 0.7152 * mid[1] + 0.0722 * mid[2]) / 255 > 0.42;
+        }
+
+        function skyPoint(dir) {
+            const c = rotateVector(dir);
+            if (c.z < 0.05) return null;
+            return { x: cx + c.x / c.z * FOV, y: cy + c.y / c.z * FOV };
+        }
+
+        function drawSky() {
+            // The horizon sits where level ground would meet the sky, so it follows the camera tilt
+            let horizonY = cy + FOV * Math.tan(angleX);
+            if (!Number.isFinite(horizonY)) horizonY = cy;
+            const below = skyCtx.createLinearGradient(0, horizonY, 0, horizonY + height * 0.8);
+            below.addColorStop(0, rgbStr(sky.hor));
+            below.addColorStop(1, rgbStr(mixRGB(sky.hor, sky.top, 0.35).map(v => v * 0.8)));
+            skyCtx.fillStyle = below;
+            skyCtx.fillRect(0, 0, width, height);
+            if (horizonY > 0) {
+                const up = skyCtx.createLinearGradient(0, horizonY - height * 0.95, 0, horizonY);
+                up.addColorStop(0, rgbStr(sky.top));
+                up.addColorStop(1, rgbStr(sky.hor));
+                skyCtx.fillStyle = up;
+                skyCtx.fillRect(0, 0, width, Math.min(height, horizonY));
+            }
+
+            if (sky.nightAmt > 0.02) {
+                skyCtx.fillStyle = '#ffffff';
+                for (const st of stars) {
+                    const p = skyPoint(st.v);
+                    if (!p || p.x < -2 || p.x > width + 2 || p.y < -2 || p.y > height + 2) continue;
+                    skyCtx.globalAlpha = st.a * sky.nightAmt;
+                    skyCtx.beginPath(); skyCtx.arc(p.x, p.y, st.size, 0, Math.PI * 2); skyCtx.fill();
+                }
+                skyCtx.globalAlpha = 1;
+            }
+
+            if (sky.sunElev > -0.15) {
+                const p = skyPoint(sky.sunDir);
+                if (p) {
+                    const warm = 1 - smooth(0, 0.4, sky.sunElev);
+                    const col = mixRGB([255, 244, 210], [255, 140, 60], warm);
+                    const fade = smooth(-0.15, 0.0, sky.sunElev);
+                    skyCtx.save();
+                    skyCtx.globalAlpha = fade;
+                    const glow = skyCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 220);
+                    glow.addColorStop(0, rgbStr(col, 0.55)); glow.addColorStop(0.15, rgbStr(col, 0.22)); glow.addColorStop(1, rgbStr(col, 0));
+                    skyCtx.fillStyle = glow; skyCtx.fillRect(p.x - 220, p.y - 220, 440, 440);
+                    skyCtx.beginPath(); skyCtx.arc(p.x, p.y, 24, 0, Math.PI * 2);
+                    skyCtx.fillStyle = rgbStr(mixRGB(col, [255, 255, 255], 0.55)); skyCtx.fill();
+                    skyCtx.restore();
+                }
+            }
+            if (sky.sunElev < 0.1) {
+                const p = skyPoint(sky.moonDir);
+                if (p) {
+                    skyCtx.save();
+                    skyCtx.globalAlpha = smooth(-0.1, 0.15, -sky.sunElev);
+                    const glow = skyCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 110);
+                    glow.addColorStop(0, 'rgba(200, 215, 255, 0.35)'); glow.addColorStop(1, 'rgba(200, 215, 255, 0)');
+                    skyCtx.fillStyle = glow; skyCtx.fillRect(p.x - 110, p.y - 110, 220, 220);
+                    skyCtx.beginPath(); skyCtx.arc(p.x, p.y, 17, 0, Math.PI * 2);
+                    skyCtx.fillStyle = '#e8eefc'; skyCtx.fill();
+                    skyCtx.restore();
+                }
+            }
+        }
+
+        // ───────── Move / Scale handles ─────────
+        const AXIS_COLOR = { x: '#ef4444', y: '#22c55e', z: '#3b82f6' };
+        const HALF_KEY = { x: 'width', y: 'height', z: 'length' };
+        let lastHandles = [];
+        let lastFaces = [];
+        let hoverKey = null;
+        let manip = null;      // active handle drag; while set the camera is locked
+        let camDrag = null;
+        const LOOK_SENS = 0.008, PITCH_LIMIT = 1.5;
+        const clampPitch = (a) => Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, a));
+
+        function canEditHandles() {
+            const o = sceneObjects[selectedObjectId];
+            return mode !== 'select' && o && o.type === 'prism6' && o.parent === 'world' && !o.locked;
+        }
+
+        function buildHandles(o) {
+            const out = [];
+            // Handle size is a third of the shape's average full size, never smaller than ~34px on screen
+            const base = ((o.width + o.height + o.length) * 2 / 3) / 3;
+            for (const axis of ['x', 'y', 'z']) {
+                for (const sign of [1, -1]) {
+                    const d = new Vec3(axis === 'x' ? sign : 0, axis === 'y' ? sign : 0, axis === 'z' ? sign : 0);
+                    const center = new Vec3(o.x + d.x * o.width, o.y + d.y * o.height, o.z + d.z * o.length);
+                    const pc = project(center);
+                    if (pc.z < 0.3) continue;
+                    const sw = Math.max(base, 34 * pc.z / FOV);
+                    const g = sw * 0.1;
+                    let a, b, r = 0;
+                    if (mode === 'move') {
+                        a = project(new Vec3(center.x + d.x * g, center.y + d.y * g, center.z + d.z * g));
+                        b = project(new Vec3(center.x + d.x * (g + sw), center.y + d.y * (g + sw), center.z + d.z * (g + sw)));
+                    } else {
+                        a = pc;
+                        const k = g + sw * 0.65;
+                        b = project(new Vec3(center.x + d.x * k, center.y + d.y * k, center.z + d.z * k));
+                        r = Math.max(7, sw * 0.2 * FOV / b.z);
+                    }
+                    if (a.z < 0.1 || b.z < 0.1) continue;
+                    out.push({ key: axis + sign, type: mode, axis, sign, d, center, a, b, r, z: pc.z, color: AXIS_COLOR[axis] });
+                }
+            }
+            return out;
+        }
+
+        function distSeg(px, py, a, b) {
+            const vx = b.x - a.x, vy = b.y - a.y, len2 = vx * vx + vy * vy;
+            let t = len2 ? ((px - a.x) * vx + (py - a.y) * vy) / len2 : 0;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(px - (a.x + vx * t), py - (a.y + vy * t));
+        }
+
+        function findHandleAt(x, y) {
+            let best = null;
+            for (const h of lastHandles) {
+                const hit = h.type === 'move'
+                    ? distSeg(x, y, h.a, h.b) <= 10
+                    : (Math.hypot(x - h.b.x, y - h.b.y) <= h.r + 5 || distSeg(x, y, h.a, h.b) <= 5);
+                if (hit && (!best || h.z < best.z)) best = h;
+            }
+            return best;
+        }
+
+        function drawHandle(h) {
+            const active = manip && manip.h.key === h.key;
+            const hot = active || hoverKey === h.key;
+            ctx.save();
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            if (hot) { ctx.shadowColor = h.color; ctx.shadowBlur = 14; }
+            const dx = h.b.x - h.a.x, dy = h.b.y - h.a.y, len = Math.hypot(dx, dy) || 1;
+            const ux = dx / len, uy = dy / len;
+
+            if (h.type === 'move') {
+                const hl = Math.min(len * 0.5, Math.max(10, len * 0.36));
+                const sx = h.b.x - ux * hl * 0.8, sy = h.b.y - uy * hl * 0.8;
+                const hw = hl * 0.42;
+                const tri = () => {
+                    ctx.beginPath();
+                    ctx.moveTo(h.b.x, h.b.y);
+                    ctx.lineTo(h.b.x - ux * hl - uy * hw, h.b.y - uy * hl + ux * hw);
+                    ctx.lineTo(h.b.x - ux * hl + uy * hw, h.b.y - uy * hl - ux * hw);
+                    ctx.closePath();
+                };
+                ctx.beginPath(); ctx.moveTo(h.a.x, h.a.y); ctx.lineTo(sx, sy);
+                ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = hot ? 7 : 6; ctx.stroke();
+                tri(); ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(h.a.x, h.a.y); ctx.lineTo(sx, sy);
+                ctx.strokeStyle = h.color; ctx.lineWidth = hot ? 4.5 : 3.5; ctx.stroke();
+                tri(); ctx.fillStyle = hot ? '#ffffff' : h.color; ctx.fill();
+                if (hot) { ctx.lineWidth = 2; ctx.strokeStyle = h.color; ctx.stroke(); }
+            } else {
+                ctx.beginPath(); ctx.moveTo(h.a.x, h.a.y); ctx.lineTo(h.b.x, h.b.y);
+                ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 5; ctx.stroke();
+                ctx.strokeStyle = h.color; ctx.lineWidth = 2.5; ctx.stroke();
+                const grad = ctx.createRadialGradient(h.b.x - h.r * 0.35, h.b.y - h.r * 0.35, h.r * 0.1, h.b.x, h.b.y, h.r);
+                grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.35, h.color); grad.addColorStop(1, h.color);
+                ctx.beginPath(); ctx.arc(h.b.x, h.b.y, h.r * (hot ? 1.15 : 1), 0, Math.PI * 2);
+                ctx.fillStyle = grad; ctx.fill();
+                ctx.lineWidth = 2; ctx.strokeStyle = hot ? '#ffffff' : 'rgba(0,0,0,0.55)'; ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ───────── Draw order ─────────
+        // Prisms are axis-aligned boxes. If two boxes are separated by a plane, the one on the camera's side of that
+        // plane can never be hidden by the other, so it is drawn later. Whole prisms are ordered, never single faces.
+        function boxInFront(a, b) {
+            const cam = [camPosX, camPosY, camPosZ];
+            for (let k = 0; k < 3; k++) {
+                if (a.max[k] <= b.min[k]) return cam[k] < (a.max[k] + b.min[k]) / 2 ? 1 : -1;   // 1: a drawn after b
+                if (b.max[k] <= a.min[k]) return cam[k] < (b.max[k] + a.min[k]) / 2 ? -1 : 1;
+            }
+            return 0;   // overlapping volumes: no plane separates them
+        }
+        function orderPrisms(entries) {
+            const cam = [camPosX, camPosY, camPosZ];
+            const boxes = entries.map(([id, o]) => {
+                const min = [o.x - o.width, o.y - o.height, o.z - o.length], max = [o.x + o.width, o.y + o.height, o.z + o.length];
+                const dist = Math.hypot(o.x - cam[0], o.y - cam[1], o.z - cam[2]);
+                return { entry: [id, o], min, max, dist };
+            });
+            const n = boxes.length, after = boxes.map(() => []), waiting = new Array(n).fill(0);
+            for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+                let r = boxInFront(boxes[i], boxes[j]);
+                if (r === 0) r = boxes[i].dist > boxes[j].dist ? -1 : 1;   // overlapping: fall back to distance
+                if (r < 0) { after[i].push(j); waiting[j]++; } else { after[j].push(i); waiting[i]++; }
+            }
+            const done = new Array(n).fill(false), out = [];
+            for (let c = 0; c < n; c++) {
+                let pick = -1;
+                for (let i = 0; i < n; i++) if (!done[i] && waiting[i] === 0 && (pick < 0 || boxes[i].dist > boxes[pick].dist)) pick = i;
+                if (pick < 0) for (let i = 0; i < n; i++) if (!done[i] && (pick < 0 || boxes[i].dist > boxes[pick].dist)) pick = i;   // cycle: farthest first
+                done[pick] = true; out.push(boxes[pick].entry);
+                for (const j of after[pick]) waiting[j]--;
+            }
+            return out;
+        }
+
+        // ───────── Render loop ─────────
+        let frameCount = 0, lastFpsTime = performance.now(), currentFps = 60;
+
+        function draw3DLine(p1, p2, color, lineWidth = 1) {
+            const t1 = transformPoint(p1), t2 = transformPoint(p2);
+            if (t1.z < 0.1 || t2.z < 0.1) return;
+            const s1 = FOV / t1.z, s2 = FOV / t2.z;
+            ctx.beginPath();
+            ctx.moveTo((t1.x * s1) + cx, (t1.y * s1) + cy);
+            ctx.lineTo((t2.x * s2) + cx, (t2.y * s2) + cy);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+        }
+
+        // ───────── WebGL renderer ─────────
+        // Prisms are drawn with a hardware depth buffer, so overlapping and intersecting boxes look like real solids.
+        // (If WebGL 2 is unavailable the old 2D painter's-algorithm renderer is used instead.)
+        let GL = null;
+        const NEAR = 0.1, FAR = 2000;
+        const GLSL_HEAD = `#version 300 es
+precision highp float;
+uniform vec3 uCam, uR, uU, uF;
+uniform vec2 uView;
+uniform float uFov;
+vec4 project(vec3 p) {
+    vec3 rel = p - uCam;
+    float z = dot(rel, uF);
+    return vec4(dot(rel, uR) * 2.0 * uFov / uView.x, dot(rel, uU) * 2.0 * uFov / uView.y,
+                ${((FAR + NEAR) / (FAR - NEAR)).toFixed(6)} * z - ${(2 * FAR * NEAR / (FAR - NEAR)).toFixed(6)}, z);
+}
+`;
+        const PRISM_VS = `
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
+layout(location = 2) in vec2 aUV;
+layout(location = 3) in float aFace;
+uniform vec3 uCenter, uHalf;
+out vec2 vUV;
+flat out float vFace;
+void main() {
+    vec3 w = uCenter + aPos * uHalf;
+    vUV = aUV; vFace = aFace;
+    if (dot(aNormal, w - uCam) >= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }   // back face
+    gl_Position = project(w);
+}`;
+        const PRISM_FS = `
+in vec2 vUV;
+flat in float vFace;
+uniform vec3 uColors[6];
+uniform vec3 uEdgeColor;
+uniform float uEdgeAlpha, uEdgeW;
+uniform int uWire;
+out vec4 o;
+void main() {
+    vec2 d = (1.0 - abs(vUV)) / max(fwidth(vUV), vec2(1e-6));
+    float line = 1.0 - smoothstep(uEdgeW - 0.75, uEdgeW + 0.75, min(d.x, d.y));
+    vec3 base = uColors[int(vFace + 0.5)];
+    if (uWire != 0) {
+        if (line < 0.02) discard;
+        vec3 c = uWire == 2 ? base : uEdgeColor;
+        o = vec4(c * line, line);
+        return;
+    }
+    o = vec4(mix(base, uEdgeColor, line * uEdgeAlpha), 1.0);
+}`;
+        const AXIS_VS = `
+layout(location = 0) in vec3 aP0;
+layout(location = 1) in vec3 aP1;
+layout(location = 2) in vec2 aSE;
+layout(location = 3) in vec4 aCol;
+layout(location = 4) in float aW;
+out vec4 vCol;
+void main() {
+    vec4 c0 = project(aP0), c1 = project(aP1);
+    vec2 s0 = c0.xy / c0.w * uView * 0.5, s1 = c1.xy / c1.w * uView * 0.5;
+    vec2 dir = s1 - s0;
+    dir = length(dir) > 1e-4 ? normalize(dir) : vec2(1.0, 0.0);
+    vec4 c = aSE.y > 0.5 ? c1 : c0;
+    c.xy += (vec2(-dir.y, dir.x) * aSE.x * aW / (uView * 0.5)) * c.w;
+    gl_Position = c;
+    vCol = aCol;
+}`;
+        const AXIS_FS = `
+in vec4 vCol;
+out vec4 o;
+void main() { o = vec4(vCol.rgb * vCol.a, vCol.a); }`;
+        const LABEL_VS = `
+layout(location = 0) in vec2 aQ;
+uniform vec3 uLC, uLR, uLU;
+uniform vec2 uCell;
+out vec2 vT;
+void main() {
+    gl_Position = project(uLC + uLR * aQ.x + uLU * aQ.y);
+    vT = vec2(aQ.x * 0.5 + 0.5, mix(uCell.y, uCell.x, aQ.y * 0.5 + 0.5));
+}`;
+        const LABEL_FS = `
+in vec2 vT;
+uniform sampler2D uTex;
+out vec4 o;
+void main() { o = texture(uTex, vT); }`;
+
+        function glProgram(gl, vs, fs, names) {
+            const mk = (type, src) => {
+                const sh = gl.createShader(type);
+                gl.shaderSource(sh, src); gl.compileShader(sh);
+                if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh) || 'shader compile failed');
+                return sh;
+            };
+            const prog = gl.createProgram();
+            gl.attachShader(prog, mk(gl.VERTEX_SHADER, GLSL_HEAD + vs));
+            gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, GLSL_HEAD + fs));
+            gl.linkProgram(prog);
+            if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) || 'program link failed');
+            const u = {};
+            for (const n of ['uCam', 'uR', 'uU', 'uF', 'uView', 'uFov'].concat(names)) u[n] = gl.getUniformLocation(prog, n);
+            return { prog, u };
+        }
+
+        function makeLabelAtlas(color, shadow) {
+            const c = document.createElement('canvas');
+            c.width = 256; c.height = 96 * faces.length;
+            const g = c.getContext('2d');
+            g.font = 'bold 45px -apple-system, "Segoe UI", Roboto, sans-serif';
+            g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.fillStyle = color;
+            if (shadow) { g.shadowColor = 'rgba(0, 0, 0, 0.55)'; g.shadowBlur = 6; }
+            faces.forEach((f, i) => g.fillText(f.label, 128, 96 * i + 48));
+            return c;
+        }
+
+        function initGL() {
+            try {
+                const gl = glCanvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true });
+                if (!gl) return;
+                const prism = glProgram(gl, PRISM_VS, PRISM_FS, ['uCenter', 'uHalf', 'uColors', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire']);
+                const axis = glProgram(gl, AXIS_VS, AXIS_FS, []);
+                const label = glProgram(gl, LABEL_VS, LABEL_FS, ['uLC', 'uLR', 'uLU', 'uCell', 'uTex']);
+
+                // unit cube, 6 faces x 2 triangles: position, normal, face-uv, face index
+                const unit = getVerts({ x: 0, y: 0, z: 0, length: 1, width: 1, height: 1 });
+                const uvs = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+                const data = [];
+                faces.forEach((f, fi) => {
+                    for (const t of [0, 1, 2, 0, 2, 3]) {
+                        const v = unit[f.indices[t]];
+                        data.push(v.x, v.y, v.z, f.normal.x, f.normal.y, f.normal.z, uvs[t][0], uvs[t][1], fi);
+                    }
+                });
+                prism.vao = gl.createVertexArray(); gl.bindVertexArray(prism.vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+                [[0, 3, 0], [1, 3, 3], [2, 2, 6], [3, 1, 8]].forEach(([loc, size, off]) => {
+                    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 36, off * 4);
+                });
+
+                axis.vao = gl.createVertexArray(); gl.bindVertexArray(axis.vao);
+                axis.buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, axis.buf);
+                [[0, 3, 0], [1, 3, 3], [2, 2, 6], [3, 4, 8], [4, 1, 12]].forEach(([loc, size, off]) => {
+                    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 52, off * 4);
+                });
+
+                label.vao = gl.createVertexArray(); gl.bindVertexArray(label.vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+                gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+                gl.bindVertexArray(null);
+
+                const tex = [makeLabelAtlas('#ffffff', true), makeLabelAtlas('#0f172a', false)].map(c => {
+                    const t = gl.createTexture();
+                    gl.bindTexture(gl.TEXTURE_2D, t);
+                    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+                    gl.generateMipmap(gl.TEXTURE_2D);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                    return t;
+                });
+                GL = { gl, prism, axis, label, tex };
+                resize();
+            } catch (err) {
+                console.warn('WebGL 2 unavailable, using the 2D renderer instead:', err);
+                GL = null;
+            }
+        }
+
+        function drawGL(prisms) {
+            const { gl, prism: P, axis: A, label: L, tex } = GL;
+            const cam = [camPosX, camPosY, camPosZ];
+            const setCam = (p) => {
+                gl.uniform3f(p.u.uCam, cam[0], cam[1], cam[2]);
+                gl.uniform3f(p.u.uR, rgtX, 0, rgtZ);
+                gl.uniform3f(p.u.uU, upX, upY, upZ);
+                gl.uniform3f(p.u.uF, fwdX, fwdY, fwdZ);
+                gl.uniform2f(p.u.uView, width, height);
+                gl.uniform1f(p.u.uFov, FOV);
+            };
+            gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+            gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+            // 1. prisms
+            gl.useProgram(P.prog); setCam(P); gl.bindVertexArray(P.vao);
+            gl.enable(gl.POLYGON_OFFSET_FILL);
+            const wireRGB = skyBright ? [0.059, 0.09, 0.165] : [0.22, 0.74, 0.97];
+            const colors = new Float32Array(18);
+            let visible = 0;
+            prisms.forEach(([id, o], i) => {
+                gl.polygonOffset(0, -(i + 1));   // later prisms win exact depth ties, so touching faces never flicker
+                gl.uniform3f(P.u.uCenter, o.x, o.y, o.z);
+                gl.uniform3f(P.u.uHalf, o.width, o.height, o.length);
+                faces.forEach((f, fi) => {
+                    const diffuse = Math.max(0, f.normal.dot(sky.lightWorld));
+                    const rgb = shadeRGB(o.faceColoring ? f.color : '#888888', sky.ambient + (1 - sky.ambient) * diffuse * sky.lightStrength);
+                    colors[fi * 3] = rgb[0]; colors[fi * 3 + 1] = rgb[1]; colors[fi * 3 + 2] = rgb[2];
+                    const cxw = o.x + f.normal.x * o.width, cyw = o.y + f.normal.y * o.height, czw = o.z + f.normal.z * o.length;
+                    if (f.normal.x * (cam[0] - cxw) + f.normal.y * (cam[1] - cyw) + f.normal.z * (cam[2] - czw) > 0) visible++;
+                });
+                gl.uniform3fv(P.u.uColors, colors);
+                const sel = id === selectedObjectId;
+                let wire = 0, edge = [0, 0, 0], edgeA = 0.5, w = 0.9;
+                if (sel) { edge = accentRGB; edgeA = 1; w = 1.9; wire = o.wireframe ? 1 : 0; }
+                else if (o.wireframe) { wire = o.faceColoring ? 2 : 1; edge = wireRGB; w = 1.0; }
+                gl.uniform1i(P.u.uWire, wire);
+                gl.uniform3f(P.u.uEdgeColor, edge[0], edge[1], edge[2]);
+                gl.uniform1f(P.u.uEdgeAlpha, edgeA);
+                gl.uniform1f(P.u.uEdgeW, w);
+                gl.drawArrays(gl.TRIANGLES, 0, 36);
+            });
+            gl.disable(gl.POLYGON_OFFSET_FILL);
+            gl.depthMask(false);
+
+            // 2. axes (depth-tested, so prisms hide them correctly)
+            const verts = [];
+            const near = 0.15;
+            const zOf = (p) => (p[0] - cam[0]) * fwdX + (p[1] - cam[1]) * fwdY + (p[2] - cam[2]) * fwdZ;
+            const mixP = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+            const addSeg = (p0, p1, rgb, alpha, halfW) => {
+                let a = p0, b = p1;
+                const za = zOf(a), zb = zOf(b);
+                if (za < near && zb < near) return;
+                if (za < near) a = mixP(a, b, (near - za) / (zb - za));
+                else if (zb < near) b = mixP(b, a, (near - zb) / (za - zb));
+                for (const [side, end] of [[-1, 0], [1, 0], [1, 1], [-1, 0], [1, 1], [-1, 1]])
+                    verts.push(a[0], a[1], a[2], b[0], b[1], b[2], side, end, rgb[0], rgb[1], rgb[2], alpha, halfW);
+            };
+            const AX = [[0.937, 0.267, 0.267], [0.133, 0.773, 0.369], [0.231, 0.51, 0.965]];
+            const lim = 5, tk = 0.1;
+            const mainA = skyBright ? 0.7 : 0.4, tickA = skyBright ? 0.6 : 0.3;
+            addSeg([-lim, 0, 0], [lim, 0, 0], AX[0], mainA, 1);
+            addSeg([0, -lim, 0], [0, lim, 0], AX[1], mainA, 1);
+            addSeg([0, 0, -lim], [0, 0, lim], AX[2], mainA, 1);
+            for (let i = -lim; i <= lim; i += 0.5) {
+                if (Math.abs(i) < 0.01) continue;
+                addSeg([i, -tk, 0], [i, tk, 0], AX[0], tickA, 0.75);
+                addSeg([-tk, i, 0], [tk, i, 0], AX[1], tickA, 0.75);
+                addSeg([0, -tk, i], [0, tk, i], AX[2], tickA, 0.75);
+            }
+            gl.useProgram(A.prog); setCam(A); gl.bindVertexArray(A.vao);
+            gl.bindBuffer(gl.ARRAY_BUFFER, A.buf);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.DYNAMIC_DRAW);
+            gl.drawArrays(gl.TRIANGLES, 0, verts.length / 13);
+
+            // 3. face labels (also depth-tested, so a label hidden behind another prism stays hidden)
+            if (prisms.some(([, o]) => o.showLabels)) {
+                gl.useProgram(L.prog); setCam(L); gl.bindVertexArray(L.vao);
+                gl.activeTexture(gl.TEXTURE0); gl.uniform1i(L.u.uTex, 0);
+                for (const [, o] of prisms) {
+                    if (!o.showLabels) continue;
+                    gl.bindTexture(gl.TEXTURE_2D, tex[skyBright && o.wireframe ? 1 : 0]);
+                    const minDim = Math.min(o.length, o.width, o.height) * 2;
+                    faces.forEach((f, fi) => {
+                        const c = [o.x + f.normal.x * o.width, o.y + f.normal.y * o.height, o.z + f.normal.z * o.length];
+                        if (f.normal.x * (cam[0] - c[0]) + f.normal.y * (cam[1] - c[1]) + f.normal.z * (cam[2] - c[2]) <= 0) return;
+                        const z = zOf(c);
+                        if (z < 0.3) return;
+                        const hh = Math.min(96 * z / FOV, minDim * 0.5333) / 2, hw = hh * 256 / 96, lift = 0.002 * z + 0.001;
+                        gl.uniform3f(L.u.uLC, c[0] + f.normal.x * lift, c[1] + f.normal.y * lift, c[2] + f.normal.z * lift);
+                        gl.uniform3f(L.u.uLR, f.right.x * hw, f.right.y * hw, f.right.z * hw);
+                        gl.uniform3f(L.u.uLU, f.up.x * hh, f.up.y * hh, f.up.z * hh);
+                        gl.uniform2f(L.u.uCell, fi / faces.length, (fi + 1) / faces.length);
+                        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                    });
+                }
+            }
+            gl.depthMask(true);
+            gl.bindVertexArray(null);
+            return visible;
+        }
+
+        function drawFallback(prisms) {
+            // Axes
+            const axisLimit = 5;
+            draw3DLine(new Vec3(-axisLimit, 0, 0), new Vec3(axisLimit, 0, 0), skyBright ? 'rgba(239, 68, 68, 0.7)' : 'rgba(239, 68, 68, 0.4)', 2);
+            draw3DLine(new Vec3(0, -axisLimit, 0), new Vec3(0, axisLimit, 0), skyBright ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.4)', 2);
+            draw3DLine(new Vec3(0, 0, -axisLimit), new Vec3(0, 0, axisLimit), skyBright ? 'rgba(59, 130, 246, 0.7)' : 'rgba(59, 130, 246, 0.4)', 2);
+            const tickSize = 0.1;
+            for (let i = -axisLimit; i <= axisLimit; i += 0.5) {
+                if (Math.abs(i) < 0.01) continue;
+                draw3DLine(new Vec3(i, -tickSize, 0), new Vec3(i, tickSize, 0), skyBright ? 'rgba(239, 68, 68, 0.6)' : 'rgba(239, 68, 68, 0.3)', 1.5);
+                draw3DLine(new Vec3(-tickSize, i, 0), new Vec3(tickSize, i, 0), skyBright ? 'rgba(34, 197, 94, 0.6)' : 'rgba(34, 197, 94, 0.3)', 1.5);
+                draw3DLine(new Vec3(0, -tickSize, i), new Vec3(0, tickSize, i), skyBright ? 'rgba(59, 130, 246, 0.6)' : 'rgba(59, 130, 246, 0.3)', 1.5);
+            }
+
+            // Gather visible faces from every prism in the World
+            const visibleFaces = [];
+            for (const [id, obj] of orderPrisms(prisms)) {
+                const tv = getVerts(obj).map(v => {
+                    const rot = transformPoint(v), scale = FOV / rot.z;
+                    return { x3d: rot.x, y3d: rot.y, z3d: rot.z, x2d: rot.x * scale + cx, y2d: rot.y * scale + cy };
+                });
+                for (const face of faces) {
+                    if (face.indices.some(i => tv[i].z3d < 0.1)) continue;
+                    const n = rotateVector(face.normal);
+                    let cx3 = 0, cy3 = 0, cz3 = 0;
+                    for (const idx of face.indices) { cx3 += tv[idx].x3d; cy3 += tv[idx].y3d; cz3 += tv[idx].z3d; }
+                    cx3 /= 4; cy3 /= 4; cz3 /= 4;
+                    if (n.dot(new Vec3(cx3, cy3, cz3)) >= 0) continue;
+
+                    // sunlight / moonlight comes from the sky, so faces light up depending on the time of day
+                    const diffuse = Math.max(0, face.normal.dot(sky.lightWorld));
+                    const intensity = sky.ambient + (1 - sky.ambient) * diffuse * sky.lightStrength;
+                    const shaded = applyLighting(obj.faceColoring ? face.color : '#888888', intensity);
+                    const rightT = rotateVector(face.right), upT = rotateVector(face.up);
+                    const scaleC = FOV / cz3;
+                    const cx2d = cx3 * scaleC + cx, cy2d = cy3 * scaleC + cy;
+                    const rx2d = (cx3 + rightT.x) * (FOV / (cz3 + rightT.z)) + cx, ry2d = (cy3 + rightT.y) * (FOV / (cz3 + rightT.z)) + cy;
+                    const dx2d = (cx3 - upT.x) * (FOV / (cz3 - upT.z)) + cx, dy2d = (cy3 - upT.y) * (FOV / (cz3 - upT.z)) + cy;
+                    visibleFaces.push({
+                        id, obj, label: face.label, color: shaded, depth: cz3,
+                        pts: face.indices.map(i => ({ x: tv[i].x2d, y: tv[i].y2d })),
+                        t: { cx2d, cy2d, vxX: rx2d - cx2d, vxY: ry2d - cy2d, vyX: dx2d - cx2d, vyY: dy2d - cy2d, scaleC }
+                    });
+                }
+            }
+            lastFaces = visibleFaces;   // already in draw order: far prisms first
+
+            for (const face of visibleFaces) {
+                const obj = face.obj, sel = face.id === selectedObjectId;
+                ctx.beginPath(); ctx.moveTo(face.pts[0].x, face.pts[0].y);
+                for (let j = 1; j < face.pts.length; j++) ctx.lineTo(face.pts[j].x, face.pts[j].y);
+                ctx.closePath();
+                ctx.lineJoin = 'round';
+
+                if (obj.wireframe) {
+                    ctx.lineWidth = sel ? 3 : (skyBright ? 2 : 1.5);
+                    ctx.strokeStyle = sel ? accentCol : (obj.faceColoring ? face.color : (skyBright ? '#0f172a' : '#38bdf8'));
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = face.color; ctx.fill();
+                    ctx.lineWidth = sel ? 3.5 : 1.5;
+                    ctx.strokeStyle = sel ? accentCol : 'rgba(0, 0, 0, 0.5)';
+                    ctx.stroke();
+                }
+
+                if (obj.showLabels) {
+                    const t = face.t;
+                    ctx.save();
+                    ctx.transform(t.vxX, t.vxY, t.vyX, t.vyY, t.cx2d, t.cy2d);
+                    let constantScale = 1.0 / t.scaleC;
+                    const minDim = Math.min(obj.length, obj.width, obj.height) * 2;
+                    const maxAllowedScale = (minDim * 0.25) / 45.0;
+                    if (constantScale > maxAllowedScale) constantScale = maxAllowedScale;
+                    ctx.scale(constantScale, constantScale);
+                    ctx.fillStyle = skyBright && obj.wireframe ? '#0f172a' : '#ffffff';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.font = 'bold 45px -apple-system, sans-serif';
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 5;
+                    ctx.fillText(face.label, 0, 0);
+                    ctx.restore();
+                }
+            }
+
+            return visibleFaces.length;
+        }
+
+        function render() {
+            if (!width || !height || !Number.isFinite(cx + cy)) { requestAnimationFrame(render); return; }
+            const frameStart = performance.now();
+            if (simulationRunning) {
+                if (!physicsLastTime) physicsLastTime = frameStart;
+                let remaining = Math.min(0.05, Math.max(0, (frameStart - physicsLastTime) / 1000));
+                physicsLastTime = frameStart;
+                while (remaining > 0) {
+                    const step = Math.min(PHYSICS_MAX_STEP, remaining);
+                    physicsStep(step);
+                    remaining -= step;
+                }
+                syncPropInputs();
+            }
+
+            updateTrig();
+
+            // WASD camera movement (locked while dragging a handle)
+            const moveSpeed = 0.05;
+            if (!manip && !isTyping()) {
+                const forwardX = fwdX, forwardY = fwdY, forwardZ = fwdZ;
+                const rightX = rgtX, rightY = 0, rightZ = rgtZ;
+                if (keyState['w']) { camPosX += forwardX * moveSpeed; camPosY += forwardY * moveSpeed; camPosZ += forwardZ * moveSpeed; }
+                if (keyState['s']) { camPosX -= forwardX * moveSpeed; camPosY -= forwardY * moveSpeed; camPosZ -= forwardZ * moveSpeed; }
+                if (keyState['a']) { camPosX -= rightX * moveSpeed; camPosY -= rightY * moveSpeed; camPosZ -= rightZ * moveSpeed; }
+                if (keyState['d']) { camPosX += rightX * moveSpeed; camPosY += rightY * moveSpeed; camPosZ += rightZ * moveSpeed; }
+            }
+
+            updateSky();
+            drawSky();
+            renderViewfinder();
+
+            ctx.clearRect(0, 0, width, height);
+            const prisms = Object.entries(sceneObjects).filter(([, o]) => o.type === 'prism6' && o.parent === 'world');
+            const visibleCount = GL ? drawGL(prisms) : drawFallback(prisms);
+
+            // Handles are drawn last so they sit above every shape (only the UI is above them)
+            lastHandles = canEditHandles() ? buildHandles(sceneObjects[selectedObjectId]) : [];
+            if (hoverKey && !lastHandles.some(h => h.key === hoverKey)) hoverKey = null;
+            const ordered = lastHandles.slice().sort((a, b) => b.z - a.z);
+            ordered.sort((a, b) => (a.key === hoverKey) - (b.key === hoverKey));
+            for (const h of ordered) drawHandle(h);
+
+            const frameEnd = performance.now();
+            frameCount++;
+            if (frameEnd - lastFpsTime >= 1000) { currentFps = frameCount; frameCount = 0; lastFpsTime = frameEnd; }
+            statFps.textContent = currentFps;
+            statFps.dataset.state = currentFps >= 55 ? 'good' : currentFps >= 30 ? 'warn' : 'bad';
+            statCpu.textContent = (frameEnd - frameStart).toFixed(2) + " ms";
+            statMem.textContent = (window.performance && window.performance.memory) ? (performance.memory.usedJSHeapSize / 1048576).toFixed(1) + " MB" : "N/A";
+            statVerts.textContent = prisms.length * 8;
+            statFaces.textContent = `${visibleCount} / ${prisms.length * 6}`;
+
+            requestAnimationFrame(render);
+        }
+
+        // ───────── Pointer interaction ─────────
+        function canvasPos(e) {
+            const r = canvas.getBoundingClientRect();
+            return { x: e.clientX - r.left, y: e.clientY - r.top };
+        }
+        function pointInPoly(x, y, pts) {
+            let inside = false;
+            for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+                const a = pts[i], b = pts[j];
+                if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) inside = !inside;
+            }
+            return inside;
+        }
+        function pickInstance(x, y) {
+            const r = rayDir(x, y), len = Math.hypot(r.x, r.y, r.z) || 1;
+            const d = [r.x / len, r.y / len, r.z / len], o = [camPosX, camPosY, camPosZ];
+            let best = null, bestT = Infinity;
+            for (const [id, p] of Object.entries(sceneObjects)) {
+                if (p.type !== 'prism6' || p.parent !== 'world') continue;
+                const mn = [p.x - p.width, p.y - p.height, p.z - p.length], mx = [p.x + p.width, p.y + p.height, p.z + p.length];
+                let tmin = -Infinity, tmax = Infinity, ok = true;
+                for (let k = 0; k < 3; k++) {
+                    if (Math.abs(d[k]) < 1e-9) { if (o[k] < mn[k] || o[k] > mx[k]) ok = false; }
+                    else {
+                        let t1 = (mn[k] - o[k]) / d[k], t2 = (mx[k] - o[k]) / d[k];
+                        if (t1 > t2) { const t = t1; t1 = t2; t2 = t; }
+                        tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2);
+                    }
+                }
+                if (ok && tmax >= tmin && tmax > 0) { const t = Math.max(tmin, 0); if (t < bestT) { bestT = t; best = id; } }
+            }
+            return best;
+        }
+
+        function startManip(h, m) {
+            const o = sceneObjects[selectedObjectId];
+            const t0 = axisParam(h.center, h.d, m.x, m.y);
+            if (t0 === null) return;
+            manip = { h, o, t0, start: { x: o.x, y: o.y, z: o.z, width: o.width, height: o.height, length: o.length } };
+            canvas.style.cursor = 'grabbing';
+        }
+        function updateManip(m) {
+            const t = axisParam(manip.h.center, manip.h.d, m.x, m.y);
+            if (t === null) return;
+            let delta = Math.max(-500, Math.min(500, t - manip.t0));
+            const step = settings.gizmoOffset;
+            if (step > 0) delta = Math.round(delta / step) * step;
+            const { o, start, h } = manip;
+            const r2 = (v) => Math.round(v * 10000) / 10000;
+            if (h.type === 'move') {
+                o[h.axis] = r2(start[h.axis] + h.sign * delta);
+            } else {
+                const half = HALF_KEY[h.axis];
+                const grow = Math.max(delta, -(2 * start[half] - 0.1));   // keep a sliver of size
+                o[half] = r2(start[half] + grow / 2);
+                o[h.axis] = r2(start[h.axis] + h.sign * grow / 2);
+            }
+            syncPropInputs();
+        }
+
+        // Turn the view in place: left/right = yaw, up/down = pitch (no momentum; free look, horizon always level)
+        function look(dx, dy) {
+            angleY += dx * LOOK_SENS;
+            angleX = clampPitch(angleX - dy * LOOK_SENS);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button !== 0 && e.button !== 2) return;
+            if (e.button === 2 && !settings.rightClick) return;
+            if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+            const m = canvasPos(e);
+            if (e.button === 0) {
+                const h = findHandleAt(m.x, m.y);
+                if (h) { startManip(h, m); if (manip) return; }
+            }
+            camDrag = {
+                button: e.button, sx: e.clientX, sy: e.clientY, px: e.clientX, py: e.clientY, moved: false,
+                rotate: e.button === 2 || settings.leftDrag
+            };
+        });
+        canvas.addEventListener('contextmenu', (e) => { if (settings.rightClick) e.preventDefault(); });
+        window.addEventListener('mousemove', (e) => {
+            const m = canvasPos(e);
+            if (manip) { updateManip(m); return; }
+            if (camDrag) {
+                if (!camDrag.moved && Math.hypot(e.clientX - camDrag.sx, e.clientY - camDrag.sy) > 4) {
+                    camDrag.moved = true;
+                    camDrag.px = camDrag.sx; camDrag.py = camDrag.sy;
+                }
+                if (camDrag.moved && camDrag.rotate) {
+                    look(e.clientX - camDrag.px, e.clientY - camDrag.py);
+                    camDrag.px = e.clientX; camDrag.py = e.clientY;
+                }
+                return;
+            }
+            const h = e.target === canvas ? findHandleAt(m.x, m.y) : null;
+            hoverKey = h ? h.key : null;
+            canvas.style.cursor = h ? 'pointer' : '';
+        });
+        window.addEventListener('mouseup', (e) => {
+            if (manip) { manip = null; canvas.style.cursor = ''; return; }
+            if (camDrag && e.button === camDrag.button) {
+                if (!camDrag.moved && camDrag.button === 0) {
+                    const m = canvasPos(e);
+                    const id = pickInstance(m.x, m.y);
+                    if (id !== selectedObjectId) selectItem(id);
+                }
+                camDrag = null;
+            }
+        });
+        canvas.addEventListener('mouseleave', () => { if (!manip) { hoverKey = null; canvas.style.cursor = ''; } });
+
+        // ───────── Boot ─────────
+        initGL();
+        applySettings();
+        refreshTheme();
+        renderExplorer();
+        renderProperties();
+        setMode('select');
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>

@@ -1,10 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#171a21">
     <title>Vanilla3D</title>
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    i am too lazy to mae the site rn coming soon
-    <a href="https://rigatoni534.github.io/Vanilla3D/Vanilla3D-latest.html">Open Editor tho</a>
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="Vanilla3D home">
+        <span class="brand-mark" aria-hidden="true">V</span>
+        <span>Vanilla3D</span>
+      </a>
+
+      <nav class="nav" aria-label="Explore Vanilla3D">
+        <a class="nav-link" href="#editor">Editor</a>
+        <a class="nav-link" href="#language">Language</a>
+        <a class="nav-link" href="#player">Player</a>
+        <a class="nav-launch" href="https://rigatoni534.github.io/Vanilla3D/Vanilla3D-latest.html" target="_blank" rel="noopener noreferrer">Launch editor <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <main id="home">
+      <section class="landing" aria-labelledby="headline">
+        <div class="intro">
+          <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> A WORLD-BUILDING PLAYGROUND</p>
+          <h1 id="headline">The best browser-based<br>engine<span class="period">.</span></h1>
+          <p class="intro-copy">A lightweight, forced to be open-sourced, browswer running 3D Engine with a lot of capabilities.</p>
+          <a class="launch-button" href="https://rigatoni534.github.io/Vanilla3D/Vanilla3D-latest.html" target="_blank" rel="noopener noreferrer">
+            <span>Launch Vanilla3D</span><span class="button-arrow" aria-hidden="true">↗</span>
+          </a>
+          <span class="launch-note">Opens Vanilla3D's latest version editor in a new tab.</span>
+        </div>
+
+        <figure class="hero-media">
+          <!-- Add your image URL or relative file path to src, then update alt text. -->
+          <img class="hero-image" alt="">
+        </figure>
+      </section>
+
+      <section class="info-section" id="editor" aria-labelledby="editor-title">
+        <div class="section-inner">
+          <div class="section-heading">
+            <span class="section-number">Extra info / EDITOR</span>
+            <h2 id="editor-title">Editor</h2>
+          </div>
+          <div class="section-content">
+            <p class="content-placeholder">The Vanilla3D editor is powerful game engine that runs in your browser, and requires minimal system resources. It has an interface and building system similar to that of another engine, Roblox Studio, while keeping it simple and useful.</p>
+            <a class="section-link" href="https://rigatoni534.github.io/Vanilla3D/Vanilla3D-latest.html" target="_blank" rel="noopener noreferrer">Try it <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="info-section" id="language" aria-labelledby="language-title">
+        <div class="section-inner">
+          <div class="section-heading">
+            <span class="section-number">Extra info / LANGUAGE</span>
+            <h2 id="language-title">Language</h2>
+          </div>
+          <div class="section-content">
+            <p class="content-placeholder">Vanilla3D uses a custom scripting language that is simple and powerful, called Vanillalua, based off of Lua or Luau by Roblox. It focuses on simplicity but power, and efficiency.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="info-section" id="player" aria-labelledby="player-title">
+        <div class="section-inner">
+          <div class="section-heading">
+            <span class="section-number">Extra info / PLAYER</span>
+            <h2 id="player-title">Player</h2>
+          </div>
+          <div class="section-content">
+            <p class="content-placeholder">This is an upcoming feature for playing Vanilla3D games in the browser without using the editor. It will come out after Vanilla is at a point where playable games are possible.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer"><span>VANILLA3D</span><span>goated engine btw</span></footer>
+
   </body>
 </html>

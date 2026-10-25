@@ -227,7 +227,7 @@
         </aside>
         <div class="docs-main" id="docs-main">
           <article class="docs-article" id="docs-article">
-            <p>This reference covers the Vanillalua scripting language used by Vanilla Engine. Engine APIs and Spaces are available to scripts running in the full editor; they are not connected to the standalone playground.</p>
+            <p>This reference covers the current Vanillalua syntax and the engine APIs exposed by Vanilla3D. The standalone playground emulates core language behavior and a small in-memory scene; it does not connect to the editor or render objects.</p>
             <h3>1. A first script</h3>
             <p>Every Vanillalua script should begin by loading the Scripts space and the Instance module. Add other spaces with <code>call</code> when you need to access them.</p>
             <pre><code>call Scripts
@@ -432,35 +432,56 @@ for step in 1, 6 do
 end
 moveStatus = "Finished"
 print(moveStatus)</code></pre>
+
+            <h3>14. Current syntax and standalone API support</h3>
+            <p>The playground accepts the current engine parser's statement and expression forms: <code>call</code> and <code>get</code> setup lines, property access, bracket indexing, chained calls, assignments to properties, vector arithmetic, and calls with multiple arguments. It emulates the current instance types: <code>prism6</code>, <code>ball</code>, <code>model</code>, <code>script</code>, and <code>worldsettings</code>.</p>
+            <pre><code>call Scripts
+call World
+get Instance
+get Scripting
+
+local ball = Instance.create("ball", World)
+ball.Position = vanilla3D.Position(0, 4, 0)
+ball.Rotation = vanilla3D.Position(0, 45, 0)
+ball.Velocity = vanilla3D.Position(1, 0, 0)
+local uid = Instance.GetUID(ball.Name, World)
+print(World[uid].Position + vanilla3D.Position(0, 1, 0))
+Instance.SetUID(uid, "MyBall01")</code></pre>
+            <p><b>Standalone limitations:</b> this playground emulates instances and spaces for learning and syntax testing; it does not change the live Vanilla3D project, run separate scripts, or simulate physics. <code>wait(seconds)</code> is accepted as a no-op in this synchronous playground. Engine-only behavior may differ from the full editor.</p>
           </article>
         </div>
       </div>
     </section>
 
     <footer class="workspace-note">
-      <strong>Standalone mode:</strong> engine Spaces and APIs (World, Storage, Scripts, Instance, wait) are unavailable. Core syntax only; execution is step-limited.
+      <strong>Standalone simulator:</strong> World, Storage, Scripts, Instance, vectors, properties and wait() are emulated in memory. No editor scene is changed; execution is step-limited.
     </footer>
 
     <script>
       (() => {
         "use strict";
 
-        const EXAMPLE = `# A little loop, some math, and a condition
-local total = 0
+        const EXAMPLE = `call Scripts
+call World
+get Instance
 
-for step in 1, 5 do
-    total = total + step
-    print("Step", step, "total:", total)
+local block = Instance.create("prism6", World)
+block.Name = "DemoBlock"
+block.Position = vanilla3D.Position(0, 2, 0)
+block.Size = vanilla3D.Size(2, 1, 2)
+block.Color = "#f2b134"
+
+for step in 1, 3 do
+    block.Position.Y = block.Position.Y + 1
+    print("Step", step, "position:", block.Position)
 end
 
-if total >= 10 then
-    print("The total reached", total)
-else
-    print("Keep counting")
-end`;
+local uid = Instance.GetUID("DemoBlock", World)
+print("UID:", uid)
+print("Type:", World[uid].Type)`;
 
         const KEYWORDS = new Set([
-          "local", "while", "for", "in", "do", "end", "if", "then", "else",
+          "call", "get", "local", "while", "for", "in", "do", "end", "if", "then", "else",
           "and", "or", "not"
         ]);
         const input = document.getElementById("code-input");
@@ -608,51 +629,47 @@ end`;
         }
 
         function parse(tokens) {
-          tokens = tokens.filter((token) => token.type !== "comment");
+          tokens = tokens.filter(token => token.type !== "comment");
           let index = 0;
-          const current = () => tokens[index];
-          const is = (value) => current().value === value;
-          const fail = (message, token = current()) => {
-            throw new LanguageError(message, token.line);
-          };
-          const skipLines = () => {
-            while (current().type === "newline") index++;
-          };
-          const expect = (value) => {
+          const current = () => tokens[index] || tokens[tokens.length - 1];
+          const is = value => current().value === value;
+          const fail = (message, token = current()) => { throw new LanguageError(message, token.line); };
+          const expect = value => {
             if (!is(value)) fail(`Expected "${value}", found "${current().value || "end of code"}".`);
             return tokens[index++];
           };
-
+          function skipLines() { while (current().type === "newline") index++; }
           function block() {
             const statements = [];
             skipLines();
             while (current().type !== "eof" && !is("end") && !is("else")) {
               statements.push(statement());
-              skipLines();
+              if (current().type === "newline") skipLines();
+              else if (current().type !== "eof" && !is("end") && !is("else")) fail("Expected the end of the line.");
             }
             return statements;
           }
-
           function statement() {
             const token = current();
             if (token.type === "keyword") {
+              if (is("call") || is("get")) {
+                index++;
+                if (current().type !== "name") fail(`Expected a name after "${token.value}".`);
+                return { type: token.value === "call" ? "useSpace" : "useModule", name: tokens[index++].value, line: token.line };
+              }
               if (is("local")) {
                 index++;
-                if (current().type !== "name") fail('Expected a name after "local".');
+                if (current().type !== "name") fail('Expected a variable name after "local".');
                 const name = tokens[index++].value;
                 expect("=");
-                const value = expression();
-                endStatement();
-                return { type: "local", name, value, line: token.line };
+                return { type: "local", name, value: expression(), line: token.line };
               }
               if (is("while")) {
                 index++;
                 const condition = expression();
                 expect("do");
-                skipLines();
                 const body = block();
                 expect("end");
-                endStatement();
                 return { type: "while", condition, body, line: token.line };
               }
               if (is("for")) {
@@ -664,50 +681,31 @@ end`;
                 expect(",");
                 const to = expression();
                 expect("do");
-                skipLines();
                 const body = block();
                 expect("end");
-                endStatement();
                 return { type: "for", name, from, to, body, line: token.line };
               }
               if (is("if")) {
                 index++;
                 const condition = expression();
                 expect("then");
-                skipLines();
                 const yes = block();
                 let no = [];
-                if (is("else")) {
-                  index++;
-                  skipLines();
-                  no = block();
-                }
+                if (is("else")) { index++; no = block(); }
                 expect("end");
-                endStatement();
                 return { type: "if", condition, yes, no, line: token.line };
               }
+              fail(`Unexpected "${token.value}".`);
             }
-
-            if (token.type === "name" && tokens[index + 1]?.value === "=") {
-              const name = tokens[index++].value;
+            const expr = parseSuffixed();
+            if (is("=")) {
+              if (!["variable", "member", "index"].includes(expr.type)) fail("You can only assign to a variable or property.", token);
               index++;
-              const value = expression();
-              endStatement();
-              return { type: "assign", name, value, line: token.line };
+              return { type: "assign", target: expr, value: expression(), line: token.line };
             }
-            const expr = expression();
-            if (expr.type !== "call") fail("Expected an assignment, loop, condition, or print(...) call.", token);
-            endStatement();
-            return { type: "call", expr, line: token.line };
+            if (expr.type === "call") return { type: "callstmt", expr, line: token.line };
+            fail("Expected an assignment or function call.", token);
           }
-
-          function endStatement() {
-            if (current().type === "newline") skipLines();
-            else if (current().type !== "eof" && !is("end") && !is("else")) {
-              fail("Expected the end of the line.");
-            }
-          }
-
           function expression() { return parseOr(); }
           function parseOr() {
             let left = parseAnd();
@@ -721,129 +719,247 @@ end`;
           }
           function parseCompare() {
             let left = parseAdd();
-            while (["==", "~=", "<", ">", "<=", ">="].includes(current().value)) {
+            while (["==", "~=", "!=", "<", ">", "<=", ">="].includes(current().value)) {
               const op = tokens[index++];
-              left = { type: "binary", op: op.value, left, right: parseAdd(), line: op.line };
+              left = { type: "binary", op: op.value === "!=" ? "~=" : op.value, left, right: parseAdd(), line: op.line };
             }
             return left;
           }
           function parseAdd() {
             let left = parseMultiply();
-            while (is("+") || is("-")) {
-              const op = tokens[index++];
-              left = { type: "binary", op: op.value, left, right: parseMultiply(), line: op.line };
-            }
+            while (is("+") || is("-")) { const op = tokens[index++]; left = { type: "binary", op: op.value, left, right: parseMultiply(), line: op.line }; }
             return left;
           }
           function parseMultiply() {
             let left = parseUnary();
-            while (is("*") || is("/") || is("%")) {
-              const op = tokens[index++];
-              left = { type: "binary", op: op.value, left, right: parseUnary(), line: op.line };
-            }
+            while (is("*") || is("/") || is("%")) { const op = tokens[index++]; left = { type: "binary", op: op.value, left, right: parseUnary(), line: op.line }; }
             return left;
           }
           function parseUnary() {
-            if (is("not") || is("-")) {
-              const op = tokens[index++];
-              return { type: "unary", op: op.value, value: parseUnary(), line: op.line };
-            }
-            return primary();
+            if (is("not") || is("-")) { const op = tokens[index++]; return { type: "unary", op: op.value, value: parseUnary(), line: op.line }; }
+            return parseSuffixed();
           }
-          function primary() {
-            const token = current();
-            if (token.type === "number" || token.type === "string") {
-              index++;
-              return { type: "literal", value: token.value, line: token.line };
-            }
-            if (token.type === "literal") {
-              index++;
-              return { type: "literal", value: token.value === "nil" ? null : token.value === "True", line: token.line };
-            }
-            if (token.type === "name" || token.type === "builtin") {
-              index++;
-              if (token.value === "print" && is("(")) {
+          function parseSuffixed() {
+            let expr = primary();
+            for (;;) {
+              if (is(".")) {
                 index++;
+                if (current().type !== "name") fail('Expected a property name after ".".');
+                const name = tokens[index++];
+                expr = { type: "member", object: expr, name: name.value, line: name.line };
+              } else if (is("[")) {
+                const token = tokens[index++];
+                const key = expression();
+                expect("]");
+                expr = { type: "index", object: expr, key, line: token.line };
+              } else if (is("(")) {
+                const token = tokens[index++];
                 const args = [];
                 if (!is(")")) {
                   args.push(expression());
                   while (is(",")) { index++; args.push(expression()); }
                 }
                 expect(")");
-                return { type: "call", args, line: token.line };
-              }
-              return { type: "variable", name: token.value, line: token.line };
+                expr = { type: "call", fn: expr, args, line: token.line };
+              } else break;
             }
-            if (is("(")) {
-              index++;
-              const expr = expression();
-              expect(")");
-              return expr;
-            }
+            return expr;
+          }
+          function primary() {
+            const token = current();
+            if (token.type === "number" || token.type === "string") { index++; return { type: "literal", value: token.value, line: token.line }; }
+            if (token.type === "literal") { index++; return { type: "literal", value: token.value === "nil" ? null : token.value === "True", line: token.line }; }
+            if (token.type === "name" || token.type === "builtin") { index++; return { type: "variable", name: token.value, line: token.line }; }
+            if (is("(")) { index++; const expr = expression(); expect(")"); return expr; }
             fail(`Expected a value, found "${token.value || "end of code"}".`);
           }
+          const statements = [];
+          while (current().type !== "eof") {
+            skipLines();
+            if (current().type === "eof") break;
+            statements.push(...block());
+            if (is("end") || is("else")) fail(`Unexpected "${current().value}".`);
+          }
+          return statements;
+        }
 
-          const result = block();
-          if (current().type !== "eof") fail(`Unexpected "${current().value}".`);
-          return result;
+        class VLVector {
+          constructor(x, y, z) { this.X = x; this.Y = y; this.Z = z; }
+        }
+        class VLSpace {
+          constructor(name) { this.name = name; this.items = {}; }
+        }
+        class VLInstance {
+          constructor(type, parent, id) {
+            this.Type = type;
+            this.Name = `${type}_${id}`;
+            this.Parent = parent;
+            this.UID = `${type}${id}`;
+            if (["prism6", "ball"].includes(type)) {
+              this.Position = new VLVector(0, 0, 0);
+              this.Size = new VLVector(1, 1, 1);
+              this.Rotation = new VLVector(0, 0, 0);
+              this.Velocity = new VLVector(0, 0, 0);
+              this.Anchored = false;
+              this.ReactsToPhysics = true;
+              this.Collidable = true;
+              this.Locked = false;
+              this.Wireframe = false;
+              this.FaceColoring = false;
+              this.ShowLabels = true;
+              this.Color = "#ffffff";
+            }
+            if (type === "worldsettings") { this.TimeOfDay = 14; this.Gravity = 9.8; this.KillLayer = -5000; }
+            if (type === "script") this.Run = () => { throw new LanguageError("Standalone mode cannot run nested engine scripts.", 1); };
+          }
         }
 
         function run(ast) {
           let steps = 0;
-          const printed = [];
           const scopes = [new Map()];
-          const truthy = (value) => value !== null && value !== false;
-          const format = (value) => value === null ? "nil"
-            : value === true ? "True"
-            : value === false ? "False"
-            : String(value);
-          const tick = (line) => {
-            steps++;
-            if (steps > MAX_STEPS) throw new LanguageError(`Execution stopped after ${MAX_STEPS} steps. Check for an infinite loop.`, line);
-          };
+          const spaces = { World: new VLSpace("World"), Storage: new VLSpace("Storage"), Scripts: new VLSpace("Scripts") };
+          const modules = {};
+          let nextId = 1;
+          const printed = [];
+          const truthy = value => value !== null && value !== false;
+          const format = value => value === null || value === undefined ? "nil"
+            : value === true ? "True" : value === false ? "False"
+            : value instanceof VLVector ? `(${value.X}, ${value.Y}, ${value.Z})`
+            : value instanceof VLInstance ? value.UID
+            : value instanceof VLSpace ? value.name : String(value);
+          const tick = line => { if (++steps > MAX_STEPS) throw new LanguageError(`Execution stopped after ${MAX_STEPS} steps. Check for an infinite loop.`, line); };
           const lookup = (name, line) => {
-            for (let i = scopes.length - 1; i >= 0; i--) {
-              if (scopes[i].has(name)) return scopes[i].get(name);
-            }
+            for (let i = scopes.length - 1; i >= 0; i--) if (scopes[i].has(name)) return scopes[i].get(name);
             throw new LanguageError(`"${name}" is not defined.`, line);
           };
-          const assign = (name, value) => {
-            for (let i = scopes.length - 1; i >= 0; i--) {
-              if (scopes[i].has(name)) {
-                scopes[i].set(name, value);
-                return;
-              }
-            }
+          const assignName = (name, value) => {
+            for (let i = scopes.length - 1; i >= 0; i--) if (scopes[i].has(name)) { scopes[i].set(name, value); return; }
             scopes[0].set(name, value);
           };
-          const number = (value, line) => {
-            if (typeof value !== "number") throw new LanguageError("Math operators require numbers.", line);
-            return value;
+          const num = (v, line) => { if (typeof v !== "number" || !Number.isFinite(v)) throw new LanguageError("Math operators require numbers.", line); return v; };
+          const vec = (a, line, label) => {
+            if (a.length !== 3 || a.some(v => typeof v !== "number" || !Number.isFinite(v))) throw new LanguageError(`${label} needs three numbers: (x, y, z).`, line);
+            return new VLVector(...a);
           };
-
+          const moduleInstance = {
+            create: (args, line) => {
+              const [type, space] = args;
+              if (!["prism6", "ball", "model", "script", "worldsettings"].includes(type)) throw new LanguageError(`Unknown instance type "${format(type)}". Use prism6, ball, model, script or worldsettings.`, line);
+              if (!(space instanceof VLSpace)) throw new LanguageError("Instance.create needs a loaded Space as its second argument, for example World.", line);
+              const inst = new VLInstance(type, space, nextId++);
+              space.items[inst.UID] = inst;
+              return inst;
+            },
+            delete: (args, line) => {
+              const inst = args[0];
+              if (!(inst instanceof VLInstance)) throw new LanguageError("Instance.delete needs an instance.", line);
+              if (inst.Parent instanceof VLSpace) delete inst.Parent.items[inst.UID];
+              inst._deleted = true;
+              return null;
+            },
+            duplicate: (args, line) => {
+              const inst = args[0], space = args[1] || inst?.Parent;
+              if (!(inst instanceof VLInstance) || !(space instanceof VLSpace)) throw new LanguageError("Instance.duplicate needs an instance and optional Space.", line);
+              const copy = new VLInstance(inst.Type, space, nextId++);
+              for (const key of Object.keys(inst)) if (!["UID", "Parent", "Type", "_deleted"].includes(key)) copy[key] = inst[key] instanceof VLVector ? new VLVector(inst[key].X, inst[key].Y, inst[key].Z) : inst[key];
+              space.items[copy.UID] = copy;
+              return copy;
+            },
+            GetUID: (args, line) => {
+              if (typeof args[0] !== "string") throw new LanguageError("Instance.GetUID(name) needs a name string.", line);
+              const found = Object.values(spaces).flatMap(space => Object.values(space.items)).filter(inst => inst.Name === args[0] && (!args[1] || inst.Parent === args[1]));
+              if (found.length !== 1) throw new LanguageError(found.length ? `More than one instance is named "${args[0]}". Pass its Space.` : `No instance named "${args[0]}" was found.`, line);
+              return found[0].UID;
+            },
+            SetUID: (args, line) => {
+              const [oldUid, newUid] = args;
+              const found = Object.values(spaces).flatMap(space => Object.values(space.items)).find(inst => inst.UID === oldUid);
+              if (!found) throw new LanguageError(`No instance exists with UID "${oldUid}".`, line);
+              if (typeof newUid !== "string" || !/^[A-Za-z][A-Za-z0-9]*$/.test(newUid)) throw new LanguageError("A UID must start with a letter and contain only letters and numbers.", line);
+              if (Object.values(spaces).some(space => space.items[newUid])) throw new LanguageError(`UID "${newUid}" is already in use.`, line);
+              delete found.Parent.items[found.UID]; found.UID = newUid; found.Parent.items[newUid] = found; return newUid;
+            }
+          };
+          modules.Instance = moduleInstance;
+          modules.Scripting = { GetUID: moduleInstance.GetUID, SetUID: moduleInstance.SetUID };
+          const root = new Map([
+            ["print", (...args) => { printed.push(args.map(format).join("\t")); return null; }],
+            ["wait", seconds => { if (typeof seconds !== "number" || seconds < 0) throw new LanguageError("wait(time) needs one non-negative number of seconds.", 1); return null; }],
+            ["vanilla3D", { Position: (...args) => vec(args, 1, "vanilla3D.Position"), Size: (...args) => vec(args, 1, "vanilla3D.Size") }]
+          ]);
+          scopes[0] = root;
+          function getMember(object, name, line) {
+            if (object instanceof VLSpace) {
+              const value = object.items[name];
+              if (!value) throw new LanguageError(`There is no instance with UID "${name}" in ${object.name}. Use Instance.GetUID("Object Name") first.`, line);
+              return value;
+            }
+            if (object instanceof VLInstance) {
+              if (object._deleted) throw new LanguageError("This instance was deleted.", line);
+              if (!(name in object)) throw new LanguageError(`"${name}" is not a property of ${object.Type}.`, line);
+              return object[name];
+            }
+            if (object instanceof VLVector && ["X", "Y", "Z"].includes(name)) return object[name];
+            if (object && typeof object === "object" && name in object) return object[name];
+            throw new LanguageError(`Cannot read "${name}" from this value.`, line);
+          }
+          function setMember(object, name, value, line) {
+            if (object instanceof VLInstance && object._deleted) throw new LanguageError("This instance was deleted.", line);
+            if (object instanceof VLVector && ["X", "Y", "Z"].includes(name)) {
+              if (typeof value !== "number") throw new LanguageError(`${name} needs a number.`, line);
+              object[name] = value; return;
+            }
+            if (object instanceof VLInstance) {
+              if (!(name in object)) throw new LanguageError(`"${name}" is not a property of ${object.Type}.`, line);
+              if (["Position", "Size", "Rotation", "Velocity"].includes(name) && !(value instanceof VLVector)) throw new LanguageError(`${name} needs a vector.`, line);
+              object[name] = value; return;
+            }
+            throw new LanguageError(`Cannot set "${name}" on this value.`, line);
+          }
           function evaluate(expr) {
             switch (expr.type) {
               case "literal": return expr.value;
               case "variable": return lookup(expr.name, expr.line);
-              case "call": return expr.args.map(evaluate);
-              case "unary": {
-                const value = evaluate(expr.value);
-                return expr.op === "not" ? !truthy(value) : -number(value, expr.line);
+              case "member": {
+                const object = evaluate(expr.object);
+                if (object instanceof VLSpace) {
+                  let key = expr.name;
+                  for (let i = scopes.length - 1; i >= 0; i--) if (scopes[i].has(expr.name)) { key = scopes[i].get(expr.name); break; }
+                  if (typeof key !== "string" && !(key instanceof VLInstance)) throw new LanguageError("A Space member must resolve to an instance UID.", expr.line);
+                  return getMember(object, key instanceof VLInstance ? key.UID : key, expr.line);
+                }
+                return getMember(object, expr.name, expr.line);
               }
+              case "index": {
+                const object = evaluate(expr.object), key = evaluate(expr.key);
+                if (typeof key !== "string") throw new LanguageError("An index must be a string, for example World[BlockUID].", expr.line);
+                return getMember(object, key, expr.line);
+              }
+              case "call": {
+                const fn = evaluate(expr.fn);
+                const args = expr.args.map(evaluate);
+                if (typeof fn !== "function") throw new LanguageError("This is not a function.", expr.line);
+                if (expr.fn.type === "member" && expr.fn.object.type === "variable" && ["Instance", "Scripting"].includes(expr.fn.object.name)) return fn(args, expr.line);
+                return fn(...args);
+              }
+              case "unary": { const value = evaluate(expr.value); return expr.op === "not" ? !truthy(value) : -num(value, expr.line); }
               case "binary": {
                 const left = evaluate(expr.left);
                 if (expr.op === "and") return truthy(left) ? evaluate(expr.right) : left;
                 if (expr.op === "or") return truthy(left) ? left : evaluate(expr.right);
                 const right = evaluate(expr.right);
+                if (expr.op === "+" && (typeof left === "string" || typeof right === "string")) return format(left) + format(right);
+                if (expr.op === "+" && left instanceof VLVector && right instanceof VLVector) return new VLVector(left.X + right.X, left.Y + right.Y, left.Z + right.Z);
+                if (expr.op === "-" && left instanceof VLVector && right instanceof VLVector) return new VLVector(left.X - right.X, left.Y - right.Y, left.Z - right.Z);
+                if (expr.op === "*" && left instanceof VLVector && typeof right === "number") return new VLVector(left.X * right, left.Y * right, left.Z * right);
                 let result;
                 switch (expr.op) {
-                  case "+": result = typeof left === "string" || typeof right === "string"
-                    ? format(left) + format(right) : number(left, expr.line) + number(right, expr.line); break;
-                  case "-": result = number(left, expr.line) - number(right, expr.line); break;
-                  case "*": result = number(left, expr.line) * number(right, expr.line); break;
-                  case "/": result = number(left, expr.line) / number(right, expr.line); break;
-                  case "%": result = number(left, expr.line) % number(right, expr.line); break;
-                  case "==": result = left === right; break;
+                  case "+": result = num(left, expr.line) + num(right, expr.line); break;
+                  case "-": result = num(left, expr.line) - num(right, expr.line); break;
+                  case "*": result = num(left, expr.line) * num(right, expr.line); break;
+                  case "/": result = num(left, expr.line) / num(right, expr.line); break;
+                  case "%": result = num(left, expr.line) % num(right, expr.line); break;
+                  case "==": result = left instanceof VLVector && right instanceof VLVector ? left.X === right.X && left.Y === right.Y && left.Z === right.Z : left === right; break;
                   case "~=": result = left !== right; break;
                   case "<": result = left < right; break;
                   case ">": result = left > right; break;
@@ -851,57 +967,51 @@ end`;
                   case ">=": result = left >= right; break;
                   default: throw new LanguageError(`Unsupported operator "${expr.op}".`, expr.line);
                 }
-                if (typeof result === "number" && !Number.isFinite(result)) {
-                  throw new LanguageError("Math produced an invalid number.", expr.line);
-                }
+                if (typeof result === "number" && !Number.isFinite(result)) throw new LanguageError("Math produced an invalid number.", expr.line);
                 return result;
               }
-              default: throw new LanguageError("Unsupported expression.", expr.line);
             }
           }
-
           function execute(statements) {
             for (const statement of statements) {
               tick(statement.line);
               switch (statement.type) {
-                case "local":
-                  scopes[scopes.length - 1].set(statement.name, evaluate(statement.value));
+                case "useSpace":
+                  if (!spaces[statement.name]) throw new LanguageError(`Unknown space "${statement.name}". Use World, Storage or Scripts.`, statement.line);
+                  assignName(statement.name, spaces[statement.name]); break;
+                case "useModule":
+                  if (!modules[statement.name]) throw new LanguageError(`Unknown module "${statement.name}". Use Instance or Scripting.`, statement.line);
+                  assignName(statement.name, modules[statement.name]); break;
+                case "local": scopes[scopes.length - 1].set(statement.name, evaluate(statement.value)); break;
+                case "assign": {
+                  const value = evaluate(statement.value), target = statement.target;
+                  if (target.type === "variable") assignName(target.name, value);
+                  else if (target.type === "member") setMember(evaluate(target.object), target.name, value, target.line);
+                  else {
+                    const object = evaluate(target.object), key = evaluate(target.key);
+                    if (typeof key !== "string") throw new LanguageError("An index must be a string.", target.line);
+                    setMember(object, key, value, target.line);
+                  }
                   break;
-                case "assign":
-                  assign(statement.name, evaluate(statement.value));
-                  break;
-                case "call":
-                  printed.push(statement.expr.args.map((arg) => format(evaluate(arg))).join("\t"));
-                  break;
+                }
+                case "callstmt": evaluate(statement.expr); break;
                 case "if":
                   scopes.push(new Map());
                   execute(truthy(evaluate(statement.condition)) ? statement.yes : statement.no);
-                  scopes.pop();
-                  break;
+                  scopes.pop(); break;
                 case "for": {
-                  const from = number(evaluate(statement.from), statement.line);
-                  const to = number(evaluate(statement.to), statement.line);
+                  const from = num(evaluate(statement.from), statement.line), to = num(evaluate(statement.to), statement.line);
                   scopes.push(new Map());
-                  for (let value = from; value <= to; value++) {
-                    tick(statement.line);
-                    scopes[scopes.length - 1].set(statement.name, value);
-                    execute(statement.body);
-                  }
-                  scopes.pop();
-                  break;
+                  for (let value = from; value <= to; value++) { tick(statement.line); scopes[scopes.length - 1].set(statement.name, value); execute(statement.body); }
+                  scopes.pop(); break;
                 }
                 case "while":
                   scopes.push(new Map());
-                  while (truthy(evaluate(statement.condition))) {
-                    tick(statement.line);
-                    execute(statement.body);
-                  }
-                  scopes.pop();
-                  break;
+                  while (truthy(evaluate(statement.condition))) { tick(statement.line); execute(statement.body); }
+                  scopes.pop(); break;
               }
             }
           }
-
           execute(ast);
           return printed;
         }

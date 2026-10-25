@@ -380,12 +380,12 @@
   .se-count.ok i { background: var(--ok, #4cc38a); }
   .se-body { flex: 1; min-height: 0; display: flex; }
   .se-gutter { flex: none; width: 56px; overflow: hidden; border-right: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 45%, transparent); }
-  #se-lines-inner { padding: 8px 0 56px; font: 12px/20px var(--mono); color: var(--muted); text-align: right; will-change: transform; }
+  #se-lines-inner { padding: 8px 0 56px; font: calc(var(--se-fs, 13px) - 1px)/20px var(--mono); color: var(--muted); text-align: right; will-change: transform; }
   #se-lines-inner div { height: 20px; padding-right: 12px; }
   #se-lines-inner div.cur { color: var(--text); }
   .se-code { position: relative; flex: 1; min-width: 0; }
   .se-text {
-    position: absolute; inset: 0; margin: 0; padding: 8px 14px 56px; border: 0; font: 13px/20px var(--mono); letter-spacing: 0;
+    position: absolute; inset: 0; margin: 0; padding: 8px 14px 56px; border: 0; font: var(--se-fs, 13px)/20px var(--mono); letter-spacing: 0;
     white-space: pre; tab-size: 2; -moz-tab-size: 2; word-wrap: normal; overflow-wrap: normal; text-align: left;
   }
   pre.se-text { overflow: hidden; pointer-events: none; color: var(--text); }
@@ -488,50 +488,6 @@
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
-  /* Full-screen Vanillalua documentation workspace */
-  .docs-overlay { align-items: stretch; justify-content: stretch; padding: 0; background: var(--bg, #0b1018); backdrop-filter: none; -webkit-backdrop-filter: none; z-index: 180; }
-  .docs-overlay.active { opacity: 1; }
-  .docs-app { width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--bg, #0b1018); color: var(--text); transform: translateY(5px); transition: transform .18s ease; }
-  .docs-overlay.active .docs-app { transform: none; }
-  .docs-topbar { flex: 0 0 72px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 30px; background: var(--panel); border-bottom: 1px solid var(--line); }
-  .docs-brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
-  .docs-brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; color: #17130a; background: #f2b134; font-size: 22px; font-weight: 900; box-shadow: 0 5px 18px #f2b1342b; }
-  .docs-brand h2 { margin: 0; font-size: 17px; font-weight: 750; letter-spacing: -.3px; }
-  .docs-brand p { margin: 4px 0 0; font: 10px var(--mono); letter-spacing: 1.2px; color: var(--muted); }
-  .docs-return { display: inline-flex; align-items: center; gap: 9px; padding: 10px 15px; border-radius: 9px; white-space: nowrap; font-weight: 650; }
-  .docs-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 255px minmax(0,1fr); }
-  .docs-sidebar { min-height: 0; display: flex; flex-direction: column; padding: 25px 14px 14px; background: var(--panel); border-right: 1px solid var(--line); }
-  .docs-sidebar-label { padding: 0 12px 13px; font: 10px var(--mono); letter-spacing: 1.25px; font-weight: 700; color: var(--muted); }
-  .docs-nav { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 2px; }
-  .docs-nav-btn { width: 100%; display: flex; align-items: center; gap: 11px; text-align: left; border: 1px solid transparent; border-radius: 8px; padding: 10px 11px; background: transparent; color: var(--text-2); cursor: pointer; font-family: var(--ui); font-size: 12.5px; font-weight: 500; transition: background .14s,border-color .14s,color .14s; }
-  .docs-nav-btn:hover { background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text); }
-  .docs-nav-btn.active { color: var(--text); background: color-mix(in srgb, #f2b134 12%, var(--panel)); border-color: color-mix(in srgb, #f2b134 32%, var(--line)); box-shadow: inset 3px 0 #f2b134; }
-  .docs-nav-num { flex: 0 0 22px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--muted); font: 10px var(--mono); }
-  .docs-nav-btn.active .docs-nav-num { background: #f2b13424; color: #f2b134; }
-  .docs-sidebar-foot { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line-soft); padding: 15px 10px 4px; color: var(--muted); font-size: 11px; }
-  .docs-status-dot { width: 7px; height: 7px; border-radius: 50%; background: #44c78a; box-shadow: 0 0 0 3px #44c78a1c; }
-  .docs-main { min-width: 0; min-height: 0; overflow: auto; scroll-behavior: smooth; }
-  .docs-article { width: min(930px,100%); margin: 0 auto; padding: 42px clamp(22px,5vw,70px) 80px; }
-  .docs-article > p:first-child { margin-top: 0; padding: 20px 22px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--text-2); font-size: 14px; }
-  .docs-article h3 { margin: 46px 0 15px; padding-top: 22px; border-top: 1px solid var(--line-soft); font-size: 23px; line-height: 1.3; letter-spacing: -.55px; scroll-margin-top: 24px; }
-  .docs-article h3::before { content: ''; display: block; width: 28px; height: 3px; margin: -23px 0 18px; border-radius: 3px; background: #f2b134; }
-  .docs-article p, .docs-article li { color: var(--text-2); font-size: 13.5px; }
-  .docs-article p { margin: 12px 0 17px; }
-  .docs-article ul { padding-left: 22px; margin: 12px 0 20px; }
-  .docs-article li { padding-left: 3px; margin: 8px 0; }
-  .docs-article b { color: var(--text); }
-  .docs-article :not(pre) > code { padding: 2px 5px; border: 1px solid color-mix(in srgb, #f2b134 18%, var(--line)); border-radius: 5px; background: color-mix(in srgb, #f2b134 8%, var(--panel)); color: color-mix(in srgb, #f2b134 75%, var(--text)); font: 11.5px var(--mono); white-space: nowrap; }
-  .docs-article pre { position: relative; margin: 18px 0 23px; padding: 42px 0 0; overflow: auto; border: 1px solid #29374b; border-radius: 11px; background: #0b111b; color: #dce7f7; box-shadow: 0 8px 24px #00000016; }
-  .docs-article pre::before { content: 'VANILLALUA'; position: absolute; top: 0; left: 0; right: 0; height: 31px; display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid #29374b; background: #121b29; color: #91a4bd; font: 9px var(--mono); letter-spacing: 1.4px; }
-  .docs-article pre::after { content: ''; position: absolute; top: 12px; left: 12px; width: 7px; height: 7px; border-radius: 50%; background: #fb7185; box-shadow: 12px 0 #fbbf24,24px 0 #34d399; }
-  .docs-article pre code { display: block; padding: 13px 18px 17px; color: inherit; font: 12px/1.75 var(--mono); tab-size: 4; white-space: pre; }
-  .docs-article .docs-copy { position: absolute; top: 5px; right: 8px; z-index: 1; border: 1px solid #34445b; border-radius: 5px; padding: 4px 8px; color: #b6c5d9; background: #1b2737; font-size: 10px; cursor: pointer; }
-  .docs-article .docs-copy:hover { background: #29384c; color: white; }
-  .docs-article .docs-copy.copied { color: #6ee7b7; }
-  @media (max-width: 760px) { .docs-topbar { flex-basis: 64px; padding: 0 14px; } .docs-brand-mark { width: 32px; height: 32px; } .docs-brand h2 { font-size: 14px; } .docs-brand p { font-size: 8px; letter-spacing: .7px; } .docs-return { padding: 9px; font-size: 11px; } .docs-layout { grid-template-columns: 164px minmax(0,1fr); } .docs-sidebar { padding: 17px 8px 10px; } .docs-sidebar-label { padding-left: 8px; font-size: 9px; } .docs-nav-btn { gap: 7px; padding: 9px 6px; font-size: 11px; } .docs-nav-num { flex-basis: 19px; width: 19px; height: 19px; } .docs-article { padding: 24px 15px 55px; } .docs-article h3 { font-size: 19px; margin-top: 34px; } .docs-article pre code { font-size: 11px; padding-left: 12px; } }
-  @media (max-width: 480px) { .docs-layout { grid-template-columns: 125px minmax(0,1fr); } .docs-nav-btn { display: block; font-size: 10px; line-height: 1.35; } .docs-nav-num { display: inline-grid; margin-right: 4px; } .docs-sidebar-foot { font-size: 9px; padding-left: 4px; } .docs-return { gap: 4px; } }
-
-
   /* ───── File menu (fits the other menus) ───── */
   .file-menu.menu { position: absolute; top: calc(100% + 8px); right: 0; left: auto; width: 272px; z-index: 220; padding: 6px; }
   .file-menu .menu-title { padding: 8px 10px 4px; font-weight: 600; }
@@ -552,39 +508,63 @@
   .cf-btn { padding: 0 16px; } .cf-btn:not(.btn-primary) { border-color: var(--line); }
   .cf-btn.danger { background: var(--bad); color: #fff; }
 
-  /* ───── Documentation redesign ───── */
-  .docs-brand-mark { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
-  .docs-brand p { font: 12px var(--ui); letter-spacing: 0; color: var(--muted); }
-  .docs-sidebar { padding: 18px 12px 12px; }
-  .docs-search { width: 100%; height: 34px; margin: 0 0 12px; padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: 13px var(--ui); }
-  .docs-search:focus { outline: none; border-color: var(--accent); }
-  .docs-nav { gap: 1px; }
-  .docs-nav-group { padding: 14px 11px 5px; color: var(--muted); font-size: 12px; font-weight: 650; }
+  /* ───── Documentation (built from the editor's own parts) ───── */
+  .docs-overlay { align-items: stretch; justify-content: stretch; padding: 0; background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; z-index: 180; }
+  .docs-app { width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--text); transform: translateY(6px); transition: transform .18s ease; }
+  .docs-overlay.active .docs-app { transform: none; }
+  .docs-topbar { flex: none; height: 46px; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--panel); border-bottom: 1px solid var(--line); box-shadow: 0 1px 0 var(--line-soft); }
+  .docs-return .ic { transform: rotate(180deg); }
+  .docs-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 252px minmax(0, 1fr); }
+
+  .docs-sidebar { min-height: 0; display: flex; flex-direction: column; padding: 12px 12px 0; background: var(--panel); border-right: 1px solid var(--line); }
+  .docs-search { flex: none; margin-bottom: 10px; }
+  .docs-nav { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; margin: 0 -4px; padding: 0 4px 12px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .docs-nav-group { padding: 14px 10px 4px; color: var(--muted); font-size: 12px; font-weight: 650; }
   .docs-nav-group:first-child { padding-top: 2px; }
-  .docs-nav-btn { padding: 7px 11px; font-size: 13px; border: 0; border-radius: 7px; }
-  .docs-nav-btn.active { background: var(--accent-soft); box-shadow: none; color: var(--text); font-weight: 600; }
+  .docs-nav-btn { flex: none; width: 100%; display: flex; align-items: center; min-height: 30px; padding: 5px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--text-2); font: 550 13px/1.3 var(--ui); text-align: left; cursor: pointer; transition: background .12s, color .12s; }
+  .docs-nav-btn:hover { background: var(--hover); color: var(--text); }
+  .docs-nav-btn.active { background: var(--accent-soft); color: var(--text); box-shadow: inset 2px 0 var(--accent); }
   .docs-nav-btn[hidden], .docs-nav-group[hidden] { display: none; }
-  .docs-article { width: min(820px, 100%); padding: 44px clamp(22px, 5vw, 64px) 96px; }
-  .docs-article > p:first-child { padding: 0; border: 0; background: none; font-size: 16px; line-height: 1.6; color: var(--text); }
-  .docs-article p, .docs-article li { font-size: 14px; max-width: 70ch; }
-  .docs-article h3 { margin: 52px 0 12px; padding-top: 26px; font-size: 24px; letter-spacing: -.02em; }
-  .docs-article h3::before { display: none; }
-  .docs-article h4 { margin: 26px 0 8px; font-size: 15px; }
-  .docs-article :not(pre) > code, .docs-article .kbd { border-color: var(--line); background: var(--panel-2); color: var(--text); }
-  .docs-article .kbd { display: inline-block; margin-left: 6px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font: 11px var(--mono); color: var(--muted); }
+  .docs-sidebar-foot { flex: none; display: flex; align-items: center; gap: 7px; height: 28px; margin: 0 -12px; padding: 0 14px; border-top: 1px solid var(--line); color: var(--muted); font: 11.5px var(--mono); }
+  .docs-status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); }
+
+  .docs-main { min-width: 0; min-height: 0; overflow-y: auto; background: var(--viewport); scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .docs-article { width: min(780px, 100%); margin: 0 auto; padding: 40px clamp(20px, 5vw, 56px) 96px; line-height: 1.65; }
+  .docs-article > p:first-child { margin-top: 0; font-size: 16px; line-height: 1.6; color: var(--text); }
+  .docs-article p, .docs-article li { color: var(--text-2); font-size: 14px; max-width: 70ch; }
+  .docs-article p { margin: 12px 0 16px; }
+  .docs-article ul { margin: 12px 0 20px; padding-left: 22px; }
+  .docs-article li { margin: 6px 0; padding-left: 2px; }
+  .docs-article b { color: var(--text); font-weight: 650; }
+  .docs-article h3 { margin: 48px 0 10px; padding-top: 24px; border-top: 1px solid var(--line-soft); font-size: 22px; font-weight: 650; line-height: 1.3; letter-spacing: -.015em; scroll-margin-top: 16px; }
+  .docs-article h4 { margin: 26px 0 8px; font-size: 15px; font-weight: 650; }
+  .docs-article :not(pre) > code { padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel-2); color: var(--text); font: 12px var(--mono); white-space: nowrap; }
   .docs-article .ver-chip { color: var(--accent); }
-  .docs-article pre { padding-top: 34px; border-color: var(--line); background: var(--viewport); color: var(--text); box-shadow: none; }
-  .docs-article pre::before { content: 'Vanillalua'; height: 30px; border-bottom: 1px solid var(--line); background: var(--panel); color: var(--muted); font: 600 12px var(--ui); letter-spacing: 0; }
-  .docs-article pre::after { display: none; }
-  .docs-article .docs-copy { top: 3px; border-color: var(--line); background: var(--panel-2); color: var(--text-2); font: 12px var(--ui); }
+  .docs-article .kbd { display: inline-block; min-width: 20px; margin-left: 6px; padding: 2px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: var(--panel-2); color: var(--text); font: 600 11px/1 var(--mono); text-align: center; vertical-align: 1px; }
+
+  .docs-article pre { position: relative; margin: 16px 0 22px; padding: 30px 0 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); }
+  .docs-article pre::before { content: 'Vanillalua'; position: absolute; top: 0; left: 0; right: 0; height: 30px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--line); background: var(--panel); color: var(--muted); font: 600 12px var(--ui); }
+  .docs-article pre code { display: block; overflow-x: auto; padding: 10px 16px 14px; color: inherit; font: 12.5px/20px var(--mono); tab-size: 2; white-space: pre; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .docs-article .docs-copy { position: absolute; top: 4px; right: 6px; z-index: 1; height: 22px; padding: 0 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); color: var(--text-2); font: 550 12px var(--ui); cursor: pointer; transition: background .15s, color .15s; }
   .docs-article .docs-copy:hover { background: var(--hover); color: var(--text); }
   .docs-article .docs-copy.copied { color: var(--good); }
-  .docs-table { width: 100%; margin: 16px 0 22px; border-collapse: collapse; font-size: 13px; }
-  .docs-table th { padding: 8px 12px; text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
-  .docs-table td { padding: 10px 12px; vertical-align: top; color: var(--text-2); border-bottom: 1px solid var(--line-soft); }
+
+  .docs-table { width: 100%; margin: 14px 0 22px; border-collapse: separate; border-spacing: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 13px; }
+  .docs-table th { padding: 8px 12px; text-align: left; background: var(--panel); border-bottom: 1px solid var(--line); color: var(--muted); font-weight: 600; }
+  .docs-table td { padding: 9px 12px; vertical-align: top; border-top: 1px solid var(--line-soft); color: var(--text-2); }
+  .docs-table tbody tr:first-child td { border-top: 0; }
   .docs-table td:first-child { color: var(--text); white-space: nowrap; font-weight: 550; }
   .docs-table td code { white-space: normal; }
   .callout { margin: 16px 0 22px; padding: 12px 16px; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; background: var(--accent-soft); color: var(--text-2); font-size: 13.5px; max-width: 70ch; }
+  @media (max-width: 760px) {
+    .docs-layout { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+    .docs-sidebar { max-height: 36vh; border-right: 0; border-bottom: 1px solid var(--line); }
+    .docs-sidebar-foot { display: none; }
+    .docs-nav { padding-bottom: 8px; }
+    .docs-article h3 { margin-top: 36px; font-size: 20px; }
+    .docs-table td:first-child { white-space: normal; }
+  }
+  @media (prefers-reduced-motion: reduce) { .docs-main { scroll-behavior: auto; } }
   .docs-empty { padding: 12px; color: var(--muted); font-size: 13px; }
 
   /* ───── Childing, settings and UI refresh ───── */
@@ -623,6 +603,36 @@
   .tree-item.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
   .tree-item.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
   .tree-item.selected + .tree-item.selected { border-top-left-radius: 0; border-top-right-radius: 0; }
+  /* ───── Consistency fixes ───── */
+  .num .tag { margin: 0; padding: 0; border-radius: 0; background: none; }
+  .sel { color-scheme: dark; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+  body.light-theme .sel { color-scheme: light; }
+  .sel:hover { border-color: color-mix(in srgb, var(--line) 60%, var(--muted)); }
+  .sel:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  #hint { border-radius: 10px; }
+  .se-count.ok i { background: var(--good); }
+  .se-out-list { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  /* ───── Prompt toast and auto-hiding controls hint ───── */
+  .toast.ask { pointer-events: auto; gap: 14px; padding: 8px 8px 8px 14px; border-left-color: var(--accent); }
+  .toast.ask .ic { color: var(--accent); }
+  .toast.ask .ask-actions { display: flex; gap: 6px; margin-left: 4px; }
+  .toast.ask .btn { height: 26px; padding: 0 12px; }
+  .toast.ask .btn:not(.btn-primary) { border-color: var(--line); }
+  #hint { transition: opacity .4s ease, visibility .4s; }
+  #hint.dismissed { opacity: 0; visibility: hidden; }
+  /* ───── More settings ───── */
+  .setting-col { flex-direction: column; align-items: flex-start; gap: 12px; cursor: default; }
+  .accent-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  #acc-swatches { display: flex; flex-wrap: wrap; gap: 9px; }
+  .swatch { --c: var(--sw); width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: var(--c); cursor: pointer; transition: box-shadow .15s, transform .15s; }
+  body.light-theme .swatch { --c: var(--sw-l); }
+  .swatch:hover { transform: scale(1.08); }
+  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--c); }
+  .color-pick { width: 34px; height: 26px; padding: 2px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); cursor: pointer; }
+  .color-pick.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .accent-ctl input.hex-in { width: 88px; font-family: var(--mono); font-size: 12px; }
+  .fov-row { display: flex; align-items: center; gap: 10px; width: 220px; }
+  .fov-row output { flex: none; width: 38px; text-align: right; font: 12px var(--mono); color: var(--text-2); }
 </style>
 </head>
 <body>
@@ -646,6 +656,9 @@
     <symbol id="i-close" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
     <symbol id="i-pointer" viewBox="0 0 16 16"><path d="m3.5 2.5 8.5 4.2-3.6 1.2L7.2 11.7z"/></symbol>
     <symbol id="i-list" viewBox="0 0 16 16"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 16 16"><path d="M2.5 2.5h11v11h-11zM2.5 6.17h11M2.5 9.83h11M6.17 2.5v11M9.83 2.5v11"/></symbol>
+    <symbol id="i-ball" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c-2.2 1.7-2.2 9.3 0 11M8 2.5c2.2 1.7 2.2 9.3 0 11"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 16 16"><path d="M13.2 8a5.2 5.2 0 1 1-1.7-3.85"/><path d="M13.3 2.4v3.1h-3.1"/></symbol>
     <symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.75"/><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.05 1.05M11.55 11.55l1.05 1.05M3.4 12.6l1.05-1.05M11.55 4.45l1.05-1.05"/></symbol>
     <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
     <symbol id="i-move" viewBox="0 0 16 16"><path d="M8 1.75v12.5M1.75 8h12.5M8 1.75 6.25 3.5M8 1.75 9.75 3.5M8 14.25 6.25 12.5M8 14.25 9.75 12.5M1.75 8 3.5 6.25M1.75 8 3.5 9.75M14.25 8 12.5 6.25M14.25 8 12.5 9.75"/></symbol>
@@ -677,6 +690,10 @@
       <label class="offset-field" title="Offset: how far the Move and Scale gizmos step, in Vanillameters (0 = free)">
         <svg class="ic"><use href="#i-ruler"/></svg><span class="offset-label">Offset</span>
         <input type="number" id="offset-input" min="0" step="0.1" value="0.5" aria-label="Gizmo offset in Vanillameters">
+      </label>
+      <label class="offset-field" title="Rotation: how many degrees the Rotate gizmo steps (0 = free)">
+        <svg class="ic"><use href="#i-rotate"/></svg><span class="offset-label">Rotation</span>
+        <input type="number" id="rot-offset-input" min="0" step="5" value="45" aria-label="Rotation step in degrees">
       </label>
     </div>
     <div class="toolbar-end">
@@ -733,6 +750,7 @@
           <button class="tool" data-mode="select" aria-pressed="true" title="Select (1)"><svg class="ic"><use href="#i-pointer"/></svg><span class="tool-key">1</span></button>
           <button class="tool" data-mode="move" aria-pressed="false" title="Move (2)"><svg class="ic"><use href="#i-move"/></svg><span class="tool-key">2</span></button>
           <button class="tool" data-mode="scale" aria-pressed="false" title="Scale (3)"><svg class="ic"><use href="#i-scale"/></svg><span class="tool-key">3</span></button>
+          <button class="tool" data-mode="rotate" aria-pressed="false" title="Rotate (4)"><svg class="ic"><use href="#i-rotate"/></svg><span class="tool-key">4</span></button>
         </div>
 
         <div id="sim-badge" aria-live="polite">Simulating – Stop restores the world</div>
@@ -775,6 +793,8 @@
   <div id="add-menu" class="menu" role="menu" hidden>
     <div class="menu-title" id="add-menu-title">Add</div>
     <button class="menu-item" role="menuitem" data-kind="prism6"><svg class="ic"><use href="#i-cube"/></svg>Rectangular Prism<span class="menu-meta">prism6</span></button>
+    <button class="menu-item" role="menuitem" data-kind="ball"><svg class="ic"><use href="#i-ball"/></svg>Ball<span class="menu-meta">ball</span></button>
+    <button class="menu-item" role="menuitem" data-kind="texture"><svg class="ic"><use href="#i-grid"/></svg>Texture<span class="menu-meta">texture</span></button>
     <button class="menu-item" role="menuitem" data-kind="model"><svg class="ic"><use href="#i-model"/></svg>Model<span class="menu-meta">model</span></button>
     <button class="menu-item" role="menuitem" data-kind="worldsettings"><svg class="ic"><use href="#i-sun"/></svg>World Settings</button>
     <button class="menu-item" role="menuitem" data-kind="script"><svg class="ic"><use href="#i-script"/></svg>Script</button>
@@ -828,6 +848,7 @@
       <div class="settings-body">
         <nav class="set-nav" role="tablist" aria-label="Settings sections">
           <button class="set-tab" role="tab" data-pane="basics" aria-selected="true"><svg class="ic"><use href="#i-sliders"/></svg>Basics</button>
+          <button class="set-tab" role="tab" data-pane="viewport" aria-selected="false"><svg class="ic"><use href="#i-target"/></svg>Viewport</button>
           <button class="set-tab" role="tab" data-pane="scripting" aria-selected="false"><svg class="ic"><use href="#i-script"/></svg>Scripting</button>
           <button class="set-tab" role="tab" data-pane="appearance" aria-selected="false"><svg class="ic"><use href="#i-sun"/></svg>Appearance</button>
         </nav>
@@ -836,19 +857,51 @@
             <h3 class="set-h">Basics</h3>
             <div class="setting"><div><div class="setting-title">Camera move method</div><div class="setting-desc">Which mouse button turns the camera.</div></div>
               <select id="set-cam" class="sel" aria-label="Camera move method"><option value="drag">Drag (left button)</option><option value="right">Right click</option></select></div>
+            <div class="setting"><div><div class="setting-title">Camera speed</div><div class="setting-desc">How fast W, A, S and D fly the camera.</div></div>
+              <select id="set-camspeed" class="sel" aria-label="Camera speed"><option value="0.05">Slow</option><option value="0.1">Normal</option><option value="0.2">Fast</option><option value="0.4">Very fast</option><option value="0.8">Turbo</option></select></div>
             <label class="setting" for="opt-uid"><div><div class="setting-title">Show UID instead of name</div><div class="setting-desc">The Explorer lists each instance by its unique ID.</div></div><input type="checkbox" id="opt-uid" class="switch"></label>
             <div class="set-sub">Default object names</div>
             <div class="setting-desc set-note">The name given to new instances. Leave a field empty to restore its default.</div>
             <div class="name-grid">
               <label for="dn-prism6">Rectangular Prism</label><input class="text" id="dn-prism6" maxlength="24" placeholder="Block">
+              <label for="dn-ball">Ball</label><input class="text" id="dn-ball" maxlength="24" placeholder="Ball">
               <label for="dn-model">Model</label><input class="text" id="dn-model" maxlength="24" placeholder="Model">
               <label for="dn-script">Script</label><input class="text" id="dn-script" maxlength="24" placeholder="Script">
               <label for="dn-worldsettings">World Settings</label><input class="text" id="dn-worldsettings" maxlength="24" placeholder="Settings">
             </div>
+            <div class="set-sub">Saving</div>
+            <div class="setting"><div><div class="setting-title">Autosave to this browser</div><div class="setting-desc">Updates the browser save after you change something. It never saves an untouched world and pauses while a simulation runs.</div></div>
+              <select id="set-autosave" class="sel" aria-label="Autosave"><option value="0">Off</option><option value="1">Every minute</option><option value="2">Every 2 minutes</option><option value="5">Every 5 minutes</option><option value="10">Every 10 minutes</option></select></div>
+            <div class="set-sub">Reset</div>
+            <div class="setting"><div><div class="setting-title">Reset all settings</div><div class="setting-desc">Puts every setting back to its default. Your world is not changed.</div></div><button class="btn btn-outline" id="reset-settings" type="button">Reset settings</button></div>
+          </section>
+          <section class="set-pane" id="set-viewport" hidden>
+            <h3 class="set-h">Viewport</h3>
+            <div class="setting"><div><div class="setting-title">Look sensitivity</div><div class="setting-desc">How far the view turns for each mouse movement.</div></div>
+              <select id="set-looksens" class="sel" aria-label="Look sensitivity"><option value="0.5">Very slow</option><option value="0.75">Slow</option><option value="1">Normal</option><option value="1.5">Fast</option><option value="2">Very fast</option></select></div>
+            <label class="setting" for="opt-inverty"><div><div class="setting-title">Invert vertical look</div><div class="setting-desc">Dragging up looks down, like a flight stick.</div></div><input type="checkbox" id="opt-inverty" class="switch"></label>
+            <div class="setting"><div><div class="setting-title">Field of view</div><div class="setting-desc">How wide the camera sees. Higher shows more of the world.</div></div>
+              <div class="fov-row"><input type="range" class="tod" id="set-fov" min="40" max="110" step="1" aria-label="Field of view in degrees"><output id="set-fov-out" for="set-fov">75°</output></div></div>
+            <div class="set-sub">Lighting</div>
+            <div class="setting"><div><div class="setting-title">Lighting style</div><div class="setting-desc">Enhanced adds sky light, sun highlights and shadows that follow the time of day. Classic is the flat shading from before.</div></div>
+              <select id="set-lighting" class="sel" aria-label="Lighting style"><option value="enhanced">Enhanced</option><option value="classic">Classic</option></select></div>
+            <div class="setting"><div><div class="setting-title">Shadows</div><div class="setting-desc">Soft sun and moon shadows. Higher quality is sharper but needs a faster graphics card.</div></div>
+              <select id="set-shadows" class="sel" aria-label="Shadow quality"><option value="off">Off</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+            <label class="setting" for="opt-haze"><div><div class="setting-title">Atmospheric haze</div><div class="setting-desc">Distant objects fade into the color of the sky, so far edges blend into the horizon.</div></div><input type="checkbox" id="opt-haze" class="switch"></label>
+            <div class="set-sub">Interface in the viewport</div>
+            <label class="setting" for="opt-axes"><div><div class="setting-title">Show origin marker</div><div class="setting-desc">The red, green and blue lines at 0, 0, 0.</div></div><input type="checkbox" id="opt-axes" class="switch"></label>
+            <div class="setting"><div><div class="setting-title">Origin marker length</div><div class="setting-desc">How far the lines reach each way, from 0.1 to 100 Vm (Vanillameters, the engine's meters).</div></div>
+              <label class="num grav"><input type="number" id="set-axislen" min="0.1" max="100" step="0.1" aria-label="Origin marker length in Vanillameters"><span class="tag">Vm</span></label></div>
+            <label class="setting" for="opt-viewcube"><div><div class="setting-title">Show view cube</div><div class="setting-desc">The small orientation cube in the top right.</div></div><input type="checkbox" id="opt-viewcube" class="switch"></label>
+            <div class="setting"><div><div class="setting-title">Controls hint</div><div class="setting-desc">The bar in the bottom left that lists the controls.</div></div>
+              <select id="set-hint" class="sel" aria-label="Controls hint"><option value="auto">Hide after 10 seconds</option><option value="always">Always show</option><option value="never">Never show</option></select></div>
+            <label class="setting" for="opt-status"><div><div class="setting-title">Show status bar</div><div class="setting-desc">FPS, CPU, memory and mesh counts along the bottom.</div></div><input type="checkbox" id="opt-status" class="switch"></label>
           </section>
           <section class="set-pane" id="set-scripting" hidden>
             <h3 class="set-h">Scripting</h3>
             <label class="setting" for="opt-syntax"><div><div class="setting-title">Script coloration</div><div class="setting-desc">Color keywords, strings and numbers in the script editor.</div></div><input type="checkbox" id="opt-syntax" class="switch" checked></label>
+            <div class="setting"><div><div class="setting-title">Script editor text size</div><div class="setting-desc">The size of the code in the script editor.</div></div>
+              <select id="set-sefont" class="sel" aria-label="Script editor text size"><option value="12">Small</option><option value="13">Normal</option><option value="15">Large</option><option value="17">Extra large</option></select></div>
             <div class="set-sub">Pre-include in every script</div>
             <div class="setting-desc set-note">Included lines no longer need to be typed. Required means the script will not run without it.</div>
             <label class="setting" for="pre-Scripts"><div><div class="setting-title"><code>call Scripts</code> <span class="tag">Required</span></div><div class="setting-desc">Load the Scripts space.</div></div><input type="checkbox" id="pre-Scripts" class="switch"></label>
@@ -861,22 +914,27 @@
           <section class="set-pane" id="set-appearance" hidden>
             <h3 class="set-h">Appearance</h3>
             <label class="setting" for="theme-toggle"><div><div class="setting-title">Light mode</div><div class="setting-desc">Use a light palette for the editor and viewport.</div></div><input type="checkbox" id="theme-toggle" class="switch"></label>
+            <div class="setting setting-col"><div><div class="setting-title">Accent color</div><div class="setting-desc">Used for buttons, selections and highlights across the whole editor. Vanilla yellow is the default.</div></div>
+              <div class="accent-ctl"><div id="acc-swatches" role="group" aria-label="Accent presets"></div>
+                <input type="color" class="color-pick" id="acc-custom" value="#f2b134" aria-label="Custom accent color" title="Pick a custom color">
+                <input class="text hex-in" id="acc-hex" maxlength="7" spellcheck="false" aria-label="Accent color hex code" placeholder="#f2b134">
+                <button class="btn btn-outline" id="acc-reset" type="button">Reset</button></div></div>
           </section>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="modal-script-docs" class="modal-overlay docs-overlay" role="dialog" aria-modal="true" aria-labelledby="sd-title">
+  <div id="modal-script-docs" class="modal-overlay docs-overlay" role="dialog" aria-modal="true" aria-label="Vanilla Engine documentation">
     <div class="docs-app">
       <header class="docs-topbar">
-        <div class="docs-brand"><span class="docs-brand-mark">V</span><div><h2 id="sd-title">Vanilla Engine Docs</h2><p id="docs-sub">Editor guide and Vanillalua reference</p></div></div>
-        <button class="btn docs-return" id="docs-return-settings" type="button"><span aria-hidden="true">←</span> <span id="docs-return-label">Return to Settings</span></button>
+        <div class="brand"><svg class="ic mark"><use href="#i-cube"/></svg><span class="brand-name">Vanilla Engine</span><span class="brand-sub" id="docs-sub">Documentation</span></div>
+        <button class="btn docs-return" id="docs-return-settings" type="button" title="Close the docs" aria-label="Close the docs"><svg class="ic"><use href="#i-chev"/></svg><span class="label" id="docs-return-label">Return to Settings</span></button>
       </header>
       <div class="docs-layout">
-        <aside class="docs-sidebar"><input id="docs-search" class="docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
-        <main class="docs-main"><div class="docs-article" id="docs-article" style="line-height:1.65">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">2.2.0.2</code>.</p>
+        <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
+        <main class="docs-main"><div class="docs-article" id="docs-article">
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">2.3.7.21</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of three <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -887,6 +945,7 @@
         </tbody></table>
         <p><b>Multi-select:</b> hold <kbd>Shift</kbd> and click to add or remove single objects. Hold <kbd>Ctrl</kbd> (<kbd>Cmd</kbd> on Mac) and click to select every object between your last click and the one you click. Copy, cut, paste, delete and dragging then apply to all selected objects.</p>
         <p>Hover an instance in the Explorer and press the three-dot button for <b>Rename, Copy, Paste, Cut, Delete</b> and <b>Move Camera To</b>.</p>
+        <p>A Rectangular Prism also has a <b>Color</b> in its Render section: pick one with the color box or type a hex code such as <code>#ff8800</code>. Turning on <b>Face coloring</b> overrides it, because each face then shows its own debug color.</p>
         <h3 data-group="Editor guide">Camera and selection</h3>
         <p>The camera looks like a first-person view: the horizon stays level and dragging turns your head up, down, left and right. There is no momentum, so it stops the moment you let go. Move with <code>W</code> <code>A</code> <code>S</code> <code>D</code>.</p>
         <p>In <b>Settings</b>, <b>Drag to move</b> turns the camera with the left mouse button and <b>Right click to move</b> uses the right button. The camera is locked while you drag a gizmo handle.</p>
@@ -897,6 +956,7 @@
           <li><b>Scale</b> shows a sphere on each of the six sides.</li>
         </ul>
         <p>Handles are always drawn on top of the scene at about a third of the block's size. The <b>Offset</b> box next to Run sets the step for both tools in Vanillameters. It starts at <code>0.5</code>; set it to <code>0</code> for free, unstepped movement.</p>
+        <p>The <b>Rotate</b> tool (key <span class="kbd">4</span>) turns a prism or ball. Each axis has a double-headed curved arrow; drag it to turn the shape about that axis. The <b>Rotation</b> box beside Offset sets how many degrees the arrows snap to (45 by default, 0 for free turning). Rotation is also in the Properties panel as three numbers. The turn about Y is applied first, then the tilt about X, then the roll about Z, and each arrow edits exactly its own number. Physics treats a tilted prism as the box around it, and a tilted prism still blocks balls at its real angle. Models cannot be rotated yet.</p>
         <h3 data-group="Editor guide">Run and Stop</h3>
         <p><b>Run</b> works like Roblox Studio: the world is snapshotted, physics and scripts run live, and <b>Stop</b> restores the snapshot exactly as it was. Anything scripts create or change during a run is discarded on Stop, and global variables are cleared.</p>
         <div class="callout"><b>Heads up:</b> saving, opening a world and starting a new one are blocked while a simulation runs. Stop first.</div>
@@ -927,9 +987,35 @@
           <li><b>Reorder</b> by dropping on the top or bottom edge of a row (a line shows where it will land). Dropping on the middle of a row makes a child.</li>
         </ul>
         <p>Children live in the same space as their parent and keep their own position; they do not move with the parent. A script placed under an object, anywhere inside World or Scripts, runs like any other script and can reach that object with <code>script.Parent</code>.</p>
+        <p>A <b>Ball</b> is a smooth 3D sphere with the same properties as a prism: position, size, color, face coloring, face labels, wireframe, locked, and the physics switches. Its Size is the radius on each axis, so it defaults to 0.5 on every axis. When the simulation runs, a ball rolls: it spins to match its speed as it moves over a surface, bounces a little when it lands hard, and keeps its spin while it is in the air. The panels and seams painted on it make the rolling easy to see. Stopping the simulation puts it back the way it was.</p>
+        <h3 data-group="Editor guide">Textures</h3>
+        <p>A <b>Texture</b> paints chosen faces of a Rectangular Prism. Use <b>Add Child…</b> in a prism's three-dot menu and choose <b>Texture</b>; it appears as a child of that prism and always affects its parent.</p>
+        <ul>
+          <li><b>Faces</b> – toggle one or more of Top, Bottom, Front, Back, Left and Right. <b>All faces</b> and <b>None</b> are shortcuts.</li>
+          <li><b>Texture</b> – pick what to apply. For now there is one: <b>Grid</b>, with fine lines every 0.25 Vm, medium lines every 0.5 Vm and bold lines every 1 Vm, which makes squares like a normal grid.</li>
+          <li>The grid is locked to the world, so the lines of neighboring prisms line up and match the origin marker. In the distance the fine lines blend into a soft shade and wider lines every 4, 16 and 64 Vm take over, so the grid stays visible all the way to the horizon without shimmering.</li>
+          <li>The default Plate has a Texture on its Top face. Selecting a Texture outlines the prism it affects.</li>
+        </ul>
         <h3 data-group="Editor guide">Settings</h3>
         <table class="docs-table"><thead><tr><th>Setting</th><th>What it does</th></tr></thead><tbody>
           <tr><td>Camera move method</td><td>Choose whether dragging with the left button or the right button turns the camera.</td></tr>
+          <tr><td>Camera speed</td><td>How fast W, A, S and D move the camera: Slow, Normal, Fast, Very fast or Turbo. Normal is the default.</td></tr>
+          <tr><td>Autosave to this browser</td><td>Off, or every 1, 2, 5 or 10 minutes. It only updates the browser save when your world has changed, and it waits while a simulation runs.</td></tr>
+          <tr><td>Look sensitivity</td><td>How far the view turns for each mouse movement, from Very slow to Very fast.</td></tr>
+          <tr><td>Invert vertical look</td><td>Flips the up and down direction of looking around.</td></tr>
+          <tr><td>Field of view</td><td>40 to 110 degrees. Higher shows more of the world. The default is 75.</td></tr>
+          <tr><td>Lighting style</td><td>Enhanced uses sky light, sun highlights and shadows that follow the World Settings time of day. Classic is the earlier flat shading.</td></tr>
+          <tr><td>Shadows</td><td>Off, Low, Medium or High. Shadows are soft, follow the sun by day and the moon by night, and stay sharp around where you are looking.</td></tr>
+          <tr><td>Atmospheric haze</td><td>Fades distant objects into the sky color. Only applies to Enhanced lighting.</td></tr>
+          <tr><td>Show origin marker</td><td>Turns the red, green and blue lines at the origin on or off.</td></tr>
+          <tr><td>Origin marker length</td><td>How far the origin lines reach each way, from 0.1 to 100 Vm (Vanillameters). Ticks spread out to match.</td></tr>
+          <tr><td>Show view cube</td><td>Shows or hides the orientation cube in the top right of the viewport.</td></tr>
+          <tr><td>Controls hint</td><td>Hide after 10 seconds, always show, or never show the controls bar in the bottom left.</td></tr>
+          <tr><td>Show status bar</td><td>Shows or hides the FPS, CPU, memory and mesh counts along the bottom.</td></tr>
+          <tr><td>Script editor text size</td><td>Small, Normal, Large or Extra large code text.</td></tr>
+          <tr><td>Light mode</td><td>Switches to the light palette. The editor remembers your choice.</td></tr>
+          <tr><td>Accent color</td><td>Pick a preset or any custom color. It changes buttons, selections and highlights everywhere. Vanilla yellow is the default.</td></tr>
+          <tr><td>Reset all settings</td><td>Puts every setting back to its default without touching your world.</td></tr>
           <tr><td>Show UID instead of name</td><td>The Explorer lists instances by unique ID.</td></tr>
           <tr><td>Default object names</td><td>Sets the name for each new Rectangular Prism, Script and World Settings. Empty restores the default.</td></tr>
           <tr><td>Script coloration</td><td>Turns syntax coloring in the script editor on or off.</td></tr>
@@ -1051,7 +1137,7 @@ print(block.Name)</code></pre>
         <p>When a dot member on a Space matches a local variable, its string value is treated as the UID. Bracket lookup also works: <code>World[blockUID]</code>. You can pass the Space to <code>GetUID</code> when names are duplicated, for example <code>Instance.GetUID("Block", World)</code>.</p>
         <h3 data-group="Vanillalua language">10. The Instance module</h3>
         <ul>
-          <li><code>Instance.create(type, space)</code> — creates and returns an instance. Supported types: <code>"prism6"</code>, <code>"script"</code>, and <code>"worldsettings"</code>.</li>
+          <li><code>Instance.create(type, space)</code> — creates and returns an instance. Supported types: <code>"prism6"</code>, <code>"ball"</code>, <code>"script"</code>, and <code>"worldsettings"</code>.</li>
           <li><code>Instance.duplicate(instance)</code> — duplicates an instance in its current space.</li>
           <li><code>Instance.duplicate(instance, space)</code> — duplicates it into a chosen loaded space.</li>
           <li><code>Instance.delete(instance)</code> — deletes the instance. References to it become deleted references.</li>
@@ -1086,7 +1172,10 @@ print(block)</code></pre>
         <p>Read or set properties using <code>instance.Property</code>. Properties are validated by the engine, so a property expects the correct kind of value.</p>
         <table class="docs-table"><thead><tr><th>Applies to</th><th>Properties</th></tr></thead><tbody>
           <tr><td>Every instance</td><td><code>Name</code> (string), <code>Type</code> (read-only), <code>Parent</code> (a Space or an instance)</td></tr>
-          <tr><td>Prism blocks</td><td><code>Position</code>, <code>Size</code> (vectors, each axis at least 0.05 for Size), <code>Locked</code>, <code>Anchored</code>, <code>ReactsToPhysics</code>, <code>Collidable</code>, <code>Wireframe</code>, <code>FaceColoring</code>, <code>ShowLabels</code> (True or False)</td></tr>
+          <tr><td>Balls</td><td>A <code>"ball"</code> has every prism property below. Its <code>Size</code> is the radius on each axis, so the default <code>Size</code> of 0.5 makes a ball 1 Vm wide. Physics treats it as a sphere with the average of its three sizes.</td></tr>
+          <tr><td>Rotation</td><td>For prisms and balls: a vector of degrees about X, Y and Z, for example <code>block.Rotation = vanilla3D.Position(0, 45, 0)</code>. The turn about Y is applied first, then the tilt about X, then the roll about Z.</td></tr>
+          <tr><td>Velocity</td><td>For prisms and balls: a vector you can read or set while the simulation runs, for example <code>ball.Velocity = vanilla3D.Position(4, 0, 0)</code> rolls a ball along +X.</td></tr>
+          <tr><td>Prism blocks</td><td><code>Position</code>, <code>Size</code> (vectors, each axis at least 0.05 for Size), <code>Locked</code>, <code>Anchored</code>, <code>ReactsToPhysics</code>, <code>Collidable</code>, <code>Wireframe</code>, <code>FaceColoring</code>, <code>ShowLabels</code> (True or False), <code>Color</code> (a hex string such as <code>"#ff8800"</code>; <code>FaceColoring</code> overrides it)</td></tr>
           <tr><td>World Settings</td><td><code>TimeOfDay</code> (0 to 24), <code>Gravity</code> (0 to 1000), <code>KillLayer</code> (number)</td></tr>
           <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr>
         </tbody></table>
@@ -1171,7 +1260,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
   </div>
 
   <script>
-        const ENGINE_VERSION = '2.2.0.2';
+        const ENGINE_VERSION = '2.3.7.21';
         const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
@@ -1189,13 +1278,55 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             let changed = true;
             while (changed) { changed = false; for (const [id, o] of Object.entries(sceneObjects)) if (o.parent !== 'engine' && !SPACE_KEYS.includes(o.parent) && !sceneObjects[o.parent]) { delete sceneObjects[id]; physicsVelocity.delete(id); vlInstCache.delete(id); if (selectedObjectId === id) selectedObjectId = null; changed = true; } }
         }
-        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings' })[type] || 'Instance'; }
+        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball' })[type] || 'Instance'; }
         function preInc(n) { return typeof settings !== 'undefined' && !!(settings.preinclude && settings.preinclude[n]); }
+        // Textures: a child of a prism6 that paints chosen faces. Faces use the engine's face order.
+        const FACE_LABELS = ['Front', 'Back', 'Right', 'Left', 'Top', 'Bottom'];
+        const FACE_PICK_ORDER = [4, 5, 0, 1, 3, 2];
+        const TEXTURES = { grid: { id: 1, name: 'Grid (0.25, 0.5 and 1 Vm)', note: 'Squares with fine lines every 0.25 Vm, medium lines every 0.5 Vm and bold lines every 1 Vm. Wider lines every 4, 16 and 64 Vm appear in the distance. The grid is locked to the world, so neighboring prisms line up.' } };
+        function makeTexture(name, parent, faces, texture) { return { type: 'texture', name, parent, faces: (faces || [4]).slice(), texture: texture || 'grid' }; }
+        const HEX6 = /^#[0-9a-f]{6}$/i;
+        const prismColor = (o) => HEX6.test(o.color) ? o.color : '#888888';
+        // A ball is an ellipsoid with the same properties as a prism. Its Size is the radius on each axis.
+        function makeBall(name, parent, dims) {
+            return Object.assign(makePrism(name, parent, {}), { type: 'ball', length: 0.5, width: 0.5, height: 0.5 }, dims);
+        }
+        const isShape = (o) => !!o && (o.type === 'prism6' || o.type === 'ball');
+        // Rotation: degrees about X, Y and Z, applied as R = Ry * Rx * Rz (turn, then tilt, then roll). Matrices are 3x3 row-major.
+        const ROT_IDENT = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+        const rotCache = new WeakMap();
+        function mat3mul(a, b) {
+            const r = new Float32Array(9);
+            for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) r[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
+            return r;
+        }
+        const mat3T = (a) => new Float32Array([a[0], a[3], a[6], a[1], a[4], a[7], a[2], a[5], a[8]]);
+        function rotInfo(o) {
+            const rx = +o.rotX || 0, ry = +o.rotY || 0, rz = +o.rotZ || 0;
+            if (!rx && !ry && !rz) return null;
+            const key = rx + ',' + ry + ',' + rz, c = rotCache.get(o);
+            if (c && c.key === key) return c;
+            const d = Math.PI / 180, ca = Math.cos(rx * d), sa = Math.sin(rx * d), cb = Math.cos(ry * d), sb = Math.sin(ry * d), cg = Math.cos(rz * d), sg = Math.sin(rz * d);
+            const m = mat3mul(mat3mul(new Float32Array([cb, 0, sb, 0, 1, 0, -sb, 0, cb]), new Float32Array([1, 0, 0, 0, ca, -sa, 0, sa, ca])), new Float32Array([cg, -sg, 0, sg, cg, 0, 0, 0, 1]));
+            const info = { key, m, t: mat3T(m) };
+            rotCache.set(o, info);
+            return info;
+        }
+        const rotMat = (o) => { const i = rotInfo(o); return i ? i.m : ROT_IDENT; };      // local -> world
+        const rotGL = (o) => { const i = rotInfo(o); return i ? i.t : ROT_IDENT; };       // same matrix, column-major for WebGL
+        // Half sizes of the world-aligned box around a shape (physics, bounds and draw order use this)
+        function shapeHalfExt(o) {
+            const i = rotInfo(o);
+            if (!i) return [o.width, o.height, o.length];
+            const m = i.m, w = o.width, h = o.height, l = o.length;
+            if (o.type === 'ball') return [Math.hypot(m[0] * w, m[1] * h, m[2] * l), Math.hypot(m[3] * w, m[4] * h, m[5] * l), Math.hypot(m[6] * w, m[7] * h, m[8] * l)];
+            return [Math.abs(m[0]) * w + Math.abs(m[1]) * h + Math.abs(m[2]) * l, Math.abs(m[3]) * w + Math.abs(m[4]) * h + Math.abs(m[5]) * l, Math.abs(m[6]) * w + Math.abs(m[7]) * h + Math.abs(m[8]) * l];
+        }
         function makePrism(name, parent, dims) {
             return Object.assign({
                 type: 'prism6', name, parent,
-                x: 0, y: 0, z: 0, length: 1, width: 1, height: 1,
-                faceColoring: false, showLabels: false, wireframe: false, locked: false, reactsToPhysics: false, collidable: true, anchored: false
+                x: 0, y: 0, z: 0, length: 0.5, width: 1, height: 0.5, rotX: 0, rotY: 0, rotZ: 0,
+                color: '#888888', faceColoring: false, showLabels: false, wireframe: false, locked: false, reactsToPhysics: true, collidable: true, anchored: false
             }, dims);
         }
         // Every instance has a type (its label, e.g. "prism6", shared by all of that kind)
@@ -1215,7 +1346,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             function scan(id) {
                 for (const [k, o] of Object.entries(sceneObjects)) {
                     if (o.parent === id) {
-                        if (o.type === 'prism6' && spaceOf(o) === 'world') list.push([k, o]);
+                        if (isShape(o) && spaceOf(o) === 'world') list.push([k, o]);
                         scan(k);
                     }
                 }
@@ -1231,12 +1362,13 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             let minY = Infinity, maxY = -Infinity;
             let minZ = Infinity, maxZ = -Infinity;
             for (const [, p] of prisms) {
-                minX = Math.min(minX, p.x - p.width);
-                maxX = Math.max(maxX, p.x + p.width);
-                minY = Math.min(minY, p.y - p.height);
-                maxY = Math.max(maxY, p.y + p.height);
-                minZ = Math.min(minZ, p.z - p.length);
-                maxZ = Math.max(maxZ, p.z + p.length);
+                const e = shapeHalfExt(p);
+                minX = Math.min(minX, p.x - e[0]);
+                maxX = Math.max(maxX, p.x + e[0]);
+                minY = Math.min(minY, p.y - e[1]);
+                maxY = Math.max(maxY, p.y + e[1]);
+                minZ = Math.min(minZ, p.z - e[2]);
+                maxZ = Math.max(maxZ, p.z + e[2]);
             }
             return {
                 x: (minX + maxX) / 2,
@@ -1264,12 +1396,13 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const esc = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
         const sceneObjects = {
-            'Cobalt092': makePrism('Block', 'world', { length: 1.8, width: 1.0, height: 0.8 }),
+            'Cobalt092': makePrism('Plate', 'world', { x: 0, y: -1, z: 0, length: 100, width: 100, height: 1, anchored: true }),
             'Onyx004': { type: 'viewfinder', name: 'Viewfinder', parent: 'engine', readOnly: true }
         };
+        sceneObjects['Linen551'] = makeTexture('Texture', 'Cobalt092', [4], 'grid');
         sceneObjects['Amber417'] = { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 };
-        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1 };
-        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun' };
+        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0 };
+        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball' };
 
         let isLightMode = false;
         let accentCol = '#f2b134';
@@ -1282,6 +1415,26 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         let simSnapshot = null;
         let physicsLastTime = 0;
         const physicsVelocity = new Map();
+        // Ball spin and orientation exist only while the simulation runs (3x3 row-major rotation, spin in rad/s)
+        const ballRot = new Map(), ballSpin = new Map(), ballContacts = new Map();
+        const IDENT3 = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+        const ballRotFor = (id) => ballRot.get(id) || IDENT3;
+        const ballRadius = (o) => (o.width + o.height + o.length) / 3;
+        function spinFor(id) { if (!ballSpin.has(id)) ballSpin.set(id, { x: 0, y: 0, z: 0 }); return ballSpin.get(id); }
+        function rotateBall(id, w, h) {
+            const m = Math.hypot(w.x, w.y, w.z), ang = m * h;
+            if (ang < 1e-7) return;
+            const ax = w.x / m, ay = w.y / m, az = w.z / m, c = Math.cos(ang), sn = Math.sin(ang), t = 1 - c;
+            const K = [t * ax * ax + c, t * ax * ay - sn * az, t * ax * az + sn * ay, t * ax * ay + sn * az, t * ay * ay + c, t * ay * az - sn * ax, t * ax * az - sn * ay, t * ay * az + sn * ax, t * az * az + c];
+            const R = ballRotFor(id), N = new Float32Array(9);
+            for (let r = 0; r < 3; r++) for (let q = 0; q < 3; q++) N[r * 3 + q] = K[r * 3] * R[q] + K[r * 3 + 1] * R[3 + q] + K[r * 3 + 2] * R[6 + q];
+            // keep the rows perpendicular and unit length so tiny errors never build up
+            const nrm = (i) => { const l = Math.hypot(N[i], N[i + 1], N[i + 2]) || 1; N[i] /= l; N[i + 1] /= l; N[i + 2] /= l; };
+            nrm(0);
+            let d = N[0] * N[3] + N[1] * N[4] + N[2] * N[5]; N[3] -= d * N[0]; N[4] -= d * N[1]; N[5] -= d * N[2]; nrm(3);
+            N[6] = N[1] * N[5] - N[2] * N[4]; N[7] = N[2] * N[3] - N[0] * N[5]; N[8] = N[0] * N[4] - N[1] * N[3];
+            ballRot.set(id, N);
+        }
         const PHYSICS_MAX_STEP = 1 / 120;
         const DEFAULT_GRAVITY = 9.8;          // meters per second squared (Earth)
         const GRAVITY_MAX = 1000;
@@ -1304,7 +1457,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
         function physicsBodyList() {
             return Object.entries(sceneObjects)
-                .filter(([, o]) => o.type === 'prism6' && spaceOf(o) === 'world');
+                .filter(([, o]) => isShape(o) && spaceOf(o) === 'world');
         }
 
         function physicsVelocityFor(id) {
@@ -1314,6 +1467,50 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
         // A body moves under physics only when it reacts to physics and is not anchored.
         const isMovable = (o) => o.reactsToPhysics && !o.anchored;
+
+        // Ball against a prism or another ball. n points from B toward A. Balls bounce a little and pick up spin when they roll.
+        function resolveBallPair(idA, a, idB, b) {
+            const aMoves = isMovable(a), bMoves = isMovable(b);
+            let n, pen;
+            if (a.type === 'ball' && b.type === 'ball') {
+                const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z, dist = Math.hypot(dx, dy, dz), rs = ballRadius(a) + ballRadius(b);
+                if (dist >= rs) return;
+                n = dist > 1e-6 ? [dx / dist, dy / dist, dz / dist] : [0, 1, 0];
+                pen = rs - dist;
+            } else {
+                const ball = a.type === 'ball' ? a : b, box = ball === a ? b : a, r = ballRadius(ball);
+                // work in the box's own axes, so a tilted box is solid at its true angle
+                const R = rotMat(box), ax = ball.x - box.x, ay = ball.y - box.y, az = ball.z - box.z;
+                const lx = R[0] * ax + R[3] * ay + R[6] * az, ly = R[1] * ax + R[4] * ay + R[7] * az, lz = R[2] * ax + R[5] * ay + R[8] * az;
+                const qx = Math.max(-box.width, Math.min(box.width, lx)), qy = Math.max(-box.height, Math.min(box.height, ly)), qz = Math.max(-box.length, Math.min(box.length, lz));
+                const dx = lx - qx, dy = ly - qy, dz = lz - qz, dist = Math.hypot(dx, dy, dz);
+                if (dist >= r) return;
+                let nl;
+                if (dist > 1e-6) { nl = [dx / dist, dy / dist, dz / dist]; pen = r - dist; }
+                else {
+                    // the center is inside the box: leave through the nearest face
+                    const px = box.width - Math.abs(lx), py = box.height - Math.abs(ly), pz = box.length - Math.abs(lz);
+                    if (py <= px && py <= pz) { nl = [0, ly >= 0 ? 1 : -1, 0]; pen = py + r; }
+                    else if (px <= pz) { nl = [lx >= 0 ? 1 : -1, 0, 0]; pen = px + r; }
+                    else { nl = [0, 0, lz >= 0 ? 1 : -1]; pen = pz + r; }
+                }
+                const nb = [R[0] * nl[0] + R[1] * nl[1] + R[2] * nl[2], R[3] * nl[0] + R[4] * nl[1] + R[5] * nl[2], R[6] * nl[0] + R[7] * nl[1] + R[8] * nl[2]];
+                n = ball === a ? nb : [-nb[0], -nb[1], -nb[2]];
+            }
+            const shareA = aMoves && bMoves ? 0.5 : (aMoves ? 1 : 0), shareB = aMoves && bMoves ? 0.5 : (bMoves ? 1 : 0);
+            a.x += n[0] * pen * shareA; a.y += n[1] * pen * shareA; a.z += n[2] * pen * shareA;
+            b.x -= n[0] * pen * shareB; b.y -= n[1] * pen * shareB; b.z -= n[2] * pen * shareB;
+            const av = physicsVelocityFor(idA), bv = physicsVelocityFor(idB);
+            const rel = (av.x - bv.x) * n[0] + (av.y - bv.y) * n[1] + (av.z - bv.z) * n[2];
+            if (rel < 0) {
+                const e = -rel > 1.5 ? 0.35 : 0, dv = -(1 + e) * rel;
+                const fa = aMoves && bMoves ? dv / 2 : (aMoves ? dv : 0), fb = aMoves && bMoves ? dv / 2 : (bMoves ? dv : 0);
+                av.x += n[0] * fa; av.y += n[1] * fa; av.z += n[2] * fa;
+                bv.x -= n[0] * fb; bv.y -= n[1] * fb; bv.z -= n[2] * fb;
+            }
+            if (a.type === 'ball' && aMoves) ballContacts.set(idA, { nx: n[0], ny: n[1], nz: n[2], ovx: bv.x, ovy: bv.y, ovz: bv.z });
+            if (b.type === 'ball' && bMoves) ballContacts.set(idB, { nx: -n[0], ny: -n[1], nz: -n[2], ovx: av.x, ovy: av.y, ovz: av.z });
+        }
 
         function resolvePhysicsCollisions(bodies) {
             // Every collidable prism blocks movers. There is no ground plane: things fall until they land on something.
@@ -1327,10 +1524,12 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     const aMoves = isMovable(a);
                     const bMoves = isMovable(b);
                     if (!aMoves && !bMoves) continue;
+                    if (a.type === 'ball' || b.type === 'ball') { resolveBallPair(idA, a, idB, b); continue; }
 
-                    const dx = (a.width + b.width) - Math.abs(a.x - b.x);
-                    const dy = (a.height + b.height) - Math.abs(a.y - b.y);
-                    const dz = (a.length + b.length) - Math.abs(a.z - b.z);
+                    const ea = shapeHalfExt(a), eb = shapeHalfExt(b);   // tilted boxes collide as the box around them
+                    const dx = (ea[0] + eb[0]) - Math.abs(a.x - b.x);
+                    const dy = (ea[1] + eb[1]) - Math.abs(a.y - b.y);
+                    const dz = (ea[2] + eb[2]) - Math.abs(a.z - b.z);
                     if (dx <= 0 || dy <= 0 || dz <= 0) continue;
 
                     const signX = a.x < b.x ? -1 : 1;
@@ -1386,6 +1585,22 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 }
                 // A few passes help stacked boxes settle without obvious overlap.
                 for (let pass = 0; pass < 3; pass++) resolvePhysicsCollisions(bodies);
+                // Rolling: a touching ball spins so its surface does not slip, and rolling slowly loses speed
+                for (const [id, c] of ballContacts) {
+                    const o = sceneObjects[id];
+                    if (!o || !isMovable(o)) continue;
+                    const v = physicsVelocityFor(id), r = ballRadius(o);
+                    const rx = v.x - c.ovx, ry = v.y - c.ovy, rz = v.z - c.ovz, dn = rx * c.nx + ry * c.ny + rz * c.nz;
+                    const tx = rx - c.nx * dn, ty = ry - c.ny * dn, tz = rz - c.nz * dn;
+                    const tw = [(c.ny * tz - c.nz * ty) / r, (c.nz * tx - c.nx * tz) / r, (c.nx * ty - c.ny * tx) / r];
+                    const w = spinFor(id), wn = w.x * c.nx + w.y * c.ny + w.z * c.nz, k = Math.min(1, 25 * h), keep = Math.max(0, 1 - 2 * h);
+                    const px = w.x - c.nx * wn, py = w.y - c.ny * wn, pz = w.z - c.nz * wn;
+                    w.x = c.nx * wn * keep + px + (tw[0] - px) * k; w.y = c.ny * wn * keep + py + (tw[1] - py) * k; w.z = c.nz * wn * keep + pz + (tw[2] - pz) * k;
+                    const f = Math.min(1, 0.35 * h);
+                    v.x -= tx * f; v.y -= ty * f; v.z -= tz * f;
+                }
+                ballContacts.clear();
+                for (const [id, o] of bodies) if (o.type === 'ball' && isMovable(o) && ballSpin.has(id)) rotateBall(id, ballSpin.get(id), h);
             }
 
             // Kill layer: anything that falls below it is deleted from the world.
@@ -1393,7 +1608,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             for (const [id, o] of bodies) {
                 if (isMovable(o) && o.y < killY) {
                     delete sceneObjects[id];
-                    physicsVelocity.delete(id);
+                    physicsVelocity.delete(id); ballRot.delete(id); ballSpin.delete(id);
                     if (selectedObjectId === id) selectedObjectId = null;
                     removed = true;
                 }
@@ -1410,7 +1625,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             Object.assign(sceneObjects, JSON.parse(JSON.stringify(simSnapshot.objects)));
             Object.assign(counters, simSnapshot.counters);
             simSnapshot = null;
-            physicsVelocity.clear();
+            physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear();
             manip = null;
             if (selectedObjectId && !sceneObjects[selectedObjectId]) selectedObjectId = null;
             renderExplorer();
@@ -1420,7 +1635,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function setSimulationRunning(running) {
             if (running === simulationRunning) return;
             physicsLastTime = 0;
-            physicsVelocity.clear();
+            physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear();
             if (running) {
                 takeSnapshot();
                 outputLog.length = 0;
@@ -1450,7 +1665,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const VL_KEYWORDS = new Set(['call', 'get', 'local', 'while', 'for', 'in', 'do', 'end', 'if', 'then', 'else', 'and', 'or', 'not']);
         const VL_SPACES = { World: 'world', Storage: 'storage', Scripts: 'scripts' };
         const VL_MODULES = ['Instance', 'Scripting'];
-        const VL_TYPES = ['prism6', 'model', 'script', 'worldsettings'];
+        const VL_TYPES = ['prism6', 'ball', 'model', 'script', 'worldsettings'];
         const VL_GLOBALS = ['vanilla3D', 'print', 'wait', 'script'];
         // Runtime globals are shared by all scripts during one simulation.
         let vlSharedGlobals = new Map();
@@ -1714,7 +1929,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                             const m = f.name, n = e.args.length;
                             if (m === 'create') {
                                 if (n !== 2) err(e.line, 'Instance.create needs 2 arguments: (type, space).');
-                                if (e.args[0] && e.args[0].k === 'str' && !VL_TYPES.includes(e.args[0].v)) err(e.line, 'Unknown instance type "' + e.args[0].v + '". Use prism6, script or worldsettings.');
+                                if (e.args[0] && e.args[0].k === 'str' && !VL_TYPES.includes(e.args[0].v)) err(e.line, 'Unknown instance type "' + e.args[0].v + '". Use prism6, ball, model, script or worldsettings.');
                                 if (e.args[1] && (e.args[1].k === 'str' || e.args[1].k === 'num' || e.args[1].k === 'bool')) err(e.line, 'The second argument of Instance.create must be a loaded Space such as World.');
                             } else if (m === 'delete') {
                                 if (n !== 1) err(e.line, 'Instance.delete needs 1 argument: (instance).');
@@ -1834,8 +2049,9 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const VL_AXES = { X: 0, Y: 1, Z: 2 };
         class VLVec {
             constructor(x, y, z, bind) { this.v = [x, y, z]; this.bind = bind || null; }
-            get(i) { if (this.bind) { const o = sceneObjects[this.bind.id]; if (!o) throw new VLError('This instance was deleted.'); return o[this.bind.keys[i]]; } return this.v[i]; }
-            set(i, n) { if (this.bind) { const o = sceneObjects[this.bind.id]; if (!o) throw new VLError('This instance was deleted.'); o[this.bind.keys[i]] = n; } else this.v[i] = n; }
+            target() { const o = sceneObjects[this.bind.id]; if (!o) throw new VLError('This instance was deleted.'); return this.bind.vel ? physicsVelocityFor(this.bind.id) : o; }
+            get(i) { if (this.bind) return this.target()[this.bind.keys[i]]; return this.v[i]; }
+            set(i, n) { if (this.bind) this.target()[this.bind.keys[i]] = n; else this.v[i] = n; }
         }
         class VLScope {
             constructor(parent) { this.vars = new Map(); this.parent = parent || null; }
@@ -1874,18 +2090,22 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             model: {},
             prism6: {
                 Locked: ['locked', 'bool'], Anchored: ['anchored', 'bool'], ReactsToPhysics: ['reactsToPhysics', 'bool'], Collidable: ['collidable', 'bool'],
-                Wireframe: ['wireframe', 'bool'], FaceColoring: ['faceColoring', 'bool'], ShowLabels: ['showLabels', 'bool']
+                Wireframe: ['wireframe', 'bool'], FaceColoring: ['faceColoring', 'bool'], Color: ['color', 'str'], ShowLabels: ['showLabels', 'bool']
             },
+            ball: null,
             worldsettings: { TimeOfDay: ['timeOfDay', 'num'], Gravity: ['gravity', 'num'], KillLayer: ['killY', 'num'] },
             script: {}
         };
 
+        VL_PROPS.ball = VL_PROPS.prism6;
         function vlGetProp(inst, name, line) {
             const o = vlObj(inst, line);
             if (name === 'Type') return o.type;
             if (name === 'Parent') return SPACE_KEYS.includes(o.parent) ? vlSpaces[o.parent] : vlInst(o.parent);
-            if (o.type === 'prism6' && name === 'Position') return new VLVec(0, 0, 0, { id: inst.id, keys: ['x', 'y', 'z'] });
-            if (o.type === 'prism6' && name === 'Size') return new VLVec(0, 0, 0, { id: inst.id, keys: ['width', 'height', 'length'] });
+            if (isShape(o) && name === 'Velocity') return new VLVec(0, 0, 0, { id: inst.id, keys: ['x', 'y', 'z'], vel: true });
+            if (isShape(o) && name === 'Rotation') return new VLVec(0, 0, 0, { id: inst.id, keys: ['rotX', 'rotY', 'rotZ'] });
+            if (isShape(o) && name === 'Position') return new VLVec(0, 0, 0, { id: inst.id, keys: ['x', 'y', 'z'] });
+            if (isShape(o) && name === 'Size') return new VLVec(0, 0, 0, { id: inst.id, keys: ['width', 'height', 'length'] });
             if (o.type === 'script' && name === 'Run') return new VLFn('Run', (args, ln) => { vlRunScript(inst.id, ln); return null; });
             const def = VL_PROPS.common[name] || (VL_PROPS[o.type] || {})[name];
             if (!def) throw new VLError('"' + name + '" is not a property of ' + o.type + '.', line);
@@ -1901,9 +2121,15 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 else throw new VLError('Parent needs an instance or a Space such as World.', line);
                 uiDirty = true; return;
             }
-            if (o.type === 'prism6' && (name === 'Position' || name === 'Size')) {
+            if (isShape(o) && name === 'Velocity') {
+                if (!(v instanceof VLVec)) throw new VLError('Velocity needs a vector, for example vanilla3D.Position(0, 5, 0).', line);
+                const vel = physicsVelocityFor(inst.id);
+                vel.x = v.get(0); vel.y = v.get(1); vel.z = v.get(2);
+                return;
+            }
+            if (isShape(o) && (name === 'Position' || name === 'Size' || name === 'Rotation')) {
                 if (!(v instanceof VLVec)) throw new VLError(name + ' needs a vector, for example vanilla3D.' + name + '(0, 1, 0).', line);
-                const keys = name === 'Position' ? ['x', 'y', 'z'] : ['width', 'height', 'length'];
+                const keys = name === 'Position' ? ['x', 'y', 'z'] : (name === 'Rotation' ? ['rotX', 'rotY', 'rotZ'] : ['width', 'height', 'length']);
                 for (let i = 0; i < 3; i++) { const n = v.get(i); o[keys[i]] = name === 'Size' ? Math.max(0.05, n) : n; }
                 return;
             }
@@ -1913,6 +2139,12 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             if (kind === 'bool' && typeof v !== 'boolean') throw new VLError(name + ' needs True or False.', line);
             if (kind === 'num' && (typeof v !== 'number' || !Number.isFinite(v))) throw new VLError(name + ' needs a number.', line);
             if (kind === 'str' && typeof v !== 'string') throw new VLError(name + ' needs a string.', line);
+            if (name === 'Color') {
+                let h = v.trim().replace(/^#/, '');
+                if (/^[0-9a-f]{3}$/i.test(h)) h = h.split('').map(c => c + c).join('');
+                if (!/^[0-9a-f]{6}$/i.test(h)) throw new VLError('Color needs a hex string such as "#ff8800".', line);
+                v = ('#' + h).toLowerCase();
+            }
             if (name === 'TimeOfDay') v = Math.max(0, Math.min(24, v));
             if (name === 'Gravity') v = Math.max(0, Math.min(GRAVITY_MAX, v));
             o[def[0]] = v;
@@ -1951,7 +2183,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         // ── Instance module ──
         function vlCreate(type, spaceId) {
             let o;
-            if (type === 'prism6') o = makePrism(dn('prism6') + ' ' + (++counters.prism), spaceId, { length: 0.75, width: 0.75, height: 0.75 });
+            if (type === 'prism6') o = makePrism(dn('prism6') + ' ' + (++counters.prism), spaceId, {});
+            else if (type === 'ball') o = makeBall(dn('ball') + ' ' + (++counters.ball), spaceId, {});
             else if (type === 'model') { const n = ++counters.model; o = { type: 'model', name: dn('model') + (n === 1 ? '' : ' ' + n), parent: spaceId }; }
             else if (type === 'worldsettings') o = { type: 'worldsettings', name: dn('worldsettings') + ' ' + (++counters.worldsettings), parent: spaceId, timeOfDay: 14, gravity: 9.8, killY: -5000 };
             else { const n = ++counters.script; o = newScriptData(n === 1 ? dn('script') : dn('script') + ' ' + n, spaceId); }
@@ -2003,7 +2236,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             SetUID: vlSetUIDFn,
             create: new VLFn('Instance.create', (args, line) => {
                 const [type, space] = args;
-                if (typeof type !== 'string' || !VL_TYPES.includes(type)) throw new VLError('Unknown instance type "' + vlStr(type) + '". Use prism6, script or worldsettings.', line);
+                if (typeof type !== 'string' || !VL_TYPES.includes(type)) throw new VLError('Unknown instance type "' + vlStr(type) + '". Use prism6, ball, model, script or worldsettings.', line);
                 if (!(space instanceof VLSpace)) throw new VLError('Instance.create needs a loaded Space as its second argument, for example World.', line);
                 return vlInst(vlCreate(type, space.id));
             }),
@@ -2498,7 +2731,15 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 const n = ++counters.prism;
                 const k = n - 2;
                 const offset = (k % 2 === 0 ? 1 : -1) * 3 * (Math.floor(k / 2) + 1);
-                obj = makePrism(dn('prism6') + ' ' + n, space, { x: offset, length: 0.75, width: 0.75, height: 0.75 });
+                obj = makePrism(dn('prism6') + ' ' + n, space, { x: offset, y: 0.5 });
+            } else if (kind === 'ball') {
+                const n = ++counters.ball;
+                const k = n - 1;
+                const offset = (k % 2 === 0 ? 1 : -1) * 2 * (Math.floor(k / 2) + 1);
+                obj = makeBall(dn('ball') + (n === 1 ? '' : ' ' + n), space, { x: offset, y: 0.5, z: 2 });
+            } else if (kind === 'texture') {
+                const n = ++counters.texture;
+                obj = makeTexture(dn('texture') + (n === 1 ? '' : ' ' + n), space, [4], 'grid');
             } else if (kind === 'model') {
                 const n = ++counters.model;
                 obj = { type: 'model', name: dn('model') + (n === 1 ? '' : ' ' + n), parent: space };
@@ -2530,15 +2771,101 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const statFaces = document.getElementById('stat-faces');
 
         // Camera control settings (saved in this browser)
-        const settings = { leftDrag: true, rightClick: false, gizmoOffset: 0.5, showUid: false, syntax: true, defaultNames: {}, preinclude: {} };
+        let FOV = 450;
+        const defaultSettings = () => ({ leftDrag: true, rightClick: false, gizmoOffset: 0.5, rotOffset: 45, camSpeed: 0.1, axisLength: 8, lookSens: 1, invertY: false, fov: 75, lighting: 'enhanced', shadows: 'medium', haze: true, showAxes: true, showViewfinder: true, hintMode: 'auto', showStatus: true, seFont: 13, autosave: 0, accent: 'vanilla', light: false, showUid: false, syntax: true, defaultNames: {}, preinclude: {} });
+        const settings = defaultSettings();
+        let autosaveTimer = null, autosaveMins = -1, autosaveBase = '';
+        // Accent colors: each preset has a dark-theme and a light-theme shade.
+        const ACCENT_PRESETS = [
+            { id: 'vanilla', name: 'Vanilla yellow', dark: '#f2b134', light: '#b86f00' },
+            { id: 'coral', name: 'Coral', dark: '#ff7a59', light: '#c8431f' },
+            { id: 'rose', name: 'Rose', dark: '#f472b6', light: '#be2a75' },
+            { id: 'violet', name: 'Violet', dark: '#a78bfa', light: '#6d3fd1' },
+            { id: 'blue', name: 'Blue', dark: '#5aa2ff', light: '#1f62c9' },
+            { id: 'teal', name: 'Teal', dark: '#2dd4bf', light: '#0b7f73' },
+            { id: 'green', name: 'Green', dark: '#4ade80', light: '#1c8c4a' },
+            { id: 'graphite', name: 'Graphite', dark: '#b6bdcc', light: '#4a5368' }
+        ];
+        const hexOk = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+        const hexToRgb = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+        const rgbToHex = (a) => '#' + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+        const mixRgb = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+        const lumOf = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+        function accentVars(rgb, light) {
+            const hover = mixRgb(rgb, light ? [0, 0, 0] : [255, 255, 255], light ? 0.12 : 0.18);
+            const ink = lumOf(rgb) > (light ? 0.3 : 0.35) ? rgbToHex(mixRgb(rgb, [0, 0, 0], 0.85)) : '#ffffff';
+            return '--accent:' + rgbToHex(rgb) + ';--accent-hover:' + rgbToHex(hover) + ';--accent-ink:' + ink + ';--accent-soft:rgba(' + rgb.map(Math.round).join(',') + ',' + (light ? 0.12 : 0.15) + ');';
+        }
+        function applyAccent() {
+            let el = document.getElementById('accent-style');
+            const preset = ACCENT_PRESETS.find(p => p.id === settings.accent);
+            if (!preset && !hexOk(settings.accent)) settings.accent = 'vanilla';
+            if (settings.accent === 'vanilla') { if (el) el.remove(); return; }
+            let dark, light;
+            if (preset) { dark = hexToRgb(preset.dark); light = hexToRgb(preset.light); }
+            else { dark = hexToRgb(settings.accent); light = lumOf(dark) > 0.25 ? mixRgb(dark, [0, 0, 0], 0.3) : dark; }
+            if (!el) { el = document.createElement('style'); el.id = 'accent-style'; document.head.appendChild(el); }
+            el.textContent = ':root{' + accentVars(dark, false) + '}body.light-theme{' + accentVars(light, true) + '}';
+        }
         try { Object.assign(settings, JSON.parse(localStorage.getItem('vanilla-editor-settings') || '{}')); } catch (e) {}
+        const AXIS_MIN = 0.1, AXIS_MAX = 100;
+        const clampAxis = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? Math.min(AXIS_MAX, Math.max(AXIS_MIN, Math.round(n * 1000) / 1000)) : 8; };
+        // Origin marker geometry: half-length, tick spacing (about ten ticks per side) and tick size.
+        function axisGeom() {
+            const lim = clampAxis(settings.axisLength), x = lim / 10, e = Math.pow(10, Math.floor(Math.log10(x))), f = x / e;
+            const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e;
+            return { lim, step, n: Math.round(lim / step), tk: step * 0.2 };
+        }
         function applySettings() {
+            const pick = (v, list, d) => list.includes(+v) ? +v : d;
+            settings.lookSens = pick(settings.lookSens, [0.5, 0.75, 1, 1.5, 2], 1);
+            settings.seFont = pick(settings.seFont, [12, 13, 15, 17], 13);
+            settings.autosave = pick(settings.autosave, [0, 1, 2, 5, 10], 0);
+            settings.fov = Math.round(Math.min(110, Math.max(40, Number.isFinite(parseFloat(settings.fov)) ? parseFloat(settings.fov) : 75)));
+            if (!['auto', 'always', 'never'].includes(settings.hintMode)) settings.hintMode = 'auto';
+            if (!['enhanced', 'classic'].includes(settings.lighting)) settings.lighting = 'enhanced';
+            if (!['off', 'low', 'medium', 'high'].includes(settings.shadows)) settings.shadows = 'medium';
+            document.getElementById('set-lighting').value = settings.lighting;
+            document.getElementById('set-shadows').value = settings.shadows;
+            document.getElementById('set-shadows').disabled = settings.lighting === 'classic';
+            document.getElementById('opt-haze').checked = settings.haze !== false;
+            document.getElementById('opt-haze').disabled = settings.lighting === 'classic';
+            isLightMode = !!settings.light;
+            document.body.classList.toggle('light-theme', isLightMode);
+            document.getElementById('theme-toggle').checked = isLightMode;
+            applyAccent();
+            document.getElementById('set-looksens').value = String(settings.lookSens);
+            document.getElementById('opt-inverty').checked = !!settings.invertY;
+            document.getElementById('set-fov').value = settings.fov;
+            document.getElementById('set-fov-out').textContent = settings.fov + '°';
+            FOV = 450 * Math.tan(75 * Math.PI / 360) / Math.tan(settings.fov * Math.PI / 360);
+            document.getElementById('opt-axes').checked = settings.showAxes !== false;
+            document.getElementById('opt-viewcube').checked = settings.showViewfinder !== false;
+            document.getElementById('viewfinder-container').style.display = settings.showViewfinder === false ? 'none' : '';
+            document.getElementById('set-hint').value = settings.hintMode;
+            { const h = document.getElementById('hint'); h.classList.toggle('dismissed', settings.hintMode === 'never' || (settings.hintMode === 'auto' && h.dataset.elapsed === '1')); }
+            document.getElementById('opt-status').checked = settings.showStatus !== false;
+            document.getElementById('statusbar').style.display = settings.showStatus === false ? 'none' : '';
+            document.getElementById('set-sefont').value = String(settings.seFont);
+            document.documentElement.style.setProperty('--se-fs', settings.seFont + 'px');
+            document.getElementById('set-autosave').value = String(settings.autosave);
+            if (settings.autosave !== autosaveMins) { autosaveMins = settings.autosave; setupAutosave(); }
+            document.querySelectorAll('#acc-swatches .swatch').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.accent === settings.accent)));
+            { const custom = hexOk(settings.accent), pr = ACCENT_PRESETS.find(p => p.id === settings.accent), cur = custom ? settings.accent.toLowerCase() : (pr ? pr.dark : '#f2b134');
+              const cp = document.getElementById('acc-custom'), hx = document.getElementById('acc-hex');
+              cp.value = cur; cp.classList.toggle('on', custom); if (hx !== document.activeElement) hx.value = cur; }
+            refreshTheme();
             if (typeof settings.defaultNames !== 'object' || !settings.defaultNames) settings.defaultNames = {};
             if (typeof settings.preinclude !== 'object' || !settings.preinclude) settings.preinclude = {};
             document.getElementById('set-cam').value = settings.rightClick && !settings.leftDrag ? 'right' : 'drag';
+            if (!(settings.camSpeed > 0)) settings.camSpeed = 0.1;
+            document.getElementById('set-camspeed').value = String(settings.camSpeed);
+            if (document.getElementById('set-camspeed').value !== String(settings.camSpeed)) document.getElementById('set-camspeed').value = '0.1';
+            settings.axisLength = clampAxis(settings.axisLength);
+            { const ax = document.getElementById('set-axislen'); if (ax !== document.activeElement) ax.value = settings.axisLength; }
             document.getElementById('opt-uid').checked = !!settings.showUid;
             document.getElementById('opt-syntax').checked = settings.syntax !== false;
-            ['prism6', 'model', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el && el !== document.activeElement) el.value = dn(t); });
+            ['prism6', 'ball', 'model', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el && el !== document.activeElement) el.value = dn(t); });
             ['Scripts', 'Instance', 'World', 'Storage', 'Scripting'].forEach(n => { document.getElementById('pre-' + n).checked = !!settings.preinclude[n]; });
             canvas.classList.toggle('no-grab', !settings.leftDrag);
             const look = document.getElementById('hint-look');
@@ -2551,9 +2878,50 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         }
         const reCheckEditor = () => { if (typeof activeTab !== 'undefined' && activeTab !== 'world') seInput.dispatchEvent(new Event('input')); };
         document.getElementById('set-cam').addEventListener('change', (e) => { settings.leftDrag = e.target.value === 'drag'; settings.rightClick = e.target.value === 'right'; saveSettings(); });
+        document.getElementById('set-camspeed').addEventListener('change', (e) => { settings.camSpeed = parseFloat(e.target.value) || 0.1; saveSettings(); });
+        document.getElementById('set-axislen').addEventListener('input', (e) => { if (e.target.value !== '' && Number.isFinite(parseFloat(e.target.value))) { settings.axisLength = clampAxis(e.target.value); try { localStorage.setItem('vanilla-editor-settings', JSON.stringify(settings)); } catch (err) {} } });
+        document.getElementById('set-axislen').addEventListener('change', (e) => { settings.axisLength = clampAxis(e.target.value); e.target.value = settings.axisLength; saveSettings(); });
+        const bindSel = (id, key, parse) => document.getElementById(id).addEventListener('change', (e) => { settings[key] = parse(e.target.value); saveSettings(); });
+        const bindChk = (id, key) => document.getElementById(id).addEventListener('change', (e) => { settings[key] = e.target.checked; saveSettings(); });
+        bindSel('set-looksens', 'lookSens', parseFloat); bindSel('set-hint', 'hintMode', v => v); bindSel('set-sefont', 'seFont', Number); bindSel('set-autosave', 'autosave', Number);
+        bindSel('set-lighting', 'lighting', v => v); bindSel('set-shadows', 'shadows', v => v); bindChk('opt-haze', 'haze');
+        bindChk('opt-inverty', 'invertY'); bindChk('opt-axes', 'showAxes'); bindChk('opt-viewcube', 'showViewfinder'); bindChk('opt-status', 'showStatus');
+        document.getElementById('set-fov').addEventListener('input', (e) => { settings.fov = parseInt(e.target.value, 10); saveSettings(); });
+        // Accent color: preset swatches, a custom picker, a hex box and a reset button
+        ACCENT_PRESETS.forEach(p => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = 'swatch'; b.dataset.accent = p.id; b.title = p.name; b.setAttribute('aria-label', p.name);
+            b.style.setProperty('--sw', p.dark); b.style.setProperty('--sw-l', p.light);
+            b.addEventListener('click', () => { settings.accent = p.id; saveSettings(); });
+            document.getElementById('acc-swatches').appendChild(b);
+        });
+        document.getElementById('acc-custom').addEventListener('input', (e) => { settings.accent = e.target.value.toLowerCase(); saveSettings(); });
+        document.getElementById('acc-hex').addEventListener('change', (e) => {
+            let v = e.target.value.trim().replace(/^#/, '');
+            if (/^[0-9a-f]{3}$/i.test(v)) v = v.split('').map(c => c + c).join('');
+            if (/^[0-9a-f]{6}$/i.test(v)) { settings.accent = ('#' + v).toLowerCase(); saveSettings(); }
+            e.target.value = hexOk(settings.accent) ? settings.accent : (ACCENT_PRESETS.find(p => p.id === settings.accent) || ACCENT_PRESETS[0]).dark;
+        });
+        document.getElementById('acc-reset').addEventListener('click', () => { settings.accent = 'vanilla'; saveSettings(); });
+        document.getElementById('reset-settings').addEventListener('click', async () => {
+            if (!(await confirmDialog('Reset all settings?', 'Every setting goes back to its default. Your world is not changed.', 'Reset', false))) return;
+            Object.keys(settings).forEach(k => delete settings[k]); Object.assign(settings, defaultSettings());
+            document.getElementById('offset-input').value = settings.gizmoOffset;
+            document.getElementById('rot-offset-input').value = settings.rotOffset;
+            saveSettings(); reCheckEditor(); toast('Settings reset.');
+        });
+        function setupAutosave() {
+            clearInterval(autosaveTimer); autosaveTimer = null;
+            if (!(settings.autosave > 0)) return;
+            try { autosaveBase = JSON.stringify(buildWorldFile()); } catch (e) { autosaveBase = ''; }
+            autosaveTimer = setInterval(() => {
+                if (simulationRunning) return;
+                try { const now = JSON.stringify(buildWorldFile()); if (now === autosaveBase) return; localStorage.setItem(VN_WORLD_SAVE_KEY, now); autosaveBase = now; } catch (e) {}
+            }, settings.autosave * 60000);
+        }
         document.getElementById('opt-uid').addEventListener('change', (e) => { settings.showUid = e.target.checked; saveSettings(); renderExplorer(); });
         document.getElementById('opt-syntax').addEventListener('change', (e) => { settings.syntax = e.target.checked; saveSettings(); reCheckEditor(); });
-        ['prism6', 'model', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el) el.addEventListener('change', () => { const v = el.value.trim().slice(0, 24); if (v) settings.defaultNames[t] = v; else delete settings.defaultNames[t]; el.value = dn(t); saveSettings(); }); });
+        ['prism6', 'ball', 'model', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el) el.addEventListener('change', () => { const v = el.value.trim().slice(0, 24); if (v) settings.defaultNames[t] = v; else delete settings.defaultNames[t]; el.value = dn(t); saveSettings(); }); });
         ['Scripts', 'Instance', 'World', 'Storage', 'Scripting'].forEach(n => document.getElementById('pre-' + n).addEventListener('change', (e) => { settings.preinclude[n] = e.target.checked; saveSettings(); reCheckEditor(); }));
         document.querySelectorAll('.set-tab').forEach(b => b.addEventListener('click', () => {
             document.querySelectorAll('.set-tab').forEach(x => x.setAttribute('aria-selected', String(x === b)));
@@ -2569,12 +2937,18 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         offsetEl.addEventListener('input', () => { const n = parseOffset(offsetEl.value); if (n !== null) { settings.gizmoOffset = n; persistOffset(); } });
         offsetEl.addEventListener('change', () => { offsetEl.value = settings.gizmoOffset; });
         offsetEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') offsetEl.blur(); });
+        // Rotation: the step in degrees the Rotate gizmo snaps to (0 means free)
+        const rotEl = document.getElementById('rot-offset-input');
+        if (parseOffset(settings.rotOffset) === null) settings.rotOffset = 45;
+        rotEl.value = settings.rotOffset;
+        rotEl.addEventListener('input', () => { const n = parseOffset(rotEl.value); if (n !== null) { settings.rotOffset = n; persistOffset(); } });
+        rotEl.addEventListener('change', () => { rotEl.value = settings.rotOffset; });
+        rotEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') rotEl.blur(); });
 
         // Theme toggle
         document.getElementById('theme-toggle').addEventListener('change', (e) => {
-            isLightMode = e.target.checked;
-            document.body.classList.toggle('light-theme', isLightMode);
-            refreshTheme();
+            settings.light = e.target.checked;
+            saveSettings();
         });
 
         // Modals
@@ -2674,6 +3048,28 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             document.getElementById('toast-host').appendChild(el);
             setTimeout(() => el.remove(), 3200);
         }
+        let askEl = null;
+        function clearAsk() { if (askEl) { askEl.remove(); askEl = null; } }
+        function askToast(text, yesLabel, noLabel, onYes) {
+            clearAsk();
+            const el = document.createElement('div');
+            el.className = 'toast ask'; el.setAttribute('role', 'group'); el.setAttribute('aria-label', text);
+            el.innerHTML = icon('i-info') + '<span>' + esc(text) + '</span><div class="ask-actions"><button type="button" class="btn btn-outline" data-ask="no">' + esc(noLabel) + '</button><button type="button" class="btn btn-primary" data-ask="yes">' + esc(yesLabel) + '</button></div>';
+            el.querySelector('[data-ask="no"]').addEventListener('click', clearAsk);
+            el.querySelector('[data-ask="yes"]').addEventListener('click', () => { if (simulationRunning) { toast('Stop the simulation first. Stop restores your world.', 'warn'); return; } clearAsk(); onYes(); });
+            document.getElementById('toast-host').appendChild(el);
+            askEl = el;
+        }
+        function createPlate() {
+            const id = newId();
+            sceneObjects[id] = makePrism('Plate', 'world', { x: 0, y: -1, z: 0, length: 100, width: 100, height: 1, anchored: true });
+            sceneObjects[newId()] = makeTexture(dn('texture'), id, [4], 'grid');
+            counters.prism++; counters.texture++;
+            uiDirty = true; renderExplorer();
+            toast('Plate created.');
+        }
+        // The controls hint hides itself 10 seconds after the editor opens.
+        setTimeout(() => { const h = document.getElementById('hint'); h.dataset.elapsed = '1'; if (settings.hintMode === 'auto') h.classList.add('dismissed'); }, 10000);
         function confirmDialog(title, text, okLabel, danger) {
             return new Promise(resolve => {
                 const ov = document.getElementById('confirm-overlay'), ok = document.getElementById('cf-ok'), no = document.getElementById('cf-cancel');
@@ -2729,13 +3125,14 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             sanitizeWorldFile(data);
             for (const [uid, obj] of Object.entries(data.objects)) {
                 if (!/^[A-Za-z][A-Za-z0-9]*$/.test(uid) || !obj || typeof obj !== 'object' || !(SPACE_IDS.includes(obj.parent) || (data.objects[obj.parent] && obj.parent !== uid))) throw new Error('The file contains an invalid object or UID: ' + uid);
-                if (!['prism6', 'model', 'worldsettings', 'script'].includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
+                if (!['prism6', 'ball', 'model', 'worldsettings', 'script', 'texture'].includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
             }
             for (const [uid, obj] of Object.entries(data.objects)) { let p = obj, n = 0; while (p && !SPACE_IDS.includes(p.parent) && n++ < 64) p = data.objects[p.parent]; if (!p) throw new Error('Object ' + uid + ' has a circular parent chain.'); }
             return data;
         }
         function applyWorldFile(raw) {
             const data = validateWorldFile(raw);
+            clearAsk();
             for (const [uid, obj] of Object.entries(sceneObjects)) if (SPACE_IDS.includes(spaceOf(obj))) delete sceneObjects[uid];
             for (const [uid, obj] of Object.entries(data.objects)) {
                 if (obj.type === 'script') {
@@ -2744,10 +3141,16 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     if (obj.language !== 'vanillalua' && obj.language !== 'json') obj.language = 'vanillalua';
                     if (typeof obj.source !== 'string') obj.source = '';
                 }
+                if (isShape(obj) && !HEX6.test(obj.color)) obj.color = '#888888';
+                if (isShape(obj)) for (const k of ['rotX', 'rotY', 'rotZ']) if (!Number.isFinite(obj[k])) obj[k] = 0;
+                if (obj.type === 'texture') {
+                    obj.faces = Array.isArray(obj.faces) ? [...new Set(obj.faces.filter(i => Number.isInteger(i) && i >= 0 && i < 6))] : [4];
+                    if (!TEXTURES[obj.texture]) obj.texture = 'grid';
+                }
                 sceneObjects[uid] = obj;
             }
-            vlInstCache.clear(); physicsVelocity.clear(); selectedObjectId = null; renamingId = null; menuItemId = null;
-            for (const [k, t] of [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings']]) counters[k] = Object.values(sceneObjects).filter(o => o.type === t).length;
+            vlInstCache.clear(); physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear(); selectedObjectId = null; renamingId = null; menuItemId = null;
+            for (const [k, t] of [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball']]) counters[k] = Object.values(sceneObjects).filter(o => o.type === t).length;
             uiDirty = true;
             renderTabs(); renderExplorer(); renderProperties();
         }
@@ -2777,6 +3180,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 if (!(await confirmDialog('Start a new world?', 'This clears World, Storage and Scripts. Unsaved changes will be lost.', 'Clear world', true))) return;
                 applyWorldFile({ format: 'VanillaWorld', formatVersion: 1, objects: { Amber417: { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 } } });
                 toast('New empty world.');
+                askToast('Do you want to create the plate?', 'Yes', 'No', createPlate);
             }
         }
         fileBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFileMenu(); });
@@ -2922,6 +3326,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             menuBtn = btn;
             addMenu.dataset.space = btn.dataset.add;
             document.getElementById('add-menu-title').textContent = spaces[btn.dataset.add] ? 'Add to ' + spaces[btn.dataset.add].name : 'Add inside ' + ((sceneObjects[btn.dataset.add] || {}).name || 'object');
+            { const tgt = sceneObjects[btn.dataset.add]; addMenu.querySelector('[data-kind="texture"]').style.display = tgt && tgt.type === 'prism6' ? '' : 'none'; }
             addMenu.hidden = false;
             const r = btn.getBoundingClientRect();
             const mw = addMenu.offsetWidth, mh = addMenu.offsetHeight;
@@ -2947,7 +3352,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         addMenu.addEventListener('keydown', (e) => {
             if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
             e.preventDefault();
-            const items = [...addMenu.querySelectorAll('.menu-item')];
+            const items = [...addMenu.querySelectorAll('.menu-item')].filter(el => el.style.display !== 'none');
             const i = items.indexOf(document.activeElement);
             items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
         });
@@ -2980,7 +3385,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             off('cut', !!o.locked);
             off('delete', !!o.locked);
             off('paste', !clipboard);
-            off('camera', !((o.type === 'prism6' || o.type === 'model') && spaceOf(o) === 'world'));
+            off('camera', !((isShape(o) || o.type === 'model') && spaceOf(o) === 'world'));
             off('ungroup', o.type !== 'model');
             off('group', !menuTargets(id).length);
             itemMenu.hidden = false;
@@ -3097,17 +3502,17 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             data.parent = space;
             if (!c.cut) {
                 c.pastes++;
-                if (data.type === 'prism6') {
+                if (isShape(data)) {
                     data.x = Math.round((data.x + c.pastes * (2 * data.width + 0.5)) * 100) / 100;
                 } else if (data.type === 'model') {
                     let w = 1.0, minX = Infinity, maxX = -Infinity;
                     for (const [, kd] of (c.kids || [])) {
-                        if (kd.type === 'prism6') { minX = Math.min(minX, kd.x - kd.width); maxX = Math.max(maxX, kd.x + kd.width); }
+                        if (isShape(kd)) { minX = Math.min(minX, kd.x - kd.width); maxX = Math.max(maxX, kd.x + kd.width); }
                     }
                     if (minX !== Infinity) w = (maxX - minX) / 2;
                     const shiftX = Math.round(c.pastes * (2 * w + 0.5) * 100) / 100;
                     for (const [, kd] of (c.kids || [])) {
-                        if (kd.type === 'prism6') kd.x = Math.round((kd.x + shiftX) * 100) / 100;
+                        if (isShape(kd)) kd.x = Math.round((kd.x + shiftX) * 100) / 100;
                     }
                 }
             }
@@ -3221,7 +3626,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const objHead = (id, o, ic, extra = '') =>
             `<div class="obj-head">${icon(ic)}<div class="obj-meta"><div class="obj-name">${esc(o.name)}</div>
                 <div class="obj-id"><span title="Instance type">${o.type}</span><span class="uid" title="Unique ID">${id}</span></div></div>${extra}</div>`;
-        const defaultNames = { prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings' };
+        const defaultNames = { prism6: 'Block', ball: 'Ball', model: 'Model', script: 'Script', worldsettings: 'Settings' };
         const nameField = (o, dis = '') =>
             `<div class="field-label">Name</div><input class="text" type="text" id="prop-name" maxlength="48" value="${esc(o.name)}" aria-label="Name" ${dis}>`;
         function bindName(obj) {
@@ -3247,10 +3652,10 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const section = (title, body) =>
             `<details class="sec" open><summary>${icon('i-chev', 'chev')}${title}</summary><div class="sec-body">${body}</div></details>`;
 
-        const propFields = [['prop-x', 'x'], ['prop-y', 'y'], ['prop-z', 'z'], ['prop-length', 'length'], ['prop-width', 'width'], ['prop-height', 'height']];
+        const propFields = [['prop-x', 'x'], ['prop-y', 'y'], ['prop-z', 'z'], ['prop-length', 'length'], ['prop-width', 'width'], ['prop-height', 'height'], ['prop-rx', 'rotX'], ['prop-ry', 'rotY'], ['prop-rz', 'rotZ']];
         function syncPropInputs() {
             const o = sceneObjects[selectedObjectId];
-            if (!o || o.type !== 'prism6') return;
+            if (!isShape(o)) return;
             for (const [elId, key] of propFields) {
                 const el = document.getElementById(elId);
                 if (el && document.activeElement !== el) el.value = o[key];
@@ -3267,6 +3672,42 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
             if (obj.readOnly) {
                 container.innerHTML = `<div class="empty">${icon('i-lock')}<p>${esc(obj.name)}</p><span>This is an engine component and can’t be edited.</span></div>`;
+                return;
+            }
+
+            if (obj.type === 'texture') {
+                const parent = sceneObjects[obj.parent];
+                if (!Array.isArray(obj.faces)) obj.faces = [];
+                if (!TEXTURES[obj.texture]) obj.texture = 'grid';
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, 'i-grid')}
+                    ${section('Editor', nameField(obj))}
+                    ${section('Texture', `
+                        <div class="field-label">Texture</div>
+                        <select class="text" id="prop-texture" aria-label="Texture">${Object.entries(TEXTURES).map(([k, t]) => `<option value="${k}"${obj.texture === k ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
+                        <div class="field-note" id="prop-texture-note">${esc(TEXTURES[obj.texture].note)}</div>
+                        <div class="field-label">Faces</div>
+                        <div class="pill-row">${FACE_PICK_ORDER.map(i => `<button class="pill" data-face="${i}" aria-pressed="${obj.faces.includes(i)}">${FACE_LABELS[i]}</button>`).join('')}</div>
+                        <div class="pill-row"><button class="pill" data-faceset="all" aria-pressed="false">All faces</button><button class="pill" data-faceset="none" aria-pressed="false">None</button></div>
+                        ${parent && parent.type === 'prism6' ? `<div class="field-note">Applies to ${esc(parent.name)}.</div>` : '<div class="field-note">A texture only shows when it is a child of a Rectangular Prism.</div>'}
+                    `)}
+                `;
+                bindName(obj);
+                const facePills = [...container.querySelectorAll('[data-face]')];
+                const syncFaces = () => facePills.forEach(b => b.setAttribute('aria-pressed', String(obj.faces.includes(Number(b.dataset.face)))));
+                facePills.forEach(b => b.addEventListener('click', () => {
+                    const f = Number(b.dataset.face);
+                    obj.faces = obj.faces.includes(f) ? obj.faces.filter(x => x !== f) : obj.faces.concat(f).sort((a, b2) => a - b2);
+                    syncFaces();
+                }));
+                container.querySelectorAll('[data-faceset]').forEach(b => b.addEventListener('click', () => {
+                    obj.faces = b.dataset.faceset === 'all' ? [0, 1, 2, 3, 4, 5] : [];
+                    syncFaces();
+                }));
+                document.getElementById('prop-texture').addEventListener('change', (e) => {
+                    obj.texture = TEXTURES[e.target.value] ? e.target.value : 'grid';
+                    document.getElementById('prop-texture-note').textContent = TEXTURES[obj.texture].note;
+                });
                 return;
             }
 
@@ -3380,7 +3821,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
             const dis = obj.locked ? 'disabled' : '';
             container.innerHTML = `
-                ${objHead(selectedObjectId, obj, 'i-cube', obj.locked ? `<span class="chip">${icon('i-lock')}Locked</span>` : '')}
+                ${objHead(selectedObjectId, obj, obj.type === 'ball' ? 'i-ball' : 'i-cube', obj.locked ? `<span class="chip">${icon('i-lock')}Locked</span>` : '')}
                 ${section('Position', `<div class="field-row">
                     ${numField('prop-x', 'X', 'x', 'X', obj.x, dis)}
                     ${numField('prop-y', 'Y', 'y', 'Y', obj.y, dis)}
@@ -3391,6 +3832,11 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     ${numField('prop-width', 'W', 'x', 'Width (X)', obj.width, dis)}
                     ${numField('prop-height', 'H', 'y', 'Height (Y)', obj.height, dis)}
                 </div>`)}
+                ${section('Rotation', `<div class="field-row">
+                    ${numField('prop-rx', 'X', 'x', 'Rotation X in degrees', obj.rotX || 0, dis)}
+                    ${numField('prop-ry', 'Y', 'y', 'Rotation Y in degrees', obj.rotY || 0, dis)}
+                    ${numField('prop-rz', 'Z', 'z', 'Rotation Z in degrees', obj.rotZ || 0, dis)}
+                </div>`)}
                 ${section('Editor', `
                     ${nameField(obj, dis)}
                     <div class="switch-stack">
@@ -3399,7 +3845,12 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     ${switchRow('prop-labels', 'Face labels', obj.showLabels, dis)}
                     </div>
                 `)}
-                ${section('Render', switchRow('prop-wireframe', 'Wireframe', obj.wireframe, dis))}
+                ${section('Render', `
+                    <div class="field-label">Color</div>
+                    <div class="accent-ctl"><input type="color" class="color-pick" id="prop-color" value="${prismColor(obj)}" aria-label="Color" ${dis}><input class="text hex-in" id="prop-color-hex" maxlength="7" spellcheck="false" value="${prismColor(obj)}" aria-label="Color hex code" ${dis}></div>
+                    ${obj.faceColoring ? '<div class="field-note">Face coloring is on, so each face uses its own color instead of this one.</div>' : ''}
+                    ${switchRow('prop-wireframe', 'Wireframe', obj.wireframe, dis)}
+                `)}
                 ${section('Simulation', `
                     ${switchRow('prop-physics', 'Reacts to physics', obj.reactsToPhysics, dis)}
                     ${switchRow('prop-collidable', 'Collidable', obj.collidable !== false, dis)}
@@ -3414,7 +3865,15 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 for (const [elId, key] of propFields) {
                     document.getElementById(elId).addEventListener('input', (e) => { obj[key] = parseFloat(e.target.value) || 0; });
                 }
-                document.getElementById('prop-face-coloring').addEventListener('change', (e) => { obj.faceColoring = e.target.checked; });
+                document.getElementById('prop-face-coloring').addEventListener('change', (e) => { obj.faceColoring = e.target.checked; renderProperties(); });
+                const colPick = document.getElementById('prop-color'), colHex = document.getElementById('prop-color-hex');
+                colPick.addEventListener('input', () => { obj.color = colPick.value.toLowerCase(); colHex.value = obj.color; });
+                colHex.addEventListener('change', () => {
+                    let v = colHex.value.trim().replace(/^#/, '');
+                    if (/^[0-9a-f]{3}$/i.test(v)) v = v.split('').map(c => c + c).join('');
+                    if (/^[0-9a-f]{6}$/i.test(v)) { obj.color = ('#' + v).toLowerCase(); colPick.value = obj.color; }
+                    colHex.value = prismColor(obj);
+                });
                 document.getElementById('prop-labels').addEventListener('change', (e) => { obj.showLabels = e.target.checked; });
                 document.getElementById('prop-wireframe').addEventListener('change', (e) => { obj.wireframe = e.target.checked; });
                 document.getElementById('prop-physics').addEventListener('change', (e) => {
@@ -3430,7 +3889,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         }
 
         // ───────── Modes ─────────
-        const hintText = { select: 'Click an instance to select it', move: 'Drag an arrow to move', scale: 'Drag a sphere to resize' };
+        const hintText = { select: 'Click an instance to select it', move: 'Drag an arrow to move', scale: 'Drag a sphere to resize', rotate: 'Drag an arc to rotate' };
         function setMode(m) {
             mode = m;
             document.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
@@ -3466,10 +3925,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
         function getVerts(o) {
             const l = o.length, w = o.width, h = o.height, ox = o.x || 0, oy = o.y || 0, oz = o.z || 0;
-            return [
-                new Vec3(ox - w, oy - h, oz - l), new Vec3(ox + w, oy - h, oz - l), new Vec3(ox + w, oy + h, oz - l), new Vec3(ox - w, oy + h, oz - l),
-                new Vec3(ox - w, oy - h, oz + l), new Vec3(ox + w, oy - h, oz + l), new Vec3(ox + w, oy + h, oz + l), new Vec3(ox - w, oy + h, oz + l)
-            ];
+            const R = rotMat(o), at = (sx, sy, sz) => { const a = sx * w, b = sy * h, c = sz * l; return new Vec3(ox + R[0] * a + R[1] * b + R[2] * c, oy + R[3] * a + R[4] * b + R[5] * c, oz + R[6] * a + R[7] * b + R[8] * c); };
+            return [at(-1, -1, -1), at(1, -1, -1), at(1, 1, -1), at(-1, 1, -1), at(-1, -1, 1), at(1, -1, 1), at(1, 1, 1), at(-1, 1, 1)];
         }
 
         const vfVertices = [
@@ -3487,9 +3944,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         ];
 
         let angleX = -0.3, angleY = -0.6;
-        let camPosX = -4.5 * Math.cos(angleX) * Math.sin(angleY), camPosY = -4.5 * Math.sin(angleX), camPosZ = 4.5 * Math.cos(angleX) * Math.cos(angleY);
+        let camPosX = -8 * Math.cos(angleX) * Math.sin(angleY), camPosY = -8 * Math.sin(angleX), camPosZ = 8 * Math.cos(angleX) * Math.cos(angleY);
         const keyState = {};
-        const FOV = 450;
         const lightDir = new Vec3(-0.5, -0.8, -1.0).normalize();
 
         // Camera basis for a level, y-up world: angleY = yaw (turn), angleX = pitch (positive looks up)
@@ -3543,6 +3999,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 if (k === '1') setMode('select');
                 else if (k === '2') setMode('move');
                 else if (k === '3') setMode('scale');
+                else if (k === '4') setMode('rotate');
             }
         });
         window.addEventListener('keyup', (e) => { keyState[e.key.toLowerCase()] = false; });
@@ -3748,19 +4205,26 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function canEditHandles() {
             const o = sceneObjects[selectedObjectId];
             if (mode === 'select' || !o || spaceOf(o) !== 'world') return false;
-            if (o.type === 'prism6') return !o.locked;
+            if (mode === 'rotate') return isShape(o) && !o.locked;
+            if (isShape(o)) return !o.locked;
             if (o.type === 'model') return getModelPrisms(selectedObjectId).length > 0;
             return false;
         }
 
         function buildHandles(o) {
+            if (mode === 'rotate') return buildRotateHandles(o);
             const out = [];
+            const R = rotMat(o), ex = shapeHalfExt(o), half = [o.width, o.height, o.length];
             // Handle size is a third of the shape's average full size, never smaller than ~34px on screen
-            const base = ((o.width + o.height + o.length) * 2 / 3) / 3;
-            for (const axis of ['x', 'y', 'z']) {
+            const base = ((ex[0] + ex[1] + ex[2]) * 2 / 3) / 3;
+            ['x', 'y', 'z'].forEach((axis, ai) => {
                 for (const sign of [1, -1]) {
-                    const d = new Vec3(axis === 'x' ? sign : 0, axis === 'y' ? sign : 0, axis === 'z' ? sign : 0);
-                    const center = new Vec3(o.x + d.x * o.width, o.y + d.y * o.height, o.z + d.z * o.length);
+                    const e = [axis === 'x' ? sign : 0, axis === 'y' ? sign : 0, axis === 'z' ? sign : 0];
+                    // Move arrows follow the world axes; Scale spheres follow the shape's own (tilted) axes
+                    const d = mode === 'scale' ? new Vec3(R[ai] * sign, R[3 + ai] * sign, R[6 + ai] * sign) : new Vec3(e[0], e[1], e[2]);
+                    const center = mode === 'scale'
+                        ? new Vec3(o.x + d.x * half[ai], o.y + d.y * half[ai], o.z + d.z * half[ai])
+                        : new Vec3(o.x + e[0] * ex[0], o.y + e[1] * ex[1], o.z + e[2] * ex[2]);
                     const pc = project(center);
                     if (pc.z < 0.3) continue;
                     const sw = Math.max(base, 34 * pc.z / FOV);
@@ -3778,6 +4242,37 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     if (a.z < 0.1 || b.z < 0.1) continue;
                     out.push({ key: axis + sign, type: mode, axis, sign, d, center, a, b, r, z: pc.z, color: AXIS_COLOR[axis] });
                 }
+            });
+            return out;
+        }
+
+        // Rotate gizmo: one double-headed curved arrow per axis. The rings follow the same order the angles are applied in
+        // (turn about world Y, tilt about the turned X, roll about the shape's own Z), so each arrow edits exactly its own number.
+        function buildRotateHandles(o) {
+            const R = rotMat(o), ry = (o.rotY || 0) * Math.PI / 180;
+            const normals = { x: [Math.cos(ry), 0, -Math.sin(ry)], y: [0, 1, 0], z: [R[2], R[5], R[8]] };
+            const ex = shapeHalfExt(o), pc0 = project(new Vec3(o.x, o.y, o.z));
+            if (pc0.z < 0.3) return [];
+            const rr = Math.max(Math.max(ex[0], ex[1], ex[2]) * 1.2, 46 * pc0.z / FOV);
+            const cam = [camPosX, camPosY, camPosZ], c = [o.x, o.y, o.z], out = [];
+            for (const axis of ['x', 'y', 'z']) {
+                const n = normals[axis];
+                const ref = Math.abs(n[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+                let u = [n[1] * ref[2] - n[2] * ref[1], n[2] * ref[0] - n[0] * ref[2], n[0] * ref[1] - n[1] * ref[0]];
+                const ul = Math.hypot(u[0], u[1], u[2]) || 1; u = [u[0] / ul, u[1] / ul, u[2] / ul];
+                const v = [n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2], n[0] * u[1] - n[1] * u[0]];
+                const cd = [cam[0] - c[0], cam[1] - c[1], cam[2] - c[2]];
+                const phi = Math.atan2(cd[0] * v[0] + cd[1] * v[1] + cd[2] * v[2], cd[0] * u[0] + cd[1] * u[1] + cd[2] * u[2]);
+                const pts = []; let ok = true;
+                const N = 18, span = 0.66;
+                for (let i = 0; i <= N; i++) {
+                    const ang = phi + (i / N * 2 - 1) * span, cs = Math.cos(ang), sn = Math.sin(ang);
+                    const p = project(new Vec3(c[0] + rr * (cs * u[0] + sn * v[0]), c[1] + rr * (cs * u[1] + sn * v[1]), c[2] + rr * (cs * u[2] + sn * v[2])));
+                    if (p.z < 0.1) { ok = false; break; }
+                    pts.push(p);
+                }
+                if (!ok) continue;
+                out.push({ key: 'rot-' + axis, type: 'rotate', axis, n, u, v, center: c, pts, z: pc0.z, color: AXIS_COLOR[axis] });
             }
             return out;
         }
@@ -3792,7 +4287,9 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function findHandleAt(x, y) {
             let best = null;
             for (const h of lastHandles) {
-                const hit = h.type === 'move'
+                let hit;
+                if (h.type === 'rotate') { hit = false; for (let i = 0; i + 1 < h.pts.length && !hit; i++) hit = distSeg(x, y, h.pts[i], h.pts[i + 1]) <= 9; }
+                else hit = h.type === 'move'
                     ? distSeg(x, y, h.a, h.b) <= 10
                     : (Math.hypot(x - h.b.x, y - h.b.y) <= h.r + 5 || distSeg(x, y, h.a, h.b) <= 5);
                 if (hit && (!best || h.z < best.z)) best = h;
@@ -3806,6 +4303,23 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             ctx.save();
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             if (hot) { ctx.shadowColor = h.color; ctx.shadowBlur = 14; }
+            if (h.type === 'rotate') {
+                const P = h.pts, last = P.length - 1;
+                const path = () => { ctx.beginPath(); ctx.moveTo(P[0].x, P[0].y); for (let i = 1; i <= last; i++) ctx.lineTo(P[i].x, P[i].y); };
+                const head = (tip, from) => {
+                    const dx = tip.x - from.x, dy = tip.y - from.y, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, hl = 15, hw = 7;
+                    ctx.beginPath(); ctx.moveTo(tip.x + ux * 4, tip.y + uy * 4);
+                    ctx.lineTo(tip.x - ux * hl - uy * hw, tip.y - uy * hl + ux * hw); ctx.lineTo(tip.x - ux * hl + uy * hw, tip.y - uy * hl - ux * hw); ctx.closePath();
+                };
+                path(); ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = hot ? 8 : 7; ctx.stroke();
+                head(P[last], P[last - 2]); ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.stroke();
+                head(P[0], P[2]); ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fill(); ctx.stroke();
+                path(); ctx.strokeStyle = h.color; ctx.lineWidth = hot ? 5 : 4; ctx.stroke();
+                head(P[last], P[last - 2]); ctx.fillStyle = hot ? '#ffffff' : h.color; ctx.fill();
+                head(P[0], P[2]); ctx.fill();
+                ctx.restore();
+                return;
+            }
             const dx = h.b.x - h.a.x, dy = h.b.y - h.a.y, len = Math.hypot(dx, dy) || 1;
             const ux = dx / len, uy = dy / len;
 
@@ -3854,7 +4368,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function orderPrisms(entries) {
             const cam = [camPosX, camPosY, camPosZ];
             const boxes = entries.map(([id, o]) => {
-                const min = [o.x - o.width, o.y - o.height, o.z - o.length], max = [o.x + o.width, o.y + o.height, o.z + o.length];
+                const e = shapeHalfExt(o), min = [o.x - e[0], o.y - e[1], o.z - e[2]], max = [o.x + e[0], o.y + e[1], o.z + e[2]];
                 const dist = Math.hypot(o.x - cam[0], o.y - cam[1], o.z - cam[2]);
                 return { entry: [id, o], min, max, dist };
             });
@@ -3913,34 +4427,192 @@ layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aUV;
 layout(location = 3) in float aFace;
 uniform vec3 uCenter, uHalf;
+uniform mat3 uRot;
 out vec2 vUV;
+out vec3 vW;
+flat out vec3 vN;
 flat out float vFace;
 void main() {
-    vec3 w = uCenter + aPos * uHalf;
-    vUV = aUV; vFace = aFace;
-    if (dot(aNormal, w - uCam) >= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }   // back face
+    vec3 w = uCenter + uRot * (aPos * uHalf);
+    vec3 n = uRot * aNormal;
+    vUV = aUV; vFace = aFace; vW = w; vN = n;
+    if (dot(n, w - uCam) >= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }   // back face
     gl_Position = project(w);
 }`;
         const PRISM_FS = `
 in vec2 vUV;
+in vec3 vW;
+flat in vec3 vN;
 flat in float vFace;
-uniform vec3 uColors[6];
+uniform mat3 uRot;
+uniform vec3 uColors[6];          // classic shaded colors (also used by wireframes)
+uniform vec3 uAlbedo[6];          // unlit surface colors for enhanced lighting
+uniform int uFaceTex[6];
 uniform vec3 uEdgeColor;
 uniform float uEdgeAlpha, uEdgeW;
 uniform int uWire;
+uniform int uMode;                // 0 classic, 1 enhanced
+uniform vec3 uSunDir, uSunCol, uSkyCol, uGndCol, uHazeCol;
+uniform float uHaze, uShStr, uSpec;
+uniform int uShadowOn;
+uniform highp sampler2DShadow uSh0;
+uniform highp sampler2DShadow uSh1;
+uniform mat4 uLVP0, uLVP1;
+uniform vec4 uShInfo;             // texel size and depth range of both cascades
+uniform vec2 uShSize;
 out vec4 o;
+const vec3 FN[6] = vec3[6](vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, -1.0), vec3(1.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), vec3(0.0, -1.0, 0.0));
+const vec2 PD[12] = vec2[12](vec2(-0.326, -0.406), vec2(-0.840, -0.074), vec2(-0.696, 0.457), vec2(-0.203, 0.621), vec2(0.962, -0.195), vec2(0.473, -0.480), vec2(0.519, 0.767), vec2(0.185, -0.893), vec2(0.507, 0.064), vec2(0.896, 0.412), vec2(-0.322, -0.933), vec2(-0.792, -0.598));
+vec3 toLin(vec3 c) { return pow(c, vec3(2.2)); }
+vec3 toSRGB(vec3 c) { return pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2)); }
+// Grid texture: lines at every 0.25, 0.5 and 1 Vm, locked to world coordinates.
+// Each axis fades on its own, so lines that run away from you stay visible far into the distance. When cells get
+// denser than pixels they settle to their average shade instead of vanishing, and wider markings (every 4, 16
+// and 64 Vm) appear as the finer ones shrink, so the grid never disappears.
+float gridDens(vec2 p, float s) { vec2 d = fwidth(p / s); return max(d.x, d.y); }
+float gridLvl(vec2 p, float s, float lw) {
+    vec2 q = p / s;
+    vec2 d = max(fwidth(q), vec2(1e-6));
+    vec2 a = abs(fract(q - 0.5) - 0.5) / d;
+    vec2 l = 1.0 - smoothstep(vec2(lw * 0.5 - 0.5), vec2(lw * 0.5 + 0.5), a);
+    vec2 mean = min(vec2(0.3), lw * d);
+    vec2 c = mix(l, mean, smoothstep(vec2(0.35), vec2(0.9), d));
+    return 1.0 - (1.0 - c.x) * (1.0 - c.y);
+}
+vec3 gridTex(vec3 base, vec3 w, int face) {
+    vec2 p = face < 2 ? vec2(dot(w, uRot[0]), dot(w, uRot[1])) : (face < 4 ? vec2(dot(w, uRot[2]), dot(w, uRot[1])) : vec2(dot(w, uRot[0]), dot(w, uRot[2])));
+    float a = max(max(gridLvl(p, 0.25, 1.0) * 0.16, gridLvl(p, 0.5, 1.2) * 0.26), gridLvl(p, 1.0, 1.7) * 0.42);
+    a = max(a, gridLvl(p, 4.0, 2.0) * 0.5 * smoothstep(0.06, 0.25, gridDens(p, 1.0)));
+    a = max(a, gridLvl(p, 16.0, 2.4) * 0.55 * smoothstep(0.06, 0.25, gridDens(p, 4.0)));
+    a = max(a, gridLvl(p, 64.0, 2.8) * 0.6 * smoothstep(0.06, 0.25, gridDens(p, 16.0)));
+    vec3 lc = dot(base, vec3(0.299, 0.587, 0.114)) > 0.3 ? vec3(0.0) : vec3(1.0);
+    return mix(base, lc, a);
+}
+// Soft shadows: rotated 12-tap filtering on a hardware-compared depth map. w is how much this cascade covers the pixel.
+float cascadeShadow(highp sampler2DShadow sm, mat4 vp, vec3 wp, vec3 N, float texel, float far, float size, float ang, out float w) {
+    vec4 lp = vp * vec4(wp + N * texel * 2.0, 1.0);
+    vec3 q = lp.xyz * 0.5 + 0.5;
+    vec2 e = min(q.xy, 1.0 - q.xy);
+    w = (q.z > 0.0 && q.z < 1.0) ? smoothstep(0.0, 0.12, min(e.x, e.y)) : 0.0;
+    if (w <= 0.0) return 1.0;
+    float bias = texel * 1.5 / far;
+    float c = cos(ang), s = sin(ang);
+    mat2 rm = mat2(c, s, -s, c);
+    float rad = 2.2 / size;
+    float sum = 0.0;
+    for (int i = 0; i < 12; i++) sum += texture(sm, vec3(q.xy + rm * PD[i] * rad, q.z - bias));
+    return sum / 12.0;
+}
+float sunShadow(vec3 wp, vec3 N) {
+    float ang = 6.2831853 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+    float w0, w1 = 0.0, s1 = 1.0;
+    float s0 = cascadeShadow(uSh0, uLVP0, wp, N, uShInfo.x, uShInfo.y, uShSize.x, ang, w0);
+    if (w0 < 1.0) s1 = cascadeShadow(uSh1, uLVP1, wp, N, uShInfo.z, uShInfo.w, uShSize.y, ang, w1);
+    return mix(mix(1.0, s1, w1), s0, w0);
+}
 void main() {
     vec2 d = (1.0 - abs(vUV)) / max(fwidth(vUV), vec2(1e-6));
     float line = 1.0 - smoothstep(uEdgeW - 0.75, uEdgeW + 0.75, min(d.x, d.y));
-    vec3 base = uColors[int(vFace + 0.5)];
+    int fi = int(vFace + 0.5);
+    vec3 base = uColors[fi];
     if (uWire != 0) {
         if (line < 0.02) discard;
         vec3 c = uWire == 2 ? base : uEdgeColor;
         o = vec4(c * line, line);
         return;
     }
-    o = vec4(mix(base, uEdgeColor, line * uEdgeAlpha), 1.0);
+    vec3 lit;
+    if (uMode == 0) {
+        if (uFaceTex[fi] == 1) base = gridTex(base, vW, fi);
+        lit = base;
+    } else {
+        vec3 alb = uAlbedo[fi];
+        if (uFaceTex[fi] == 1) alb = gridTex(alb, vW, fi);
+        alb = toLin(alb);
+        vec3 N = normalize(vN);
+        vec3 V = normalize(uCam - vW);
+        float ndl = dot(N, uSunDir);
+        float sh = 1.0;
+        if (uShadowOn != 0 && ndl > 0.0) sh = mix(1.0, sunShadow(vW, N), uShStr);
+        float diff = max(ndl, 0.0) * sh;
+        vec3 col = alb * (mix(uGndCol, uSkyCol, N.y * 0.5 + 0.5) + uSunCol * diff);
+        vec3 H = normalize(uSunDir + V);
+        col += uSunCol * pow(max(dot(N, H), 0.0), 64.0) * step(0.0, ndl) * sh * uSpec;
+        col += uSkyCol * pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.1;
+        float fog = uHaze > 0.0 ? min(0.9, 1.0 - exp(-pow(length(uCam - vW) * uHaze, 2.0))) : 0.0;
+        lit = toSRGB(mix(col, uHazeCol, fog));
+    }
+    o = vec4(mix(lit, uEdgeColor, line * uEdgeAlpha), 1.0);
 }`;
+        const BALL_VS = `
+layout(location = 0) in vec3 aPos;
+uniform vec3 uCenter, uHalf;
+uniform mat3 uRot, uPatT;
+out vec3 vW;
+out vec3 vLoc;
+out vec3 vN;
+void main() {
+    vec3 w = uCenter + uRot * (aPos * uHalf);
+    vW = w; vLoc = uPatT * aPos; vN = normalize(uRot * (aPos / uHalf));
+    gl_Position = project(w);
+}`;
+        // The ball shares the prism's lighting code, so sun, sky, haze and shadows match.
+        const FS_LIGHT_UNIFORMS = PRISM_FS.slice(PRISM_FS.indexOf('uniform int uMode;'), PRISM_FS.indexOf('out vec4 o;'));
+        const FS_LIGHT_FUNCS = PRISM_FS.slice(PRISM_FS.indexOf('const vec2 PD[12]'), PRISM_FS.indexOf('// Grid texture')) + PRISM_FS.slice(PRISM_FS.indexOf('// Soft shadows'), PRISM_FS.indexOf('void main()'));
+        const BALL_FS = `
+in vec3 vW;
+in vec3 vLoc;
+in vec3 vN;
+uniform vec3 uBase;
+uniform vec3 uFaceCols[6];
+uniform int uFaceCol, uWire;
+uniform vec3 uEdgeColor;
+uniform float uSel;
+uniform vec2 uClassic;
+${FS_LIGHT_UNIFORMS}
+out vec4 o;
+${FS_LIGHT_FUNCS}
+int domFace(vec3 p) {
+    vec3 a = abs(p);
+    if (a.z >= a.x && a.z >= a.y) return p.z >= 0.0 ? 0 : 1;
+    if (a.x >= a.y) return p.x >= 0.0 ? 2 : 3;
+    return p.y >= 0.0 ? 4 : 5;
+}
+void main() {
+    vec3 N = normalize(vN), L = normalize(vLoc), V = normalize(uCam - vW);
+    int fi = domFace(L);
+    if (uWire != 0) { o = vec4(uWire == 2 ? uFaceCols[fi] : uEdgeColor, 1.0); return; }
+    vec3 alb = uBase;
+    if (uFaceCol != 0) alb = uFaceCols[fi];
+    vec3 lit;
+    float ndl = dot(N, uSunDir);
+    if (uMode == 0) {
+        float b = uClassic.x + (1.0 - uClassic.x) * max(ndl, 0.0) * uClassic.y;
+        lit = alb * (0.2 + 0.8 * b);
+    } else {
+        float sh = 1.0;
+        if (uShadowOn != 0 && ndl > 0.0) sh = mix(1.0, sunShadow(vW, N), uShStr);
+        vec3 col = toLin(alb) * (mix(uGndCol, uSkyCol, N.y * 0.5 + 0.5) + uSunCol * max(ndl, 0.0) * sh);
+        vec3 H = normalize(uSunDir + V);
+        col += uSunCol * pow(max(dot(N, H), 0.0), 72.0) * step(0.0, ndl) * sh * uSpec * 1.6;
+        col += uSkyCol * pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.1;
+        float fog = uHaze > 0.0 ? min(0.9, 1.0 - exp(-pow(length(uCam - vW) * uHaze, 2.0))) : 0.0;
+        lit = toSRGB(mix(col, uHazeCol, fog));
+    }
+    float rim = 1.0 - max(dot(N, V), 0.0);
+    lit = mix(lit, uEdgeColor, uSel * smoothstep(0.8, 0.94, rim));
+    o = vec4(lit, 1.0);
+}`;
+        const SHADOW_VS = `#version 300 es
+precision highp float;
+layout(location = 0) in vec3 aPos;
+uniform vec3 uCenter, uHalf;
+uniform mat3 uRot;
+uniform mat4 uLVP;
+void main() { gl_Position = uLVP * vec4(uCenter + uRot * (aPos * uHalf), 1.0); }`;
+        const SHADOW_FS = `#version 300 es
+precision highp float;
+void main() {}`;
         const AXIS_VS = `
 layout(location = 0) in vec3 aP0;
 layout(location = 1) in vec3 aP1;
@@ -3977,7 +4649,7 @@ uniform sampler2D uTex;
 out vec4 o;
 void main() { o = texture(uTex, vT); }`;
 
-        function glProgram(gl, vs, fs, names) {
+        function glProgram(gl, vs, fs, names, raw) {
             const mk = (type, src) => {
                 const sh = gl.createShader(type);
                 gl.shaderSource(sh, src); gl.compileShader(sh);
@@ -3985,8 +4657,8 @@ void main() { o = texture(uTex, vT); }`;
                 return sh;
             };
             const prog = gl.createProgram();
-            gl.attachShader(prog, mk(gl.VERTEX_SHADER, GLSL_HEAD + vs));
-            gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, GLSL_HEAD + fs));
+            gl.attachShader(prog, mk(gl.VERTEX_SHADER, raw ? vs : GLSL_HEAD + vs));
+            gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, raw ? fs : GLSL_HEAD + fs));
             gl.linkProgram(prog);
             if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) || 'program link failed');
             const u = {};
@@ -4006,11 +4678,160 @@ void main() { o = texture(uTex, vT); }`;
             return c;
         }
 
+        // ───────── Lighting and shadows ─────────
+        const SHADOW_SIZES = { off: 0, low: 1024, medium: 2048, high: 4096 };
+        function makeShadowMap(gl, size) {
+            const tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, size, size, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
+            const fbo = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tex, 0);
+            gl.drawBuffers([gl.NONE]); gl.readBuffer(gl.NONE);
+            const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            return { tex, fbo, size, ok };
+        }
+        function ensureShadowMaps(gl, size) {
+            if (GL.shadowFailed) return null;
+            if (GL.sm && GL.sm.size === size) return GL.sm;
+            if (GL.sm) for (const c of [GL.sm.c0, GL.sm.c1]) { gl.deleteTexture(c.tex); gl.deleteFramebuffer(c.fbo); }
+            const c0 = makeShadowMap(gl, size), c1 = makeShadowMap(gl, Math.max(512, size >> 1));
+            if (!c0.ok || !c1.ok) { GL.shadowFailed = true; GL.sm = null; return null; }
+            GL.sm = { size, c0, c1 };
+            return GL.sm;
+        }
+        const vCross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+        const vDot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        const vNorm = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+        // Two orthographic shadow windows from the sun: a tight one around where you are looking and a wide one behind it.
+        function renderShadows(gl, prisms, sm, balls) {
+            const L = [sky.lightWorld.x, sky.lightWorld.y, sky.lightWorld.z];
+            const f = [-L[0], -L[1], -L[2]];
+            const r = vNorm(vCross(f, Math.abs(L[1]) > 0.99 ? [1, 0, 0] : [0, 1, 0])), u = vCross(r, f);
+            const cam = [camPosX, camPosY, camPosZ], fw = [fwdX, fwdY, fwdZ];
+            let hit = Infinity, minY = Infinity, maxY = -Infinity;
+            const casters = [], ballCasters = [];
+            for (const [, o] of prisms.concat(balls)) {
+                const ex = shapeHalfExt(o);
+                minY = Math.min(minY, o.y - ex[1]); maxY = Math.max(maxY, o.y + ex[1]);
+                if (o.wireframe) continue;
+                (o.type === 'ball' ? ballCasters : casters).push(o);
+                let t0 = 0, t1 = Infinity;
+                const c = [o.x, o.y, o.z], h = ex;
+                for (let i = 0; i < 3 && t0 <= t1; i++) {
+                    if (Math.abs(fw[i]) < 1e-9) { if (cam[i] < c[i] - h[i] || cam[i] > c[i] + h[i]) t1 = -1; continue; }
+                    let ta = (c[i] - h[i] - cam[i]) / fw[i], tb = (c[i] + h[i] - cam[i]) / fw[i];
+                    if (ta > tb) { const tmp = ta; ta = tb; tb = tmp; }
+                    t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
+                }
+                if (t0 <= t1 && t1 >= 0 && t0 < hit) hit = t0;
+            }
+            if (!casters.length && !ballCasters.length) return null;
+            const hs = Math.min(4000, Math.max(20, (maxY - minY) / 2 + 10));
+            const S = GL.shadow, P = GL.prism;
+            gl.useProgram(S.prog); gl.bindVertexArray(P.vao);
+            gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+            gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(2.0, 4.0);
+            const out = { vp: [], info: [], sizes: [] };
+            [[24, sm.c0], [110, sm.c1]].forEach(([R, map]) => {
+                const t = Math.min(isFinite(hit) ? hit : R * 0.6, R * 1.2);
+                let c = [cam[0] + fw[0] * t, cam[1] + fw[1] * t, cam[2] + fw[2] * t];
+                const extent = R * 1.3 + hs, far = extent * 2, texel = 2 * R / map.size;
+                const cx = vDot(r, c), cy = vDot(u, c), sx = Math.floor(cx / texel) * texel, sy = Math.floor(cy / texel) * texel;
+                c = [c[0] + r[0] * (sx - cx) + u[0] * (sy - cy), c[1] + r[1] * (sx - cx) + u[1] * (sy - cy), c[2] + r[2] * (sx - cx) + u[2] * (sy - cy)];
+                const eye = [c[0] - f[0] * extent, c[1] - f[1] * extent, c[2] - f[2] * extent];
+                const rows = [
+                    [r[0] / R, r[1] / R, r[2] / R, -vDot(r, eye) / R],
+                    [u[0] / R, u[1] / R, u[2] / R, -vDot(u, eye) / R],
+                    [2 * f[0] / far, 2 * f[1] / far, 2 * f[2] / far, -2 * vDot(f, eye) / far - 1],
+                    [0, 0, 0, 1]
+                ];
+                const m = new Float32Array(16);
+                for (let col = 0; col < 4; col++) for (let row = 0; row < 4; row++) m[col * 4 + row] = rows[row][col];
+                gl.bindFramebuffer(gl.FRAMEBUFFER, map.fbo);
+                gl.viewport(0, 0, map.size, map.size);
+                gl.clear(gl.DEPTH_BUFFER_BIT);
+                gl.uniformMatrix4fv(S.u.uLVP, false, m);
+                gl.bindVertexArray(P.vao);
+                for (const o of casters) {
+                    const rad = Math.hypot(o.width, o.height, o.length);
+                    const px = o.x - c[0], py = o.y - c[1], pz = o.z - c[2];
+                    if (Math.abs(r[0] * px + r[1] * py + r[2] * pz) - rad > R * 1.42 || Math.abs(u[0] * px + u[1] * py + u[2] * pz) - rad > R * 1.42) continue;
+                    gl.uniform3f(S.u.uCenter, o.x, o.y, o.z);
+                    gl.uniform3f(S.u.uHalf, o.width, o.height, o.length);
+                    gl.uniformMatrix3fv(S.u.uRot, false, rotGL(o));
+                    gl.drawArrays(gl.TRIANGLES, 0, 36);
+                }
+                gl.bindVertexArray(GL.sphere.vaoTri);
+                for (const o of ballCasters) {
+                    const rad = Math.max(o.width, o.height, o.length);
+                    const px = o.x - c[0], py = o.y - c[1], pz = o.z - c[2];
+                    if (Math.abs(r[0] * px + r[1] * py + r[2] * pz) - rad > R * 1.42 || Math.abs(u[0] * px + u[1] * py + u[2] * pz) - rad > R * 1.42) continue;
+                    gl.uniform3f(S.u.uCenter, o.x, o.y, o.z);
+                    gl.uniform3f(S.u.uHalf, o.width, o.height, o.length);
+                    gl.uniformMatrix3fv(S.u.uRot, false, rotGL(o));
+                    gl.drawElements(gl.TRIANGLES, GL.sphere.nTri, gl.UNSIGNED_SHORT, 0);
+                }
+                out.vp.push(m); out.info.push(texel, far); out.sizes.push(map.size);
+            });
+            gl.disable(gl.POLYGON_OFFSET_FILL);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            return out;
+        }
+        // Colors and strengths for the enhanced lighting, in linear light
+        function lightingColors() {
+            const lin = (c) => c.map(v => Math.pow(Math.max(0, v / 255), 2.2));
+            const day = smooth(-0.08, 0.3, sky.sunElev);
+            let sun;
+            if (sky.sunElev > 0) {
+                const warm = 1 - smooth(0.0, 0.45, sky.sunElev);
+                sun = mixRGB([1.0, 0.97, 0.9], [1.0, 0.52, 0.24], warm).map(v => v * 1.7 * sky.lightStrength);
+            } else sun = [0.55, 0.68, 1.0].map(v => v * 1.5 * sky.lightStrength);
+            const top = lin(sky.top), hor = lin(sky.hor);
+            const mid = mixRGB(top, hor, 0.5), lum = 0.2126 * mid[0] + 0.7152 * mid[1] + 0.0722 * mid[2];
+            const floor = [0.03, 0.04, 0.08];
+            const skyAmb = mixRGB([lum, lum, lum], mid, 0.5).map((v, i) => Math.max(v * 0.5, floor[i]));
+            const hl = 0.2126 * hor[0] + 0.7152 * hor[1] + 0.0722 * hor[2];
+            const gnd = [hl * 0.34, hl * 0.3, hl * 0.24].map((v, i) => Math.max(v, floor[i] * 0.7));
+            return { sun, sky: skyAmb, gnd, haze: hor, spec: 0.18 * day + 0.05 };
+        }
+
         function initGL() {
             try {
                 const gl = glCanvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true });
                 if (!gl) return;
-                const prism = glProgram(gl, PRISM_VS, PRISM_FS, ['uCenter', 'uHalf', 'uColors', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire']);
+                const prism = glProgram(gl, PRISM_VS, PRISM_FS, ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
+                const shadow = glProgram(gl, SHADOW_VS, SHADOW_FS, ['uCenter', 'uHalf', 'uRot', 'uLVP'], true);
+                const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
+                // unit sphere (32 x 20), shared by every ball: one triangle list and one wireframe list
+                const SEG = 32, RING = 20, sv = [], tri = [], lin = [];
+                for (let i = 0; i <= RING; i++) for (let j = 0; j <= SEG; j++) {
+                    const ph = i * Math.PI / RING, th = j * 2 * Math.PI / SEG;
+                    sv.push(Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th));
+                }
+                for (let i = 0; i < RING; i++) for (let j = 0; j < SEG; j++) {
+                    const a0 = i * (SEG + 1) + j, b0 = a0 + SEG + 1;
+                    tri.push(a0, a0 + 1, b0, a0 + 1, b0 + 1, b0);
+                }
+                for (let i = 4; i < RING; i += 4) for (let j = 0; j < SEG; j++) { const a0 = i * (SEG + 1) + j; lin.push(a0, a0 + 1); }
+                for (let j = 0; j < SEG; j += 4) for (let i = 0; i < RING; i++) { const a0 = i * (SEG + 1) + j; lin.push(a0, a0 + SEG + 1); }
+                const sphereBuf = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, sphereBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sv), gl.STATIC_DRAW);
+                const mkSphereVao = (indices) => {
+                    const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, sphereBuf); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+                    gl.bindVertexArray(null);
+                    return vao;
+                };
+                const sphere = { vaoTri: mkSphereVao(tri), nTri: tri.length, vaoLine: mkSphereVao(lin), nLine: lin.length };
                 const axis = glProgram(gl, AXIS_VS, AXIS_FS, []);
                 const label = glProgram(gl, LABEL_VS, LABEL_FS, ['uLC', 'uLR', 'uLU', 'uCell', 'uTex']);
 
@@ -4055,7 +4876,7 @@ void main() { o = texture(uTex, vT); }`;
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                     return t;
                 });
-                GL = { gl, prism, axis, label, tex };
+                GL = { gl, prism, axis, label, tex, shadow, ball: ballP, sphere, sm: null, dummy: makeShadowMap(gl, 1) };
                 resize();
             } catch (err) {
                 console.warn('WebGL 2 unavailable, using the 2D renderer instead:', err);
@@ -4063,7 +4884,8 @@ void main() { o = texture(uTex, vT); }`;
             }
         }
 
-        function drawGL(prisms) {
+        const FACE_COLS_F32 = new Float32Array([].concat(...faces.map(f => [1, 3, 5].map(i => parseInt(f.color.slice(i, i + 2), 16) / 255))));
+        function drawGL(prisms, balls) {
             const { gl, prism: P, axis: A, label: L, tex } = GL;
             const cam = [camPosX, camPosY, camPosZ];
             const setCam = (p) => {
@@ -4074,6 +4896,11 @@ void main() { o = texture(uTex, vT); }`;
                 gl.uniform2f(p.u.uView, width, height);
                 gl.uniform1f(p.u.uFov, FOV);
             };
+            const enhanced = settings.lighting !== 'classic';
+            const shSize = enhanced ? (SHADOW_SIZES[settings.shadows] || 0) : 0;
+            const Ldir = sky.lightWorld, shStr = smooth(0.02, 0.16, Ldir.y);
+            let shadowSet = null;
+            if (shSize > 0 && shStr > 0.01) { const sm = ensureShadowMaps(gl, shSize); if (sm) shadowSet = renderShadows(gl, prisms, sm, balls); }
             gl.viewport(0, 0, glCanvas.width, glCanvas.height);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -4082,23 +4909,60 @@ void main() { o = texture(uTex, vT); }`;
 
             // 1. prisms
             gl.useProgram(P.prog); setCam(P); gl.bindVertexArray(P.vao);
+            const lt = lightingColors();
+            const setLight = (P) => {
+                gl.uniform1i(P.u.uMode, enhanced ? 1 : 0);
+                gl.uniform3f(P.u.uSunDir, Ldir.x, Ldir.y, Ldir.z);
+                gl.uniform3fv(P.u.uSunCol, lt.sun); gl.uniform3fv(P.u.uSkyCol, lt.sky); gl.uniform3fv(P.u.uGndCol, lt.gnd); gl.uniform3fv(P.u.uHazeCol, lt.haze);
+                gl.uniform1f(P.u.uHaze, enhanced && settings.haze !== false ? 0.0035 : 0);
+                gl.uniform1f(P.u.uSpec, lt.spec); gl.uniform1f(P.u.uShStr, shStr);
+                gl.uniform1i(P.u.uShadowOn, shadowSet ? 1 : 0);
+                const sm = shadowSet && GL.sm;
+                gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, sm ? sm.c0.tex : GL.dummy.tex);
+                gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, sm ? sm.c1.tex : GL.dummy.tex);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.uniform1i(P.u.uSh0, 4); gl.uniform1i(P.u.uSh1, 5);
+                if (shadowSet) {
+                    gl.uniformMatrix4fv(P.u.uLVP0, false, shadowSet.vp[0]); gl.uniformMatrix4fv(P.u.uLVP1, false, shadowSet.vp[1]);
+                    gl.uniform4f(P.u.uShInfo, shadowSet.info[0], shadowSet.info[1], shadowSet.info[2], shadowSet.info[3]);
+                    gl.uniform2f(P.u.uShSize, shadowSet.sizes[0], shadowSet.sizes[1]);
+                }
+            };
+            setLight(P);
             gl.enable(gl.POLYGON_OFFSET_FILL);
             const wireRGB = skyBright ? [0.059, 0.09, 0.165] : [0.22, 0.74, 0.97];
-            const colors = new Float32Array(18);
+            const colors = new Float32Array(18), albedo = new Float32Array(18);
             let visible = 0;
+            const faceTex = new Map();
+            for (const t of Object.values(sceneObjects)) {
+                if (t.type !== 'texture' || !TEXTURES[t.texture] || !Array.isArray(t.faces)) continue;
+                const arr = faceTex.get(t.parent) || new Int32Array(6);
+                for (const f of t.faces) if (f >= 0 && f < 6) arr[f] = TEXTURES[t.texture].id;
+                faceTex.set(t.parent, arr);
+            }
+            const noTex = new Int32Array(6);
+            const selObj = selectedObjectId && sceneObjects[selectedObjectId];
+            const texParent = selObj && selObj.type === 'texture' ? selObj.parent : null;
             prisms.forEach(([id, o], i) => {
                 gl.polygonOffset(0, -(i + 1));   // later prisms win exact depth ties, so touching faces never flicker
                 gl.uniform3f(P.u.uCenter, o.x, o.y, o.z);
                 gl.uniform3f(P.u.uHalf, o.width, o.height, o.length);
+                gl.uniformMatrix3fv(P.u.uRot, false, rotGL(o));
+                const Ro = rotMat(o);
                 faces.forEach((f, fi) => {
-                    const diffuse = Math.max(0, f.normal.dot(sky.lightWorld));
-                    const rgb = shadeRGB(o.faceColoring ? f.color : '#888888', sky.ambient + (1 - sky.ambient) * diffuse * sky.lightStrength);
+                    const nx = Ro[0] * f.normal.x + Ro[1] * f.normal.y + Ro[2] * f.normal.z, ny = Ro[3] * f.normal.x + Ro[4] * f.normal.y + Ro[5] * f.normal.z, nz = Ro[6] * f.normal.x + Ro[7] * f.normal.y + Ro[8] * f.normal.z;
+                    const diffuse = Math.max(0, nx * sky.lightWorld.x + ny * sky.lightWorld.y + nz * sky.lightWorld.z);
+                    const rgb = shadeRGB(o.faceColoring ? f.color : prismColor(o), sky.ambient + (1 - sky.ambient) * diffuse * sky.lightStrength);
                     colors[fi * 3] = rgb[0]; colors[fi * 3 + 1] = rgb[1]; colors[fi * 3 + 2] = rgb[2];
-                    const cxw = o.x + f.normal.x * o.width, cyw = o.y + f.normal.y * o.height, czw = o.z + f.normal.z * o.length;
-                    if (f.normal.x * (cam[0] - cxw) + f.normal.y * (cam[1] - cyw) + f.normal.z * (cam[2] - czw) > 0) visible++;
+                    const ah = o.faceColoring ? f.color : prismColor(o);
+                    albedo[fi * 3] = parseInt(ah.slice(1, 3), 16) / 255; albedo[fi * 3 + 1] = parseInt(ah.slice(3, 5), 16) / 255; albedo[fi * 3 + 2] = parseInt(ah.slice(5, 7), 16) / 255;
+                    const lx = f.normal.x * o.width, ly = f.normal.y * o.height, lz = f.normal.z * o.length;
+                    const cxw = o.x + Ro[0] * lx + Ro[1] * ly + Ro[2] * lz, cyw = o.y + Ro[3] * lx + Ro[4] * ly + Ro[5] * lz, czw = o.z + Ro[6] * lx + Ro[7] * ly + Ro[8] * lz;
+                    if (nx * (cam[0] - cxw) + ny * (cam[1] - cyw) + nz * (cam[2] - czw) > 0) visible++;
                 });
-                gl.uniform3fv(P.u.uColors, colors);
-                const sel = id === selectedObjectId || (selectedObjectId && isInside(id, selectedObjectId));
+                gl.uniform3fv(P.u.uColors, colors); gl.uniform3fv(P.u.uAlbedo, albedo);
+                gl.uniform1iv(P.u.uFaceTex, faceTex.get(id) || noTex);
+                const sel = id === selectedObjectId || id === texParent || (selectedObjectId && isInside(id, selectedObjectId));
                 let wire = 0, edge = [0, 0, 0], edgeA = 0.5, w = 0.9;
                 if (sel) { edge = accentRGB; edgeA = 1; w = 1.9; wire = o.wireframe ? 1 : 0; }
                 else if (o.wireframe) { wire = o.faceColoring ? 2 : 1; edge = wireRGB; w = 1.0; }
@@ -4109,6 +4973,37 @@ void main() { o = texture(uTex, vT); }`;
                 gl.drawArrays(gl.TRIANGLES, 0, 36);
             });
             gl.disable(gl.POLYGON_OFFSET_FILL);
+
+            // 1b. balls
+            if (balls.length) {
+                const B = GL.ball, SP = GL.sphere;
+                gl.useProgram(B.prog); setCam(B); setLight(B);
+                gl.uniform3fv(B.u.uFaceCols, FACE_COLS_F32);
+                gl.uniform2f(B.u.uClassic, sky.ambient, sky.lightStrength);
+                gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
+                for (const [id, o] of balls) {
+                    const sel = id === selectedObjectId || (selectedObjectId && isInside(id, selectedObjectId));
+                    const col = prismColor(o);
+                    gl.uniform3f(B.u.uCenter, o.x, o.y, o.z);
+                    gl.uniform3f(B.u.uHalf, o.width, o.height, o.length);
+                    const Ru = rotMat(o), Rp = mat3mul(ballRotFor(id), Ru);
+                    gl.uniformMatrix3fv(B.u.uRot, false, rotGL(o));
+                    gl.uniformMatrix3fv(B.u.uPatT, false, mat3T(mat3mul(mat3T(Rp), Ru)));
+                    gl.uniform3f(B.u.uBase, parseInt(col.slice(1, 3), 16) / 255, parseInt(col.slice(3, 5), 16) / 255, parseInt(col.slice(5, 7), 16) / 255);
+                    gl.uniform1i(B.u.uFaceCol, o.faceColoring ? 1 : 0);
+                    gl.uniform1f(B.u.uSel, sel ? 1 : 0);
+                    const ec = sel ? accentRGB : wireRGB;
+                    gl.uniform3f(B.u.uEdgeColor, ec[0], ec[1], ec[2]);
+                    if (o.wireframe) {
+                        gl.uniform1i(B.u.uWire, o.faceColoring && !sel ? 2 : 1);
+                        gl.bindVertexArray(SP.vaoLine); gl.drawElements(gl.LINES, SP.nLine, gl.UNSIGNED_SHORT, 0);
+                    } else {
+                        gl.uniform1i(B.u.uWire, 0);
+                        gl.bindVertexArray(SP.vaoTri); gl.drawElements(gl.TRIANGLES, SP.nTri, gl.UNSIGNED_SHORT, 0);
+                    }
+                }
+                gl.disable(gl.CULL_FACE);
+            }
             gl.depthMask(false);
 
             // 2. axes (depth-tested, so prisms hide them correctly)
@@ -4126,39 +5021,73 @@ void main() { o = texture(uTex, vT); }`;
                     verts.push(a[0], a[1], a[2], b[0], b[1], b[2], side, end, rgb[0], rgb[1], rgb[2], alpha, halfW);
             };
             const AX = [[0.937, 0.267, 0.267], [0.133, 0.773, 0.369], [0.231, 0.51, 0.965]];
-            const lim = 5, tk = 0.1;
+            const { lim, step: axStep, n: axN, tk } = axisGeom();
             const mainA = skyBright ? 0.7 : 0.4, tickA = skyBright ? 0.6 : 0.3;
             addSeg([-lim, 0, 0], [lim, 0, 0], AX[0], mainA, 1);
             addSeg([0, -lim, 0], [0, lim, 0], AX[1], mainA, 1);
             addSeg([0, 0, -lim], [0, 0, lim], AX[2], mainA, 1);
-            for (let i = -lim; i <= lim; i += 0.5) {
-                if (Math.abs(i) < 0.01) continue;
+            for (let k = -axN; k <= axN; k++) {
+                if (k === 0) continue;
+                const i = k * axStep;
                 addSeg([i, -tk, 0], [i, tk, 0], AX[0], tickA, 0.75);
                 addSeg([-tk, i, 0], [tk, i, 0], AX[1], tickA, 0.75);
                 addSeg([0, -tk, i], [0, tk, i], AX[2], tickA, 0.75);
             }
+            if (settings.showAxes === false) verts.length = 0;
             gl.useProgram(A.prog); setCam(A); gl.bindVertexArray(A.vao);
             gl.bindBuffer(gl.ARRAY_BUFFER, A.buf);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.DYNAMIC_DRAW);
             gl.drawArrays(gl.TRIANGLES, 0, verts.length / 13);
 
             // 3. face labels (also depth-tested, so a label hidden behind another prism stays hidden)
-            if (prisms.some(([, o]) => o.showLabels)) {
+            if (prisms.some(([, o]) => o.showLabels) || balls.some(([, o]) => o.showLabels)) {
                 gl.useProgram(L.prog); setCam(L); gl.bindVertexArray(L.vao);
                 gl.activeTexture(gl.TEXTURE0); gl.uniform1i(L.u.uTex, 0);
                 for (const [, o] of prisms) {
                     if (!o.showLabels) continue;
                     gl.bindTexture(gl.TEXTURE_2D, tex[skyBright && o.wireframe ? 1 : 0]);
-                    const minDim = Math.min(o.length, o.width, o.height) * 2;
+                    const minDim = Math.min(o.length, o.width, o.height) * 2, Ro = rotMat(o);
+                    const rv = (x, y, z) => [Ro[0] * x + Ro[1] * y + Ro[2] * z, Ro[3] * x + Ro[4] * y + Ro[5] * z, Ro[6] * x + Ro[7] * y + Ro[8] * z];
                     faces.forEach((f, fi) => {
-                        const c = [o.x + f.normal.x * o.width, o.y + f.normal.y * o.height, o.z + f.normal.z * o.length];
-                        if (f.normal.x * (cam[0] - c[0]) + f.normal.y * (cam[1] - c[1]) + f.normal.z * (cam[2] - c[2]) <= 0) return;
+                        const off = rv(f.normal.x * o.width, f.normal.y * o.height, f.normal.z * o.length), nn = rv(f.normal.x, f.normal.y, f.normal.z);
+                        const c = [o.x + off[0], o.y + off[1], o.z + off[2]];
+                        if (nn[0] * (cam[0] - c[0]) + nn[1] * (cam[1] - c[1]) + nn[2] * (cam[2] - c[2]) <= 0) return;
                         const z = zOf(c);
                         if (z < 0.3) return;
                         const hh = Math.min(96 * z / FOV, minDim * 0.5333) / 2, hw = hh * 256 / 96, lift = 0.002 * z + 0.001;
-                        gl.uniform3f(L.u.uLC, c[0] + f.normal.x * lift, c[1] + f.normal.y * lift, c[2] + f.normal.z * lift);
-                        gl.uniform3f(L.u.uLR, f.right.x * hw, f.right.y * hw, f.right.z * hw);
-                        gl.uniform3f(L.u.uLU, f.up.x * hh, f.up.y * hh, f.up.z * hh);
+                        const rr = rv(f.right.x, f.right.y, f.right.z), uu = rv(f.up.x, f.up.y, f.up.z);
+                        gl.uniform3f(L.u.uLC, c[0] + nn[0] * lift, c[1] + nn[1] * lift, c[2] + nn[2] * lift);
+                        gl.uniform3f(L.u.uLR, rr[0] * hw, rr[1] * hw, rr[2] * hw);
+                        gl.uniform3f(L.u.uLU, uu[0] * hh, uu[1] * hh, uu[2] * hh);
+                        gl.uniform2f(L.u.uCell, fi / faces.length, (fi + 1) / faces.length);
+                        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                    });
+                }
+            }
+            // ball labels sit at the six poles of the ball and turn with it
+            if (balls.some(([, o]) => o.showLabels)) {
+                gl.useProgram(L.prog); setCam(L); gl.bindVertexArray(L.vao);
+                gl.activeTexture(gl.TEXTURE0); gl.uniform1i(L.u.uTex, 0);
+                for (const [id, o] of balls) {
+                    if (!o.showLabels) continue;
+                    gl.bindTexture(gl.TEXTURE_2D, tex[skyBright && o.wireframe ? 1 : 0]);
+                    const Ru = rotMat(o), R = mat3mul(ballRotFor(id), Ru), rd = [o.width, o.height, o.length], minR = Math.min(...rd);
+                    const rot = (v) => [R[0] * v.x + R[1] * v.y + R[2] * v.z, R[3] * v.x + R[4] * v.y + R[5] * v.z, R[6] * v.x + R[7] * v.y + R[8] * v.z];
+                    faces.forEach((f, fi) => {
+                        const d = rot(f.normal), ld = [Ru[0] * d[0] + Ru[3] * d[1] + Ru[6] * d[2], Ru[1] * d[0] + Ru[4] * d[1] + Ru[7] * d[2], Ru[2] * d[0] + Ru[5] * d[1] + Ru[8] * d[2]];
+                        const t = 1 / Math.hypot(ld[0] / rd[0], ld[1] / rd[1], ld[2] / rd[2]);
+                        const c = [o.x + d[0] * t, o.y + d[1] * t, o.z + d[2] * t];
+                        const nl0 = [ld[0] / rd[0], ld[1] / rd[1], ld[2] / rd[2]], nlen = Math.hypot(nl0[0], nl0[1], nl0[2]);
+                        const nw = [Ru[0] * nl0[0] + Ru[1] * nl0[1] + Ru[2] * nl0[2], Ru[3] * nl0[0] + Ru[4] * nl0[1] + Ru[5] * nl0[2], Ru[6] * nl0[0] + Ru[7] * nl0[1] + Ru[8] * nl0[2]];
+                        const nrm = [nw[0] / nlen, nw[1] / nlen, nw[2] / nlen];
+                        if (nrm[0] * (cam[0] - c[0]) + nrm[1] * (cam[1] - c[1]) + nrm[2] * (cam[2] - c[2]) <= 0.15 * Math.hypot(cam[0] - c[0], cam[1] - c[1], cam[2] - c[2])) return;
+                        const z = zOf(c);
+                        if (z < 0.3) return;
+                        const hh = Math.min(96 * z / FOV, minR * 0.75) / 2, hw = hh * 256 / 96, lift = 0.002 * z + 0.001;
+                        const rr = rot(f.right), uu = rot(f.up);
+                        gl.uniform3f(L.u.uLC, c[0] + nrm[0] * lift, c[1] + nrm[1] * lift, c[2] + nrm[2] * lift);
+                        gl.uniform3f(L.u.uLR, rr[0] * hw, rr[1] * hw, rr[2] * hw);
+                        gl.uniform3f(L.u.uLU, uu[0] * hh, uu[1] * hh, uu[2] * hh);
                         gl.uniform2f(L.u.uCell, fi / faces.length, (fi + 1) / faces.length);
                         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
                     });
@@ -4169,18 +5098,20 @@ void main() { o = texture(uTex, vT); }`;
             return visible;
         }
 
-        function drawFallback(prisms) {
+        function drawFallback(prisms, balls) {
             // Axes
-            const axisLimit = 5;
+            if (settings.showAxes !== false) {
+            const { lim: axisLimit, step: axStepF, n: axNF, tk: tickSize } = axisGeom();
             draw3DLine(new Vec3(-axisLimit, 0, 0), new Vec3(axisLimit, 0, 0), skyBright ? 'rgba(239, 68, 68, 0.7)' : 'rgba(239, 68, 68, 0.4)', 2);
             draw3DLine(new Vec3(0, -axisLimit, 0), new Vec3(0, axisLimit, 0), skyBright ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.4)', 2);
             draw3DLine(new Vec3(0, 0, -axisLimit), new Vec3(0, 0, axisLimit), skyBright ? 'rgba(59, 130, 246, 0.7)' : 'rgba(59, 130, 246, 0.4)', 2);
-            const tickSize = 0.1;
-            for (let i = -axisLimit; i <= axisLimit; i += 0.5) {
-                if (Math.abs(i) < 0.01) continue;
+            for (let k = -axNF; k <= axNF; k++) {
+                if (k === 0) continue;
+                const i = k * axStepF;
                 draw3DLine(new Vec3(i, -tickSize, 0), new Vec3(i, tickSize, 0), skyBright ? 'rgba(239, 68, 68, 0.6)' : 'rgba(239, 68, 68, 0.3)', 1.5);
                 draw3DLine(new Vec3(-tickSize, i, 0), new Vec3(tickSize, i, 0), skyBright ? 'rgba(34, 197, 94, 0.6)' : 'rgba(34, 197, 94, 0.3)', 1.5);
                 draw3DLine(new Vec3(0, -tickSize, i), new Vec3(0, tickSize, i), skyBright ? 'rgba(59, 130, 246, 0.6)' : 'rgba(59, 130, 246, 0.3)', 1.5);
+            }
             }
 
             // Gather visible faces from every prism in the World
@@ -4192,16 +5123,16 @@ void main() { o = texture(uTex, vT); }`;
                 });
                 for (const face of faces) {
                     if (face.indices.some(i => tv[i].z3d < 0.1)) continue;
-                    const n = rotateVector(face.normal);
+                    const Rf = rotMat(obj), n = rotateVector(new Vec3(Rf[0] * face.normal.x + Rf[1] * face.normal.y + Rf[2] * face.normal.z, Rf[3] * face.normal.x + Rf[4] * face.normal.y + Rf[5] * face.normal.z, Rf[6] * face.normal.x + Rf[7] * face.normal.y + Rf[8] * face.normal.z));
                     let cx3 = 0, cy3 = 0, cz3 = 0;
                     for (const idx of face.indices) { cx3 += tv[idx].x3d; cy3 += tv[idx].y3d; cz3 += tv[idx].z3d; }
                     cx3 /= 4; cy3 /= 4; cz3 /= 4;
                     if (n.dot(new Vec3(cx3, cy3, cz3)) >= 0) continue;
 
                     // sunlight / moonlight comes from the sky, so faces light up depending on the time of day
-                    const diffuse = Math.max(0, face.normal.dot(sky.lightWorld));
+                    const diffuse = Math.max(0, (Rf[0] * face.normal.x + Rf[1] * face.normal.y + Rf[2] * face.normal.z) * sky.lightWorld.x + (Rf[3] * face.normal.x + Rf[4] * face.normal.y + Rf[5] * face.normal.z) * sky.lightWorld.y + (Rf[6] * face.normal.x + Rf[7] * face.normal.y + Rf[8] * face.normal.z) * sky.lightWorld.z);
                     const intensity = sky.ambient + (1 - sky.ambient) * diffuse * sky.lightStrength;
-                    const shaded = applyLighting(obj.faceColoring ? face.color : '#888888', intensity);
+                    const shaded = applyLighting(obj.faceColoring ? face.color : prismColor(obj), intensity);
                     const rightT = rotateVector(face.right), upT = rotateVector(face.up);
                     const scaleC = FOV / cz3;
                     const cx2d = cx3 * scaleC + cx, cy2d = cy3 * scaleC + cy;
@@ -4252,7 +5183,19 @@ void main() { o = texture(uTex, vT); }`;
                 }
             }
 
-            return visibleFaces.length;
+            // balls: shaded circles, farthest first (this simple renderer has no depth buffer)
+            const bl = balls.map(([id, o]) => ({ id, o, p: transformPoint(new Vec3(o.x, o.y, o.z)) })).filter(b => b.p.z > 0.1).sort((a, b) => b.p.z - a.p.z);
+            for (const { id, o, p } of bl) {
+                const sc = FOV / p.z, r = Math.max(1, ballRadius(o) * sc), x = p.x * sc + cx, y = p.y * sc + cy;
+                const lit = sky.ambient + (1 - sky.ambient) * 0.6 * sky.lightStrength, col = o.faceColoring ? '#a855f7' : prismColor(o);
+                const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+                g.addColorStop(0, applyLighting(col, Math.min(1, lit + 0.4))); g.addColorStop(1, applyLighting(col, lit * 0.35));
+                ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fillStyle = g; ctx.fill();
+                ctx.lineWidth = id === selectedObjectId ? 3 : 1; ctx.strokeStyle = id === selectedObjectId ? accentCol : 'rgba(0, 0, 0, 0.4)'; ctx.stroke();
+            }
+
+            return visibleFaces.length + bl.length;
         }
 
         function render() {
@@ -4282,7 +5225,7 @@ void main() { o = texture(uTex, vT); }`;
             updateTrig();
 
             // WASD camera movement (locked while dragging a handle)
-            const moveSpeed = 0.05;
+            const moveSpeed = settings.camSpeed > 0 ? settings.camSpeed : 0.1;
             if (!manip && !isTyping()) {
                 const forwardX = fwdX, forwardY = fwdY, forwardZ = fwdZ;
                 const rightX = rgtX, rightY = 0, rightZ = rgtZ;
@@ -4298,7 +5241,8 @@ void main() { o = texture(uTex, vT); }`;
 
             ctx.clearRect(0, 0, width, height);
             const prisms = Object.entries(sceneObjects).filter(([, o]) => o.type === 'prism6' && spaceOf(o) === 'world');
-            const visibleCount = GL ? drawGL(prisms) : drawFallback(prisms);
+            const balls = Object.entries(sceneObjects).filter(([, o]) => o.type === 'ball' && spaceOf(o) === 'world');
+            const visibleCount = GL ? drawGL(prisms, balls) : drawFallback(prisms, balls);
 
             // Handles are drawn last so they sit above every shape (only the UI is above them)
             // Model bounding box in 3D
@@ -4358,13 +5302,22 @@ void main() { o = texture(uTex, vT); }`;
             const d = [r.x / len, r.y / len, r.z / len], o = [camPosX, camPosY, camPosZ];
             let best = null, bestT = Infinity;
             for (const [id, p] of Object.entries(sceneObjects)) {
-                if (p.type !== 'prism6' || spaceOf(p) !== 'world') continue;
-                const mn = [p.x - p.width, p.y - p.height, p.z - p.length], mx = [p.x + p.width, p.y + p.height, p.z + p.length];
+                if (!isShape(p) || spaceOf(p) !== 'world') continue;
+                const R = rotMat(p), rx = o[0] - p.x, ry = o[1] - p.y, rz = o[2] - p.z;
+                const lo = [R[0] * rx + R[3] * ry + R[6] * rz, R[1] * rx + R[4] * ry + R[7] * rz, R[2] * rx + R[5] * ry + R[8] * rz];
+                const ld = [R[0] * d[0] + R[3] * d[1] + R[6] * d[2], R[1] * d[0] + R[4] * d[1] + R[7] * d[2], R[2] * d[0] + R[5] * d[1] + R[8] * d[2]];
+                const hx = [p.width, p.height, p.length];
+                if (p.type === 'ball') {
+                    const ox = lo[0] / hx[0], oy = lo[1] / hx[1], oz = lo[2] / hx[2], qx = ld[0] / hx[0], qy = ld[1] / hx[1], qz = ld[2] / hx[2];
+                    const A = qx * qx + qy * qy + qz * qz, B = 2 * (ox * qx + oy * qy + oz * qz), C = ox * ox + oy * oy + oz * oz - 1, disc = B * B - 4 * A * C;
+                    if (disc >= 0) { const sq = Math.sqrt(disc), t1 = (-B - sq) / (2 * A), t2 = (-B + sq) / (2 * A); if (t2 > 0) { const t = Math.max(t1, 0); if (t < bestT) { bestT = t; best = id; } } }
+                    continue;
+                }
                 let tmin = -Infinity, tmax = Infinity, ok = true;
                 for (let k = 0; k < 3; k++) {
-                    if (Math.abs(d[k]) < 1e-9) { if (o[k] < mn[k] || o[k] > mx[k]) ok = false; }
+                    if (Math.abs(ld[k]) < 1e-9) { if (lo[k] < -hx[k] || lo[k] > hx[k]) ok = false; }
                     else {
-                        let t1 = (mn[k] - o[k]) / d[k], t2 = (mx[k] - o[k]) / d[k];
+                        let t1 = (-hx[k] - lo[k]) / ld[k], t2 = (hx[k] - lo[k]) / ld[k];
                         if (t1 > t2) { const t = t1; t1 = t2; t2 = t; }
                         tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2);
                     }
@@ -4374,8 +5327,27 @@ void main() { o = texture(uTex, vT); }`;
             return best;
         }
 
+        // Angle of the mouse around a rotate ring, measured in the ring's plane (null when the ring is edge-on)
+        function ringAngle(h, m) {
+            const dv = rayDir(m.x, m.y), len = Math.hypot(dv.x, dv.y, dv.z) || 1, dir = [dv.x / len, dv.y / len, dv.z / len];
+            const dn = h.n[0] * dir[0] + h.n[1] * dir[1] + h.n[2] * dir[2];
+            if (Math.abs(dn) < 0.08) return null;
+            const cam = [camPosX, camPosY, camPosZ];
+            const t = (h.n[0] * (h.center[0] - cam[0]) + h.n[1] * (h.center[1] - cam[1]) + h.n[2] * (h.center[2] - cam[2])) / dn;
+            if (t <= 0) return null;
+            const p = [cam[0] + dir[0] * t - h.center[0], cam[1] + dir[1] * t - h.center[1], cam[2] + dir[2] * t - h.center[2]];
+            return Math.atan2(p[0] * h.v[0] + p[1] * h.v[1] + p[2] * h.v[2], p[0] * h.u[0] + p[1] * h.u[1] + p[2] * h.u[2]);
+        }
         function startManip(h, m) {
             const o = sceneObjects[selectedObjectId];
+            if (h.type === 'rotate') {
+                const a0 = ringAngle(h, m);
+                if (a0 === null || !o) return;
+                const key = { x: 'rotX', y: 'rotY', z: 'rotZ' }[h.axis];
+                manip = { h, o, isModel: false, rotate: true, key, prev: a0, acc: 0, startVal: o[key] || 0 };
+                canvas.style.cursor = 'grabbing';
+                return;
+            }
             const isModel = o && o.type === 'model';
             const t0 = axisParam(h.center, h.d, m.x, m.y);
             if (t0 === null) return;
@@ -4394,6 +5366,21 @@ void main() { o = texture(uTex, vT); }`;
             canvas.style.cursor = 'grabbing';
         }
         function updateManip(m) {
+            if (manip.rotate) {
+                const a = ringAngle(manip.h, m);
+                if (a === null) return;
+                let dl = a - manip.prev;
+                while (dl > Math.PI) dl -= 2 * Math.PI;
+                while (dl < -Math.PI) dl += 2 * Math.PI;
+                manip.acc += dl; manip.prev = a;
+                let val = manip.startVal + manip.acc * 180 / Math.PI;
+                const step = settings.rotOffset;
+                if (step > 0) val = Math.round(val / step) * step;
+                val = ((val + 180) % 360 + 360) % 360 - 180;
+                manip.o[manip.key] = Math.round(val * 1000) / 1000;
+                syncPropInputs();
+                return;
+            }
             const t = axisParam(manip.h.center, manip.h.d, m.x, m.y);
             if (t === null) return;
             let delta = Math.max(-500, Math.min(500, t - manip.t0));
@@ -4436,15 +5423,16 @@ void main() { o = texture(uTex, vT); }`;
                 const half = HALF_KEY[h.axis];
                 const grow = Math.max(delta, -(2 * start[half] - 0.1));
                 o[half] = r2(start[half] + grow / 2);
-                o[h.axis] = r2(start[h.axis] + h.sign * grow / 2);
+                o.x = r2(start.x + h.d.x * grow / 2); o.y = r2(start.y + h.d.y * grow / 2); o.z = r2(start.z + h.d.z * grow / 2);
             }
             syncPropInputs();
         }
 
         // Turn the view in place: left/right = yaw, up/down = pitch (no momentum; free look, horizon always level)
         function look(dx, dy) {
-            angleY += dx * LOOK_SENS;
-            angleX = clampPitch(angleX - dy * LOOK_SENS);
+            const k = LOOK_SENS * settings.lookSens;
+            angleY += dx * k;
+            angleX = clampPitch(angleX - dy * k * (settings.invertY ? -1 : 1));
         }
 
         canvas.addEventListener('mousedown', (e) => {

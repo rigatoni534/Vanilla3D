@@ -12,7 +12,7 @@ const VL_KEYWORDS = new Set(['call','get','local','while','for','in','do','end',
 const VL_SPACES = { World: 'world', Storage: 'storage', Scripts: 'scripts' };
 const VL_MODULES = ['Instance','Scripting','Tweening','Extras'];
 const VL_TYPES = ['prism6', 'ball', 'model', 'script', 'worldsettings'];
-const VL_GLOBALS = ['vanilla3D','print','wait','sin','cos','tan','sqrt','abs','floor','ceil','round','min','max','random','pi','type','tostring','tonumber','table','task','warn','error','deltaTime','length'];
+const VL_GLOBALS = ['vanilla3D','print','wait','sin','cos','tan','sqrt','abs','floor','ceil','round','min','max','random','atan2','pi','type','tostring','tonumber','table','task','warn','error','deltaTime','length'];
 // Runtime globals are shared by all scripts during one simulation.
 let vlSharedGlobals = new Map();
 

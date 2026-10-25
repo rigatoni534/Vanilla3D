@@ -214,7 +214,7 @@ function vlParse(toks, diags) {
         const t = toks[p];
         if (t.t === 'num') { p++; return { k: 'num', v: t.v, line: t.line }; }
         if (t.t === 'str') { p++; return { k: 'str', v: t.v, line: t.line }; }
-        if (t.t === 'name') {
+        if (t.t === 'name' || (t.t === 'kw' && ['true','false','nil'].includes(t.v))) {
             p++;
             if (t.v === 'True' || t.v === 'true') return { k: 'bool', v: true, line: t.line };
             if (t.v === 'False' || t.v === 'false') return { k: 'bool', v: false, line: t.line };

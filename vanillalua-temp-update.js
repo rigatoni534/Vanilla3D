@@ -12,7 +12,7 @@ const VL_KEYWORDS = new Set(['call','get','local','while','for','in','do','end',
 const VL_SPACES = { World: 'world', Storage: 'storage', Scripts: 'scripts' };
 const VL_MODULES = ['Instance','Scripting','Tweening','Extras'];
 const VL_TYPES = ['prism6', 'ball', 'model', 'script', 'worldsettings'];
-const VL_GLOBALS = ['vanilla3D','print','wait','sin','cos','tan','sqrt','abs','floor','ceil','round','min','max','random','pi','type','tostring','tonumber','table','task','warn','error','deltaTime'];
+const VL_GLOBALS = ['vanilla3D','print','wait','sin','cos','tan','sqrt','abs','floor','ceil','round','min','max','random','pi','type','tostring','tonumber','table','task','warn','error','deltaTime','length'];
 // Runtime globals are shared by all scripts during one simulation.
 let vlSharedGlobals = new Map();
 
@@ -390,7 +390,7 @@ function computeDiagnostics(o) {
 class VLFn { constructor(name, fn) { this.name = name; this.fn = fn; } }
 class VLTable { constructor(){this.items=new Map();} get(k){return this.items.get(k);} set(k,v){if(v==null)this.items.delete(k);else this.items.set(k,v);} length(){let n=0;while(this.items.has(n+1))n++;return n;} }
 class VLUserFn { constructor(name,params,body,closure){this.name=name;this.params=params;this.body=body;this.closure=closure;} }
-class VLControl { constructor(kind,value){this.kind=kind;this.value=value;} }
+class VLControl extends Error { constructor(kind,value){super(kind==='break'?'break used outside a loop.':kind==='continue'?'continue used outside a loop.':'return used outside a function.');this.name='VLControl';this.kind=kind;this.value=value;} }
 class VLWait { constructor(seconds) { this.seconds = seconds; } }
 class VLModule { constructor(name, members) { this.name = name; this.members = members; } }
 class VLSpace { constructor(name, id) { this.name = name; this.id = id; } }
@@ -631,7 +631,7 @@ function vlVecFrom(a, line, name) {
 function vlRootScope() {
     const s = new VLScope(null); s.vars.set('vanilla3D',vlVanilla3D);s.vars.set('pi',Math.PI);s.vars.set('deltaTime',0);
     const mf={sin:Math.sin,cos:Math.cos,tan:Math.tan,sqrt:Math.sqrt,abs:Math.abs,floor:Math.floor,ceil:Math.ceil,round:Math.round,min:Math.min,max:Math.max,atan2:Math.atan2};for(const [n,fn] of Object.entries(mf))s.vars.set(n,new VLFn(n,(a,l)=>{if(!a.length||a.some(v=>typeof v!=='number')||(!['min','max'].includes(n)&&a.length!==(n==='atan2'?2:1)))throw new VLError(n+' received invalid numeric arguments.',l);return fn(...a);}));s.vars.set('random',new VLFn('random',(a,l)=>a.length===0?Math.random():a.length===2?Math.random()*(a[1]-a[0])+a[0]:(()=>{throw new VLError('random() takes zero args or (min,max).',l)})()));s.vars.set('type',new VLFn('type',a=>vlTypeName(a[0])));s.vars.set('tostring',new VLFn('tostring',a=>vlStr(a[0])));s.vars.set('tonumber',new VLFn('tonumber',a=>{const n=Number(a[0]);return Number.isFinite(n)?n:null;}));s.vars.set('warn',new VLFn('warn',a=>{logOutput('warning',a.map(vlStr).join('  '));return null;}));s.vars.set('error',new VLFn('error',(a,l)=>{throw new VLError(a.length?vlStr(a[0]):'Script error.',l);}));
-    s.vars.set('table',new VLModule('table',{insert:new VLFn('table.insert',(a,l)=>{if(!(a[0] instanceof VLTable)||a.length<2)throw new VLError('table.insert(table,value) expected.',l);const t=a[0],idx=a.length>2?a[1]:t.length()+1,val=a.length>2?a[2]:a[1];for(let i=t.length()+1;i>idx;i--)t.set(i,t.get(i-1));t.set(idx,val);return null;}),remove:new VLFn('table.remove',(a,l)=>{if(!(a[0] instanceof VLTable))throw new VLError('table.remove(table) expected.',l);const t=a[0],idx=a[1]===undefined?t.length():a[1],v=t.get(idx);for(let i=idx;i<t.length();i++)t.set(i,t.get(i+1));t.set(t.length(),null);return v;})}));s.vars.set('task',new VLModule('task',{wait:new VLFn('task.wait',(a,l)=>{if(a.length!==1||typeof a[0]!=='number'||a[0]<0)throw new VLError('task.wait(seconds) expects a non-negative number.',l);return new VLWait(a[0]);})}));
+    s.vars.set('length',new VLFn('length',(a,l)=>{if(a.length!==1)throw new VLError('length(value) expects one string or table.',l);if(a[0] instanceof VLTable)return a[0].length();if(typeof a[0]==='string')return a[0].length;throw new VLError('length(value) expects a string or table.',l);}));s.vars.set('table',new VLModule('table',{insert:new VLFn('table.insert',(a,l)=>{if(!(a[0] instanceof VLTable)||a.length<2)throw new VLError('table.insert(table,value) expected.',l);const t=a[0],idx=a.length>2?a[1]:t.length()+1,val=a.length>2?a[2]:a[1];for(let i=t.length()+1;i>idx;i--)t.set(i,t.get(i-1));t.set(idx,val);return null;}),remove:new VLFn('table.remove',(a,l)=>{if(!(a[0] instanceof VLTable))throw new VLError('table.remove(table) expected.',l);const t=a[0],idx=a[1]===undefined?t.length():a[1],v=t.get(idx);for(let i=idx;i<t.length();i++)t.set(i,t.get(i+1));t.set(t.length(),null);return v;})}));s.vars.set('task',new VLModule('task',{wait:new VLFn('task.wait',(a,l)=>{if(a.length!==1||typeof a[0]!=='number'||a[0]<0)throw new VLError('task.wait(seconds) expects a non-negative number.',l);return new VLWait(a[0]);})}));
     s.vars.set('print', new VLFn('print', (args) => { logOutput('print', args.map(vlStr).join('  ')); return null; }));
     s.vars.set('wait', new VLFn('wait', (args, line) => {
         if (args.length !== 1 || typeof args[0] !== 'number' || !Number.isFinite(args[0]) || args[0] < 0) throw new VLError('wait(time) needs one non-negative number of seconds.', line);
@@ -750,7 +750,13 @@ function* vlExec(stmts, env, ctx) {
                 for (let i = a; i <= b; i++) {
                     const sc = new VLScope(env);
                     sc.vars.set(s.name, i);
-                    yield* vlExec(s.body, sc, ctx);
+                    try { yield* vlExec(s.body, sc, ctx); }
+                    catch (err) {
+                        if (err instanceof VLControl && err.kind === 'break') break;
+                        if (err instanceof VLControl && err.kind === 'continue') { yield; continue; }
+                        throw err;
+                    }
+                    yield;
                 }
                 break;
             }

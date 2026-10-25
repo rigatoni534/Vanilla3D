@@ -4402,7 +4402,8 @@ void main() { o = texture(uTex, vT); }`;
 
             return visibleFaces.length + bl.length;
         }
-
+        let uiDirty = false;
+        let outputDirty = false;
         function render() {
             if (!width || !height || !Number.isFinite(cx + cy)) { requestAnimationFrame(render); return; }
             const frameStart = performance.now();

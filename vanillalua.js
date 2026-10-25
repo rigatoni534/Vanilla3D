@@ -8,11 +8,11 @@
       const host = hostContext;
       const {sceneObjects, physicsVelocity, physicsVelocityFor, spaceOf, preInc, SPACE_KEYS, isShape, isInside, GRAVITY_MAX, makePrism, makeBall, dn, counters, newId, pruneOrphans } = hostContext;
 // A small Lua-like language. Every script starts with `call Scripts` and `get Instance`.
-const VL_KEYWORDS = new Set(['call', 'get', 'local', 'while', 'for', 'in', 'do', 'end', 'if', 'then', 'else', 'and', 'or', 'not']);
+const VL_KEYWORDS = new Set(['call','get','local','while','for','in','do','end','if','then','else','elseif','and','or','not','function','return','break','continue','true','false','nil']);
 const VL_SPACES = { World: 'world', Storage: 'storage', Scripts: 'scripts' };
-const VL_MODULES = ['Instance', 'Scripting'];
+const VL_MODULES = ['Instance','Scripting','Tweening','Extras'];
 const VL_TYPES = ['prism6', 'ball', 'model', 'script', 'worldsettings'];
-const VL_GLOBALS = ['vanilla3D', 'print', 'wait', 'script'];
+const VL_GLOBALS = ['vanilla3D','print','wait','sin','cos','tan','sqrt','abs','floor','ceil','round','min','max','random','atan2','pi','type','tostring','tonumber','table','task','warn','error','deltaTime','length'];
 // Runtime globals are shared by all scripts during one simulation.
 let vlSharedGlobals = new Map();
 
@@ -23,7 +23,7 @@ class VLError extends Error { constructor(msg, line) { super(msg); this.vlLine =
 function vlLex(src, diags) {
     const toks = [], n = src.length;
     let i = 0, line = 1;
-    const numRe = /\d+(?:\.\d{1,2})?/y, idRe = /[A-Za-z_][A-Za-z0-9_]*/y;
+    const numRe = /\d+(?:\.\d+)?/y, idRe = /[A-Za-z_][A-Za-z0-9_]*/y;
     while (i < n) {
         const c = src[i];
         if (c === '\n') { line++; i++; continue; }
@@ -50,8 +50,8 @@ function vlLex(src, diags) {
             toks.push({ t: 'str', v: out, line }); i = j; continue;
         }
         const two = src.substr(i, 2);
-        if (two === '==' || two === '~=' || two === '!=' || two === '<=' || two === '>=') { toks.push({ t: 'op', v: two === '!=' ? '~=' : two, line }); i += 2; continue; }
-        if ('+-*/%<>=(),.[]'.includes(c)) { toks.push({ t: 'op', v: c, line }); i++; continue; }
+        if (two === '==' || two === '~=' || two === '!=' || two === '<=' || two === '>=' || two === '..') { toks.push({ t: 'op', v: two === '!=' ? '~=' : two, line }); i += 2; continue; }
+        if ('+-*/%<>=(),.[]{}:#'.includes(c)) { toks.push({ t: 'op', v: c, line }); i++; continue; }
         diags.push({ line, sev: 'error', msg: 'Unexpected character "' + c + '".' });
         i++;
     }
@@ -88,7 +88,7 @@ function vlParse(toks, diags) {
         const out = [];
         for (;;) {
             const t = toks[p];
-            if (t.t === 'eof' || (t.t === 'kw' && (t.v === 'end' || t.v === 'else'))) return out;
+            if (t.t === 'eof' || (t.t === 'kw' && (t.v === 'end' || t.v === 'else' || t.v === 'elseif'))) return out;
             const start = p;
             try { out.push(parseStatement()); }
             catch (e) {
@@ -116,6 +116,9 @@ function vlParse(toks, diags) {
                 expectOp('=', 'after "local ' + nt.v + '"');
                 return { k: 'local', name: nt.v, expr: parseExpr(), line: t.line };
             }
+            if (t.v === 'function') { p++; const name=toks[p++]; if(!name||name.t!=='name')fail('Expected a function name.',t); expectOp('(','after function name'); const params=[]; if(!isOp(')')){do{const param=toks[p++];if(!param||param.t!=='name')fail('Expected parameter name.',t);params.push(param.v);}while(isOp(',')&&(p++,true));}expectOp(')','after parameters');const body=parseBlock();closeBlock('function',t.line);return {k:'function',name:name.v,params,body,line:t.line}; }
+            if (t.v === 'return') { p++; return {k:'return',expr:(isKw('end')||isKw('else')||isKw('elseif')||toks[p].t==='eof'||toks[p].line>t.line)?null:parseExpr(),line:t.line}; }
+            if (t.v === 'break' || t.v === 'continue') { p++; return {k:t.v,line:t.line}; }
             if (t.v === 'while') {
                 p++;
                 const cond = parseExpr();
@@ -138,16 +141,7 @@ function vlParse(toks, diags) {
                 closeBlock('for', t.line);
                 return { k: 'for', name: v.v, from, to, body, line: t.line };
             }
-            if (t.v === 'if') {
-                p++;
-                const cond = parseExpr();
-                expectKw('then', 'after the if condition');
-                const body = parseBlock();
-                let els = null;
-                if (isKw('else')) { p++; els = parseBlock(); }
-                closeBlock('if', t.line);
-                return { k: 'if', cond, body, els, line: t.line };
-            }
+            if(t.v==='if'){p++;const cond=parseExpr();expectKw('then','after the if condition');const body=parseBlock();let els=null;if(isKw('elseif')){const et=toks[p++],ec=parseExpr();expectKw('then','after the elseif condition');const eb=parseBlock();els=[{k:'if',cond:ec,body:eb,els:null,line:et.line}];let tail=els[0];while(isKw('elseif')){const xt=toks[p++],xc=parseExpr();expectKw('then','after the elseif condition');const xb=parseBlock();tail.els=[{k:'if',cond:xc,body:xb,els:null,line:xt.line}];tail=tail.els[0];}if(isKw('else')){p++;tail.els=parseBlock();}}else if(isKw('else')){p++;els=parseBlock();}closeBlock('if',t.line);return {k:'if',cond,body,els,line:t.line};}
             fail('Unexpected "' + t.v + '".', t);
         }
         const e = parseSuffixed();
@@ -171,10 +165,11 @@ function vlParse(toks, diags) {
         return l;
     }
     function parseCmp() {
-        let l = parseAdd();
-        while (toks[p].t === 'op' && ['==', '~=', '<', '>', '<=', '>='].includes(toks[p].v)) { const t = toks[p++]; l = { k: 'bin', op: t.v, l, r: parseAdd(), line: t.line }; }
+        let l = parseConcat();
+        while (toks[p].t === 'op' && ['==', '~=', '<', '>', '<=', '>='].includes(toks[p].v)) { const t = toks[p++]; l = { k: 'bin', op: t.v, l, r: parseConcat(), line: t.line }; }
         return l;
     }
+    function parseConcat() { let l=parseAdd(); if(isOp('..')) { const t=toks[p++]; l={k:'bin',op:'..',l,r:parseConcat(),line:t.line}; } return l; }
     function parseAdd() {
         let l = parseMul();
         while (isOp('+') || isOp('-')) { const t = toks[p++]; l = { k: 'bin', op: t.v, l, r: parseMul(), line: t.line }; }
@@ -187,7 +182,8 @@ function vlParse(toks, diags) {
     }
     function parseUnary() {
         if (isKw('not')) { const t = toks[p++]; return { k: 'un', op: 'not', e: parseUnary(), line: t.line }; }
-        if (isOp('-')) { const t = toks[p++]; return { k: 'un', op: '-', e: parseUnary(), line: t.line }; }
+        if (isOp('-')) { const t=toks[p++]; return {k:'un',op:'-',e:parseUnary(),line:t.line}; }
+        if (isOp('#')) { const t=toks[p++]; return {k:'un',op:'#',e:parseUnary(),line:t.line}; }
         return parseSuffixed();
     }
     function parseSuffixed() {
@@ -218,13 +214,14 @@ function vlParse(toks, diags) {
         const t = toks[p];
         if (t.t === 'num') { p++; return { k: 'num', v: t.v, line: t.line }; }
         if (t.t === 'str') { p++; return { k: 'str', v: t.v, line: t.line }; }
-        if (t.t === 'name') {
+        if (t.t === 'name' || (t.t === 'kw' && ['true','false','nil'].includes(t.v))) {
             p++;
-            if (t.v === 'True') return { k: 'bool', v: true, line: t.line };
-            if (t.v === 'False') return { k: 'bool', v: false, line: t.line };
+            if (t.v === 'True' || t.v === 'true') return { k: 'bool', v: true, line: t.line };
+            if (t.v === 'False' || t.v === 'false') return { k: 'bool', v: false, line: t.line };
             if (t.v === 'nil') return { k: 'nil', line: t.line };
             return { k: 'name', name: t.v, line: t.line };
         }
+        if (isOp('{')) { p++; const items=[],fields=[]; while(!isOp('}')&&toks[p].t!=='eof'){if((toks[p].t==='name'||toks[p].t==='str')&&toks[p+1]&&toks[p+1].v==='='){const key=toks[p++];p++;fields.push({key:key.v,value:parseExpr()});}else items.push(parseExpr());if(!isOp(','))break;p++;}expectOp('}','to close the table');return {k:'table',items,fields,line:t.line};}
         if (isOp('(')) { p++; const e = parseExpr(); expectOp(')', 'to close the parentheses'); return e; }
         fail('Expected a value but found ' + describe(t) + '.');
     }
@@ -307,7 +304,7 @@ function vlAnalyze(ast, diags) {
                 continue;
             }
             if (s.k === 'useModule') {
-                if (!VL_MODULES.includes(s.name)) err(s.line, 'Unknown module "' + s.name + '". You can get: Instance, Scripting.');
+                if (!VL_MODULES.includes(s.name)) err(s.line, 'Unknown module "' + s.name + '". You can get: Instance, Scripting, Tweening, Extras.');
                 else {
                     if (got.has(s.name)) warn(s.line, '"get ' + s.name + '" is already in this script.');
                     got.add(s.name);
@@ -318,6 +315,9 @@ function vlAnalyze(ast, diags) {
             sawCode = true;
             switch (s.k) {
                 case 'local': expr(s.expr); declare(s.name, s.line, true); break;
+                case 'function': declare(s.name,s.line,false); push(); s.params.forEach(n=>declare(n,s.line,false)); block(s.body); pop(); break;
+                case 'return': if(s.expr)expr(s.expr); break;
+                case 'break': case 'continue': break;
                 case 'assign': {
                     if (s.target.k === 'name') {
                         if (!find(s.target.name) && !VL_GLOBALS.includes(s.target.name) && !VL_SPACES[s.target.name] && !VL_MODULES.includes(s.target.name)) declare(s.target.name, s.target.line, false);
@@ -388,6 +388,9 @@ function computeDiagnostics(o) {
 
 // ── Runtime values ──
 class VLFn { constructor(name, fn) { this.name = name; this.fn = fn; } }
+class VLTable { constructor(){this.items=new Map();} get(k){return this.items.get(k);} set(k,v){if(v==null)this.items.delete(k);else this.items.set(k,v);} length(){let n=0;while(this.items.has(n+1))n++;return n;} }
+class VLUserFn { constructor(name,params,body,closure){this.name=name;this.params=params;this.body=body;this.closure=closure;} }
+class VLControl extends Error { constructor(kind,value){super(kind==='break'?'break used outside a loop.':kind==='continue'?'continue used outside a loop.':'return used outside a function.');this.name='VLControl';this.kind=kind;this.value=value;} }
 class VLWait { constructor(seconds) { this.seconds = seconds; } }
 class VLModule { constructor(name, members) { this.name = name; this.members = members; } }
 class VLSpace { constructor(name, id) { this.name = name; this.id = id; } }
@@ -415,7 +418,8 @@ function vlTypeName(v) {
     if (v instanceof VLVec) return 'vector';
     if (v instanceof VLInst) return 'instance';
     if (v instanceof VLSpace) return 'space';
-    if (v instanceof VLFn) return 'function';
+    if (v instanceof VLFn || v instanceof VLUserFn) return 'function';
+    if (v instanceof VLTable) return 'table';
     if (v instanceof VLModule) return 'module';
     return typeof v;
 }
@@ -424,6 +428,8 @@ function vlStr(v) {
     if (typeof v === 'boolean') return v ? 'True' : 'False';
     if (typeof v === 'number') return String(vlRound(v));
     if (v instanceof VLVec) return '(' + [0, 1, 2].map(i => vlRound(v.get(i))).join(', ') + ')';
+    if (v instanceof VLTable) return '{' + [...v.items].map(([k,x])=>(typeof k==='number'?'['+k+']':k)+' = '+vlStr(x)).join(', ') + '}';
+    if (v instanceof VLUserFn) return 'function '+v.name+'(...)';
     if (v instanceof VLInst) return sceneObjects[v.id] ? v.id : 'deleted instance';
     if (v instanceof VLSpace || v instanceof VLModule) return v.name;
     if (v instanceof VLFn) return 'function ' + v.name;
@@ -501,9 +507,13 @@ function vlSetProp(inst, name, v, line) {
     if (name === 'Name') host.markUIDirty();
 }
 function vlGetMember(obj, name, line) {
+    if(obj instanceof VLTable)return name==='length'?obj.length():obj.get(name);
     if (obj instanceof VLVec) {
-        if (!(name in VL_AXES)) throw new VLError('A vector only has X, Y and Z.', line);
-        return obj.get(VL_AXES[name]);
+        if(name in VL_AXES)return obj.get(VL_AXES[name]);
+        if(name==='Magnitude'||name==='magnitude')return Math.hypot(obj.get(0),obj.get(1),obj.get(2));
+        if(name==='Unit'||name==='unit'){const m=Math.hypot(obj.get(0),obj.get(1),obj.get(2));return m?new VLVec(obj.get(0)/m,obj.get(1)/m,obj.get(2)/m):new VLVec(0,0,0);}
+        if(name==='Dot'||name==='dot')return new VLFn('Vector3.Dot',(a,l)=>{if(!(a[0] instanceof VLVec))throw new VLError('Dot needs a vector.',l);return obj.get(0)*a[0].get(0)+obj.get(1)*a[0].get(1)+obj.get(2)*a[0].get(2);});
+        if(name==='Distance'||name==='distance')return new VLFn('Vector3.Distance',(a,l)=>{if(!(a[0] instanceof VLVec))throw new VLError('Distance needs a vector.',l);return Math.hypot(obj.get(0)-a[0].get(0),obj.get(1)-a[0].get(1),obj.get(2)-a[0].get(2));});
     }
     if (obj instanceof VLInst) return vlGetProp(obj, name, line);
     if (obj instanceof VLSpace) {
@@ -519,6 +529,7 @@ function vlGetMember(obj, name, line) {
     throw new VLError('Cannot read "' + name + '" from a ' + vlTypeName(obj) + ' value.', line);
 }
 function vlSetMember(obj, name, v, line) {
+    if(obj instanceof VLTable){obj.set(name,v);return;}
     if (obj instanceof VLVec) {
         if (!(name in VL_AXES)) throw new VLError('A vector only has X, Y and Z.', line);
         if (typeof v !== 'number' || !Number.isFinite(v)) throw new VLError(name + ' needs a number.', line);
@@ -580,6 +591,8 @@ function vlSetUID(args, line) {
 const vlGetUIDFn = new VLFn('Instance.GetUID', vlGetUID);
 const vlSetUIDFn = new VLFn('Instance.SetUID', vlSetUID);
 const vlScriptingModule = new VLModule('Scripting', { GetUID: vlGetUIDFn, SetUID: vlSetUIDFn });
+const vlTweeningModule = new VLModule('Tweening',{linear:new VLFn('Tweening.linear',(a,l)=>{if(a.length!==3||a.some(v=>typeof v!=='number'))throw new VLError('linear(start,target,alpha) needs three numbers.',l);return a[0]+(a[1]-a[0])*Math.max(0,Math.min(1,a[2]));}),easeInOut:new VLFn('Tweening.easeInOut',(a,l)=>{if(a.length!==3||a.some(v=>typeof v!=='number'))throw new VLError('easeInOut(start,target,alpha) needs three numbers.',l);const t=Math.max(0,Math.min(1,a[2])),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;return a[0]+(a[1]-a[0])*e;})});
+const vlExtrasModule = new VLModule('Extras',{clamp:new VLFn('Extras.clamp',(a,l)=>{if(a.length!==3||a.some(v=>typeof v!=='number'))throw new VLError('clamp(value,min,max) needs three numbers.',l);return Math.max(a[1],Math.min(a[2],a[0]));}),lerp:new VLFn('Extras.lerp',(a,l)=>{if(a.length!==3||a.some(v=>typeof v!=='number'))throw new VLError('lerp(a,b,alpha) needs three numbers.',l);return a[0]+(a[1]-a[0])*a[2];})});
 const vlInstanceModule = new VLModule('Instance', {
     GetUID: vlGetUIDFn,
     SetUID: vlSetUIDFn,
@@ -616,8 +629,9 @@ function vlVecFrom(a, line, name) {
     return new VLVec(a[0], a[1], a[2]);
 }
 function vlRootScope() {
-    const s = new VLScope(null);
-    s.vars.set('vanilla3D', vlVanilla3D);
+    const s = new VLScope(null); s.vars.set('vanilla3D',vlVanilla3D);s.vars.set('pi',Math.PI);s.vars.set('deltaTime',0);
+    const mf={sin:Math.sin,cos:Math.cos,tan:Math.tan,sqrt:Math.sqrt,abs:Math.abs,floor:Math.floor,ceil:Math.ceil,round:Math.round,min:Math.min,max:Math.max,atan2:Math.atan2};for(const [n,fn] of Object.entries(mf))s.vars.set(n,new VLFn(n,(a,l)=>{if(!a.length||a.some(v=>typeof v!=='number')||(!['min','max'].includes(n)&&a.length!==(n==='atan2'?2:1)))throw new VLError(n+' received invalid numeric arguments.',l);return fn(...a);}));s.vars.set('random',new VLFn('random',(a,l)=>a.length===0?Math.random():a.length===2?Math.random()*(a[1]-a[0])+a[0]:(()=>{throw new VLError('random() takes zero args or (min,max).',l)})()));s.vars.set('type',new VLFn('type',a=>vlTypeName(a[0])));s.vars.set('tostring',new VLFn('tostring',a=>vlStr(a[0])));s.vars.set('tonumber',new VLFn('tonumber',a=>{const n=Number(a[0]);return Number.isFinite(n)?n:null;}));s.vars.set('warn',new VLFn('warn',a=>{logOutput('warning',a.map(vlStr).join('  '));return null;}));s.vars.set('error',new VLFn('error',(a,l)=>{throw new VLError(a.length?vlStr(a[0]):'Script error.',l);}));
+    s.vars.set('length',new VLFn('length',(a,l)=>{if(a.length!==1)throw new VLError('length(value) expects one string or table.',l);if(a[0] instanceof VLTable)return a[0].length();if(typeof a[0]==='string')return a[0].length;throw new VLError('length(value) expects a string or table.',l);}));s.vars.set('table',new VLModule('table',{insert:new VLFn('table.insert',(a,l)=>{if(!(a[0] instanceof VLTable)||a.length<2)throw new VLError('table.insert(table,value) expected.',l);const t=a[0],idx=a.length>2?a[1]:t.length()+1,val=a.length>2?a[2]:a[1];for(let i=t.length()+1;i>idx;i--)t.set(i,t.get(i-1));t.set(idx,val);return null;}),remove:new VLFn('table.remove',(a,l)=>{if(!(a[0] instanceof VLTable))throw new VLError('table.remove(table) expected.',l);const t=a[0],idx=a[1]===undefined?t.length():a[1],v=t.get(idx);for(let i=idx;i<t.length();i++)t.set(i,t.get(i+1));t.set(t.length(),null);return v;})}));s.vars.set('task',new VLModule('task',{wait:new VLFn('task.wait',(a,l)=>{if(a.length!==1||typeof a[0]!=='number'||a[0]<0)throw new VLError('task.wait(seconds) expects a non-negative number.',l);return new VLWait(a[0]);})}));
     s.vars.set('print', new VLFn('print', (args) => { logOutput('print', args.map(vlStr).join('  ')); return null; }));
     s.vars.set('wait', new VLFn('wait', (args, line) => {
         if (args.length !== 1 || typeof args[0] !== 'number' || !Number.isFinite(args[0]) || args[0] < 0) throw new VLError('wait(time) needs one non-negative number of seconds.', line);
@@ -633,6 +647,7 @@ function vlEq(a, b) {
     return a === b || (a == null && b == null);
 }
 function vlBinary(op, a, b, line) {
+    if(op==='..')return vlStr(a)+vlStr(b);
     if (op === '==') return vlEq(a, b);
     if (op === '~=') return !vlEq(a, b);
     if (op === '+') {
@@ -658,6 +673,7 @@ function vlEval(e, env, ctx) {
     switch (e.k) {
         case 'num': case 'str': case 'bool': return e.v;
         case 'nil': return null;
+        case 'table': {const t=new VLTable();let n=1;for(const item of e.items)t.set(n++,vlEval(item,env,ctx));for(const field of e.fields)t.set(field.key,vlEval(field.value,env,ctx));return t;}
         case 'name': {
             const sc = env.find(e.name);
             if (sc) return sc.vars.get(e.name);
@@ -667,18 +683,16 @@ function vlEval(e, env, ctx) {
         case 'member': { const obj = vlEval(e.obj, env, ctx); if (obj instanceof VLSpace) { const sc = env.find(e.name); if (sc) { const key = sc.vars.get(e.name); const uid = key instanceof VLInst ? key.id : key; if (typeof uid !== 'string') throw new VLError('A Space member variable must contain an instance or UID string.', e.line); return vlGetMember(obj, uid, e.line); } if (vlSharedGlobals.has(e.name)) { const key = vlSharedGlobals.get(e.name).value; const uid = key instanceof VLInst ? key.id : key; if (typeof uid !== 'string') throw new VLError('A Space member variable must contain an instance or UID string.', e.line); return vlGetMember(obj, uid, e.line); } } return vlGetMember(obj, e.name, e.line); }
         case 'index': {
             const o = vlEval(e.obj, env, ctx), k = vlEval(e.key, env, ctx);
-            if (typeof k !== 'string') throw new VLError('An index must be a string, for example World["Block 2"].', e.line);
-            return vlGetMember(o, k, e.line);
+            if(o instanceof VLTable)return o.get(k);if(typeof o==='string'&&typeof k==='number')return o.charAt(k-1);if(typeof k!=='string')throw new VLError('An index must be a string or number.',e.line);return vlGetMember(o,k,e.line);
         }
         case 'callx': {
             const f = vlEval(e.fn, env, ctx);
-            if (!(f instanceof VLFn)) throw new VLError('This is not a function.', e.line);
-            return f.fn(e.args.map(a => vlEval(a, env, ctx)), e.line, ctx);
+            const args=e.args.map(a=>vlEval(a,env,ctx));if(f instanceof VLFn)return f.fn(args,e.line,ctx);if(f instanceof VLUserFn){const local=new VLScope(f.closure);f.params.forEach((p,i)=>local.vars.set(p,args[i]));const g=vlExec(f.body,local,ctx);try{while(true){const n=g.next();if(n.done)break;if(n.value&&n.value.wait!==undefined)throw new VLError('wait() in functions is not supported yet.',e.line);}}catch(err){if(err instanceof VLControl&&err.kind==='return')return err.value;throw err;}return null;}throw new VLError('This is not a function.',e.line);
         }
         case 'un': {
             const v = vlEval(e.e, env, ctx);
             if (e.op === 'not') return !vlTruthy(v);
-            if (typeof v !== 'number') throw new VLError('Cannot negate a ' + vlTypeName(v) + ' value.', e.line);
+            if(e.op==='#'){if(v instanceof VLTable)return v.length();if(typeof v==='string')return v.length;throw new VLError('Length expects a string or table.',e.line);}if (typeof v !== 'number') throw new VLError('Cannot negate a ' + vlTypeName(v) + ' value.', e.line);
             return -v;
         }
         case 'bin': {
@@ -696,8 +710,12 @@ function* vlExec(stmts, env, ctx) {
         if (++ctx.steps >= 400) { ctx.steps = 0; yield; }
         switch (s.k) {
             case 'useSpace': env.vars.set(s.name, vlSpaces[VL_SPACES[s.name]]); break;
-            case 'useModule': env.vars.set(s.name, s.name === 'Scripting' ? vlScriptingModule : vlInstanceModule); break;
+            case 'useModule': env.vars.set(s.name, ({Scripting:vlScriptingModule,Instance:vlInstanceModule,Tweening:vlTweeningModule,Extras:vlExtrasModule})[s.name] || vlInstanceModule); break;
             case 'local': env.vars.set(s.name, vlEval(s.expr, env, ctx)); break;
+            case 'function': env.vars.set(s.name,new VLUserFn(s.name,s.params,s.body,env)); break;
+            case 'return': throw new VLControl('return',s.expr?vlEval(s.expr,env,ctx):null);
+            case 'break': throw new VLControl('break');
+            case 'continue': throw new VLControl('continue');
             case 'assign': {
                 const v = vlEval(s.expr, env, ctx), t = s.target;
                 if (t.k === 'name') {
@@ -724,10 +742,7 @@ function* vlExec(stmts, env, ctx) {
             }
             case 'exprstmt': { const result = vlEval(s.expr, env, ctx); if (result instanceof VLWait) { yield { wait: result.seconds }; } break; }
             case 'while':
-                while (vlTruthy(vlEval(s.cond, env, ctx))) {
-                    yield* vlExec(s.body, new VLScope(env), ctx);
-                    yield;
-                }
+                while(vlTruthy(vlEval(s.cond,env,ctx))){try{yield*vlExec(s.body,new VLScope(env),ctx);}catch(err){if(err instanceof VLControl&&err.kind==='break')break;if(err instanceof VLControl&&err.kind==='continue'){yield;continue;}throw err;}yield;}
                 break;
             case 'for': {
                 const a = vlEval(s.from, env, ctx), b = vlEval(s.to, env, ctx);
@@ -735,7 +750,13 @@ function* vlExec(stmts, env, ctx) {
                 for (let i = a; i <= b; i++) {
                     const sc = new VLScope(env);
                     sc.vars.set(s.name, i);
-                    yield* vlExec(s.body, sc, ctx);
+                    try { yield* vlExec(s.body, sc, ctx); }
+                    catch (err) {
+                        if (err instanceof VLControl && err.kind === 'break') break;
+                        if (err instanceof VLControl && err.kind === 'continue') { yield; continue; }
+                        throw err;
+                    }
+                    yield;
                 }
                 break;
             }
@@ -770,11 +791,11 @@ function vlStartTask(id) {
         logOutput('error', o.name + ' did not run. Line ' + errs[0].line + ': ' + errs[0].msg + (errs.length > 1 ? ' (+' + (errs.length - 1) + ' more)' : ''));
         return false;
     }
-    const ctx = { id, name: o.name, steps: 0, root: vlRootScope() };
+    const ctx = { id, name: o.name, steps: 0, root: vlRootScope(), lastFrameTime: performance.now() };
     ctx.root.vars.set('script', vlInst(id));
     for (const n of ['Scripts', 'World', 'Storage']) if (preInc(n)) ctx.root.vars.set(n, vlSpaces[VL_SPACES[n]]);
-    for (const n of ['Instance', 'Scripting']) if (preInc(n)) ctx.root.vars.set(n, n === 'Scripting' ? vlScriptingModule : vlInstanceModule);
-    scriptTasks.push({ id, name: o.name, gen: vlMain(ast, ctx), done: false, nextAt: 0 });
+    for(const n of ['Instance','Scripting','Tweening','Extras'])if(preInc(n))ctx.root.vars.set(n,({Scripting:vlScriptingModule,Instance:vlInstanceModule,Tweening:vlTweeningModule,Extras:vlExtrasModule})[n]);
+    scriptTasks.push({ id, name: o.name, gen: vlMain(ast, ctx), ctx, done: false, nextAt: 0 });
     return true;
 }
 function vlRunScript(id, line) {
@@ -800,7 +821,7 @@ function stepScripts() {
         const t = scriptTasks[i];
         if (t.done) continue;
         if (!sceneObjects[t.id]) { t.done = true; continue; }
-        try { if (performance.now() < t.nextAt) continue; const step = t.gen.next(); if (step.done) t.done = true; else if (step.value && typeof step.value.wait === 'number') t.nextAt = performance.now() + step.value.wait * 1000; }
+        try { if (performance.now() < t.nextAt) continue; const now=performance.now();if(t.ctx){t.ctx.root.vars.set('deltaTime',Math.max(0,(now-t.ctx.lastFrameTime)/1000));t.ctx.lastFrameTime=now;} const step = t.gen.next(); if (step.done) t.done = true; else if (step.value && typeof step.value.wait === 'number') t.nextAt = performance.now() + step.value.wait * 1000; }
         catch (e) {
             t.done = true;
             if (e instanceof VLError) logOutput('error', t.name + (e.vlLine ? ' line ' + e.vlLine : '') + ': ' + e.message);
@@ -838,10 +859,10 @@ function stopScripts() {
     const { ast, diags } = rt.computeDiagnostics({ language: 'vanillalua', source });
     const errors = diags.filter(d => d.sev === 'error');
     if (errors.length) return { output: errors.map(d => `Line ${d.line}: ${d.msg}`).join('\n'), status: 'error', diagnostics: diags };
-    const ctx = { id: scriptId, name: 'Playground', steps: 0, root: rt.vlRootScope() };
+    const ctx = { id: scriptId, name: 'Playground', steps: 0, root: rt.vlRootScope(), lastFrameTime: performance.now() };
     ctx.root.vars.set('script', rt.vlInst(scriptId));
     for (const n of ['Scripts', 'World', 'Storage']) ctx.root.vars.set(n, rt.vlSpaces[rt.VL_SPACES[n]]);
-    for (const n of ['Instance', 'Scripting']) ctx.root.vars.set(n, n === 'Scripting' ? rt.vlScriptingModule : rt.vlInstanceModule);
+    for(const n of ['Instance','Scripting','Tweening','Extras'])ctx.root.vars.set(n,({Scripting:rt.vlScriptingModule,Instance:rt.vlInstanceModule,Tweening:rt.vlTweeningModule,Extras:rt.vlExtrasModule})[n]);
     const gen = rt.vlMain(ast, ctx); let guard = 0;
     try { while (true) { if (++guard > 10000) throw new Error('Execution stopped after 10000 steps. Check for an infinite loop.'); const next = gen.next(); if (next.done) break; } }
     catch (e) { const line = e.vlLine ? `Line ${e.vlLine}: ` : ''; rt.logOutput('error', line + e.message); return { output: rt.outputLog.map(x => x.text).join('\n'), status: 'error', diagnostics: diags }; }

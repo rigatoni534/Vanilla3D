@@ -464,6 +464,8 @@
   .num.grav input { padding-left: 8px; }
   .num.grav .tag { width: auto; padding: 0 8px 0 0; color: var(--muted); font: 11px var(--mono); }
   .field-note { margin-top: 6px; color: var(--muted); font-size: 12px; }
+  .num.hnum .tag { width: auto; padding: 0 8px 0 0; color: var(--muted); font: 11px var(--mono); }
+  .num.hnum input { padding-left: 8px; }
   #canvas-container.simulating::after {
     content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none;
     box-shadow: inset 0 0 0 2px var(--accent);
@@ -658,6 +660,8 @@
     <symbol id="i-list" viewBox="0 0 16 16"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></symbol>
     <symbol id="i-grid" viewBox="0 0 16 16"><path d="M2.5 2.5h11v11h-11zM2.5 6.17h11M2.5 9.83h11M6.17 2.5v11M9.83 2.5v11"/></symbol>
     <symbol id="i-ball" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c-2.2 1.7-2.2 9.3 0 11M8 2.5c2.2 1.7 2.2 9.3 0 11"/></symbol>
+    <symbol id="i-players" viewBox="0 0 16 16"><circle cx="5.6" cy="5" r="2"/><path d="M2 12.6c0-2.2 1.6-3.8 3.6-3.8s3.6 1.6 3.6 3.8"/><circle cx="11.2" cy="5.6" r="1.7"/><path d="M10.4 9.2c2 0 3.6 1.4 3.6 3.4"/></symbol>
+    <symbol id="i-human" viewBox="0 0 16 16"><circle cx="8" cy="4.6" r="2.4"/><path d="M3.4 13.6c0-2.7 2-4.6 4.6-4.6s4.6 1.9 4.6 4.6"/></symbol>
     <symbol id="i-rotate" viewBox="0 0 16 16"><path d="M13.2 8a5.2 5.2 0 1 1-1.7-3.85"/><path d="M13.3 2.4v3.1h-3.1"/></symbol>
     <symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.75"/><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.05 1.05M11.55 11.55l1.05 1.05M3.4 12.6l1.05-1.05M11.55 4.45l1.05-1.05"/></symbol>
     <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
@@ -796,6 +800,7 @@
     <button class="menu-item" role="menuitem" data-kind="ball"><svg class="ic"><use href="#i-ball"/></svg>Ball<span class="menu-meta">ball</span></button>
     <button class="menu-item" role="menuitem" data-kind="texture"><svg class="ic"><use href="#i-grid"/></svg>Texture<span class="menu-meta">texture</span></button>
     <button class="menu-item" role="menuitem" data-kind="model"><svg class="ic"><use href="#i-model"/></svg>Model<span class="menu-meta">model</span></button>
+    <button class="menu-item" role="menuitem" data-kind="human"><svg class="ic"><use href="#i-human"/></svg>Human<span class="menu-meta">human</span></button>
     <button class="menu-item" role="menuitem" data-kind="worldsettings"><svg class="ic"><use href="#i-sun"/></svg>World Settings</button>
     <button class="menu-item" role="menuitem" data-kind="script"><svg class="ic"><use href="#i-script"/></svg>Script</button>
   </div>
@@ -866,6 +871,7 @@
               <label for="dn-prism6">Rectangular Prism</label><input class="text" id="dn-prism6" maxlength="24" placeholder="Block">
               <label for="dn-ball">Ball</label><input class="text" id="dn-ball" maxlength="24" placeholder="Ball">
               <label for="dn-model">Model</label><input class="text" id="dn-model" maxlength="24" placeholder="Model">
+              <label for="dn-human">Player names</label><input class="text" id="dn-human" maxlength="24" placeholder="Player">
               <label for="dn-script">Script</label><input class="text" id="dn-script" maxlength="24" placeholder="Script">
               <label for="dn-worldsettings">World Settings</label><input class="text" id="dn-worldsettings" maxlength="24" placeholder="Settings">
             </div>
@@ -909,6 +915,8 @@
             <label class="setting" for="pre-World"><div><div class="setting-title"><code>call World</code></div><div class="setting-desc">Load the World space.</div></div><input type="checkbox" id="pre-World" class="switch"></label>
             <label class="setting" for="pre-Storage"><div><div class="setting-title"><code>call Storage</code></div><div class="setting-desc">Load the Storage space.</div></div><input type="checkbox" id="pre-Storage" class="switch"></label>
             <label class="setting" for="pre-Scripting"><div><div class="setting-title"><code>get Scripting</code></div><div class="setting-desc">Load UID lookup and reassignment utilities.</div></div><input type="checkbox" id="pre-Scripting" class="switch"></label>
+            <label class="setting" for="pre-Players"><div><div class="setting-title"><code>call Players</code></div><div class="setting-desc">Load the Players space (read-only).</div></div><input type="checkbox" id="pre-Players" class="switch"></label>
+            <label class="setting" for="pre-GetPlayers"><div><div class="setting-title"><code>get Players</code></div><div class="setting-desc">Load the Players functions and join, spawn, leave and death events.</div></div><input type="checkbox" id="pre-GetPlayers" class="switch"></label>
             <div class="setting"><div><div class="setting-title">Script Docs</div><div class="setting-desc">The editor guide and the Vanillalua reference.</div></div><button class="btn btn-outline" id="script-docs-btn" type="button">Open Docs</button></div>
           </section>
           <section class="set-pane" id="set-appearance" hidden>
@@ -934,11 +942,11 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">2.2.0.2</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.0.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of three <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
-          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b> and <b>Scripts</b> spaces. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a World Settings or a Script. Storage holds objects kept for scripts and never renders; only World renders.</td></tr>
+          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b> and <b>Scripts</b> spaces. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Human, a World Settings or a Script. Storage holds objects kept for scripts and never renders; only World renders.</td></tr>
           <tr><td>Viewport</td><td>The 3D view. Select, Move and Scale modes work here.</td></tr>
           <tr><td>Properties</td><td>Edits the selected instance: name, position, size, physics flags, script options.</td></tr>
           <tr><td>Tab bar</td><td>World is always open. Scripts open as tabs over the viewport.</td></tr>
@@ -988,6 +996,7 @@
         </ul>
         <p>Children live in the same space as their parent and keep their own position; they do not move with the parent. A script placed under an object, anywhere inside World or Scripts, runs like any other script and can reach that object with <code>script.Parent</code>.</p>
         <p>A <b>Ball</b> is a smooth 3D sphere with the same properties as a prism: position, size, color, face coloring, face labels, wireframe, locked, and the physics switches. Its Size is the radius on each axis, so it defaults to 0.5 on every axis. When the simulation runs, a ball rolls: it spins to match its speed as it moves over a surface, bounces a little when it lands hard, and keeps its spin while it is in the air. The panels and seams painted on it make the rolling easy to see. Stopping the simulation puts it back the way it was.</p>
+        <p>A <b>Human</b> is a character instance that holds health, movement and stamina values. It is always named <b>Human</b>, and its <b>PlayerName</b> property holds the player's name. A new Human starts with a PlayerName of <b>Player</b> followed by a number (Player1, Player2 and so on), and when its model is given to a player, the model and the PlayerName both become that player's name. It has no body and does not render. Only Health does anything yet: when it reaches 0, the player using the model dies. The defaults are Health 100, MaxHealth 100, WalkSpeed 1.3 Vm/s, RunSpeed 3.5 Vm/s, Stamina 100, MaxStamina 100, RunStaminaLoss 3 per second, JumpHeight 0.5 Vm, JumpStaminaLoss 20 per jump and StaminaGain 6.5 per second.</p>
         <h3 data-group="Editor guide">Textures</h3>
         <p>A <b>Texture</b> paints chosen faces of a Rectangular Prism. Use <b>Add Child…</b> in a prism's three-dot menu and choose <b>Texture</b>; it appears as a child of that prism and always affects its parent.</p>
         <ul>
@@ -1126,7 +1135,7 @@ while count < 3 do
     wait(0.25)
 end</code></pre>
         <h3 data-group="Vanillalua language">9. Spaces and instance lookup</h3>
-        <p>Available spaces are <code>World</code>, <code>Storage</code>, and <code>Scripts</code>. Load each with <code>call</code> before using it. Existing instances must be accessed by their unique ID (UID), not by their display name. Use <code>Instance.GetUID(name)</code> to find an ID by object name.</p>
+        <p>Available spaces are <code>World</code>, <code>Storage</code>, <code>Scripts</code>, and <code>Players</code> (read-only). Load each with <code>call</code> before using it. Existing instances must be accessed by their unique ID (UID), not by their display name. Use <code>Instance.GetUID(name)</code> to find an ID by object name.</p>
         <pre><code>call World
 get Scripting
 get Instance
@@ -1137,7 +1146,7 @@ print(block.Name)</code></pre>
         <p>When a dot member on a Space matches a local variable, its string value is treated as the UID. Bracket lookup also works: <code>World[blockUID]</code>. You can pass the Space to <code>GetUID</code> when names are duplicated, for example <code>Instance.GetUID("Block", World)</code>.</p>
         <h3 data-group="Vanillalua language">10. The Instance module</h3>
         <ul>
-          <li><code>Instance.create(type, space)</code> — creates and returns an instance. Supported types: <code>"prism6"</code>, <code>"ball"</code>, <code>"script"</code>, and <code>"worldsettings"</code>.</li>
+          <li><code>Instance.create(type, space)</code> — creates and returns an instance. Supported types: <code>"prism6"</code>, <code>"ball"</code>, <code>"script"</code>, <code>"worldsettings"</code>, and <code>"human"</code>.</li>
           <li><code>Instance.duplicate(instance)</code> — duplicates an instance in its current space.</li>
           <li><code>Instance.duplicate(instance, space)</code> — duplicates it into a chosen loaded space.</li>
           <li><code>Instance.delete(instance)</code> — deletes the instance. References to it become deleted references.</li>
@@ -1177,6 +1186,8 @@ print(block)</code></pre>
           <tr><td>Velocity</td><td>For prisms and balls: a vector you can read or set while the simulation runs, for example <code>ball.Velocity = vanilla3D.Position(4, 0, 0)</code> rolls a ball along +X.</td></tr>
           <tr><td>Prism blocks</td><td><code>Position</code>, <code>Size</code> (vectors, each axis at least 0.05 for Size), <code>Locked</code>, <code>Anchored</code>, <code>ReactsToPhysics</code>, <code>Collidable</code>, <code>Wireframe</code>, <code>FaceColoring</code>, <code>ShowLabels</code> (True or False), <code>Color</code> (a hex string such as <code>"#ff8800"</code>; <code>FaceColoring</code> overrides it)</td></tr>
           <tr><td>World Settings</td><td><code>TimeOfDay</code> (0 to 24), <code>Gravity</code> (0 to 1000), <code>KillLayer</code> (number)</td></tr>
+          <tr><td>Humans</td><td><code>Health</code>, <code>MaxHealth</code>, <code>WalkSpeed</code>, <code>RunSpeed</code>, <code>Stamina</code>, <code>MaxStamina</code>, <code>RunStaminaLoss</code>, <code>JumpHeight</code>, <code>JumpStaminaLoss</code>, <code>StaminaGain</code> (numbers, never below 0) and <code>PlayerName</code> (text). Only Health does anything yet: at 0 the player using the model dies.</td></tr>
+          <tr><td>Blocks</td><td><code>Spawnpoint</code> (true or false). Only one block can be the spawnpoint.</td></tr>
           <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr>
         </tbody></table>
         <p><code>vanilla3D.Position(x, y, z)</code> and <code>vanilla3D.Size(x, y, z)</code> create three-component vectors. Vector axes are uppercase <code>X</code>, <code>Y</code>, and <code>Z</code>. For a prism, Position maps to its world coordinates; Size maps to width, height, and length respectively.</p>
@@ -1209,6 +1220,53 @@ child.Parent = part</code></pre>
           <li><b>Run When: Manual:</b> starts only when manually invoked, for example through the script's Run property.</li>
         </ul>
         <p>When the simulation starts, Server scripts begin before Local scripts. A <b>JSON</b> script cannot be run. Stopping the simulation stops active script tasks and restores the scene snapshot from before Run. Runtime globals are cleared as part of ending the simulation.</p>
+        <h3 data-group="Vanillalua language">12b. Players, events and threads</h3>
+        <p>The <b>Players</b> space lists every player in the game as a read-only Player instance with a <code>Name</code> and a <code>CurrentModel</code>. It is empty while you edit. When you press Run, the editor joins one player, <b>Player1</b>, and when you stop, that player leaves. Scripts cannot create, edit or delete players: <code>Players.AssignModelToPlayer</code> is the only way to change a player's model.</p>
+        <p>Use <code>get Players</code> to load the functions and events, and <code>call Players</code> to load the space.</p>
+        <ul>
+          <li><code>Players.Count</code> — the number of players, as a number.</li>
+          <li><code>Players.Players</code> — a list of the players' names, as strings.</li>
+          <li><code>Players.AddModel(model)</code> — copies a model (an instance or its UID) and everything in it into World, and returns the copy.</li>
+          <li><code>Players.AssignModelToPlayer(model, player)</code> — gives the player that model, which is also called spawning. The player's old model is removed first. The model is renamed to the player's name, moved to the spawn position and held in place. <code>player</code> is a Player instance or a player's name.</li>
+          <li><code>Players.OnPlayerJoin</code>, <code>Players.OnPlayerSpawn</code>, <code>Players.OnPlayerLeave</code> and <code>Players.OnPlayerDeath</code> — events. Each one passes the Player instance.</li>
+        </ul>
+        <p>Listen to an event with <code>:Connect</code> and a function. <code>object:Method(args)</code> is the same call as <code>object.Method(args)</code>. <code>Connect</code> returns a connection, and <code>connection:Disconnect()</code> stops listening. Each time an event fires its function runs as its own task, so it can use <code>wait()</code>. A function can be written without a name right where it is used: <code>function(player) ... end</code>. A script that connects late can read <code>Players.Players</code> to find players who already joined.</p>
+        <p><b>Death.</b> When the Health of a Human inside a player's model reaches 0, the player dies. The model's parts are released so they fall apart, then <code>OnPlayerDeath</code> fires. Giving the player a new model removes the old one.</p>
+        <p><b>Spawn position.</b> A model spawns with its feet at 0, 5, 0. If one block has <b>Spawnpoint</b> turned on, the model spawns on top of that block instead. Only one block can be the spawnpoint. The editor will not let you pick a second one, and setting a second one in a script prints a warning and is skipped. Because there is no walking or rigid-body physics yet, a living model stays where it spawns.</p>
+        <p><b>Threads.</b> <code>Scripting.NewThread(fn, threadId, ...)</code> runs <code>fn</code> in a new thread, and any extra arguments are passed to it. <code>threadId</code> is a number, a string, or <code>auto</code>, which uses the next free number. Reusing an id that is still running prints a warning and makes no new thread. A script can have at most the player count times 3 threads made this way. Server scripts share thread ids with other Server scripts, and Local scripts share theirs with other Local scripts.</p>
+        <p>New worlds start with the <code>DefaultPlayer</code> model in Storage (with a Human inside it) and a <b>PlayerManagement</b> script in Scripts that spawns every player who joins and respawns them after they die:</p>
+        <pre><code># PlayerManagement: gives every player a model when they join, and respawns them after they die.
+call Scripts
+call Storage
+call World
+call Players
+get Scripting
+get Instance
+get Players
+
+local template = Instance.GetUID("DefaultPlayer", Storage)
+
+function spawn(player)
+  local model = Players.AddModel(template)
+  Players.AssignModelToPlayer(model, player)
+end
+
+function managePlayer(player)
+  spawn(player)
+  print("Handled new join by " .. player.Name)
+end
+
+Players.OnPlayerJoin:Connect(function(player)
+  # Every player gets their own thread so they are managed individually.
+  Scripting.NewThread(managePlayer, auto, player)
+end)
+
+Players.OnPlayerDeath:Connect(function(player)
+  wait(3) # The ragdoll lies there for a moment.
+  Instance.delete(player.CurrentModel)
+  spawn(player)
+end)</code></pre>
+
         <h3 data-group="Vanillalua language">13. Full example: shared status and moving block</h3>
         <pre><code># Server script
 call Scripts
@@ -1237,7 +1295,7 @@ print(moveStatus)</code></pre>
           <li><b>Invalid wait:</b> use one non-negative number, with no more than two decimal places.</li>
           <li><b>Instance deleted:</b> confirm that the instance has not been deleted before reading or changing it.</li>
         </ul>
-        <h3 data-group="Reference">15. Quick reference</h3>
+        <h3 data-group="Reference">16. Quick reference</h3>
         <pre><code>call Scripts       # Load Scripts space
 call World         # Load World space
 call Storage       # Load Storage space
@@ -1261,7 +1319,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
   <script src="https://rigatoni534.github.io/Vanilla3D/vanillalua.js"></script>
   <script>
-        const ENGINE_VERSION = '2.2.0.2';
+        const ENGINE_VERSION = '3.0.0.0';
         const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
@@ -1269,17 +1327,18 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             world:   { name: 'World',   icon: 'i-world',  addable: true },
             storage: { name: 'Storage', icon: 'i-folder', addable: true },
             scripts: { name: 'Scripts', icon: 'i-script', addable: true },
+            players: { name: 'Players', icon: 'i-players', addable: false },
             engine:  { name: 'Engine',  icon: 'i-engine', addable: false }
         };
         // ── Childing: an instance's parent is a space id or another instance's UID ──
-        const SPACE_KEYS = ['world', 'storage', 'scripts'];
+        const SPACE_KEYS = ['world', 'storage', 'scripts', 'players'];
         function spaceOf(o) { let n = 0; while (o && !SPACE_KEYS.includes(o.parent) && n++ < 64) o = sceneObjects[o.parent]; return o ? o.parent : null; }
         function isInside(id, ancestorId) { let o = sceneObjects[id], n = 0; while (o && n++ < 64) { if (o.parent === ancestorId) return true; o = sceneObjects[o.parent]; } return false; }
         function pruneOrphans() {
             let changed = true;
             while (changed) { changed = false; for (const [id, o] of Object.entries(sceneObjects)) if (o.parent !== 'engine' && !SPACE_KEYS.includes(o.parent) && !sceneObjects[o.parent]) { delete sceneObjects[id]; physicsVelocity.delete(id); vlInstCache.delete(id); if (selectedObjectId === id) selectedObjectId = null; changed = true; } }
         }
-        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball' })[type] || 'Instance'; }
+        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player' })[type] || 'Instance'; }
         function preInc(n) { return typeof settings !== 'undefined' && !!(settings.preinclude && settings.preinclude[n]); }
         // Textures: a child of a prism6 that paints chosen faces. Faces use the engine's face order.
         const FACE_LABELS = ['Front', 'Back', 'Right', 'Left', 'Top', 'Bottom'];
@@ -1402,8 +1461,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         };
         sceneObjects['Linen551'] = makeTexture('Texture', 'Cobalt092', [4], 'grid');
         sceneObjects['Amber417'] = { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 };
-        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0 };
-        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball' };
+        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0 };
+        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human' };
 
         let isLightMode = false;
         let accentCol = '#f2b134';
@@ -1668,7 +1727,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             getSelectedObjectId: () => selectedObjectId, setSelectedObjectId: value => { selectedObjectId = value; },
             markUIDirty: () => { uiDirty = true; }, markOutputDirty: () => { outputDirty = true; }
         });
-        const { VL_KEYWORDS, VL_SPACES, VL_MODULES, VL_TYPES, VL_GLOBALS, VLParseError, VLError, vlLex, vlParse, vlAnalyze, jsonDiagnostics, SCRIPT_TEMPLATE, newScriptData, ensureScript, computeDiagnostics, VLFn, VLWait, VLModule, VLSpace, VLInst, VLVec, VLScope, vlInstCache, vlSpaces, vlInst, vlObj, vlRound, vlTypeName, vlStr, vlTruthy, VL_PROPS, vlGetProp, vlSetProp, vlGetMember, vlSetMember, vlCreate, vlDeleteInst, vlGetUID, vlSetUID, vlGetUIDFn, vlSetUIDFn, vlScriptingModule, vlInstanceModule, vlVanilla3D, vlVecFrom, vlRootScope, vlEq, vlBinary, vlEval, vlExec, vlMain, scriptTasks, outputLog, logOutput, vlStartTask, vlRunScript, startSimulationScripts, stepScripts, stopScripts } = vlRuntime;
+        const { VL_KEYWORDS, VL_SPACES, VL_MODULES, VL_TYPES, VL_GLOBALS, VLParseError, VLError, vlLex, vlParse, vlAnalyze, jsonDiagnostics, SCRIPT_TEMPLATE, newScriptData, makeHuman, HUMAN_DEFAULTS, makePlayerSetup, ensureScript, computeDiagnostics, VLFn, VLWait, VLModule, VLSpace, VLInst, VLVec, VLScope, vlInstCache, vlSpaces, vlInst, vlObj, vlRound, vlTypeName, vlStr, vlTruthy, VL_PROPS, vlGetProp, vlSetProp, vlGetMember, vlSetMember, vlCreate, vlDeleteInst, vlGetUID, vlSetUID, vlGetUIDFn, vlSetUIDFn, vlScriptingModule, vlInstanceModule, vlVanilla3D, vlVecFrom, vlRootScope, vlEq, vlBinary, vlEval, vlExec, vlMain, scriptTasks, outputLog, logOutput, vlStartTask, vlRunScript, startSimulationScripts, stepScripts, stopScripts } = vlRuntime;
 
 
 
@@ -1948,6 +2007,9 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             } else if (kind === 'model') {
                 const n = ++counters.model;
                 obj = { type: 'model', name: dn('model') + (n === 1 ? '' : ' ' + n), parent: space };
+            } else if (kind === 'human') {
+                // Nobody can join inside the editor yet, so the join number is the order Humans are created in.
+                obj = makeHuman(dn('human') + (++counters.human), space);
             } else if (kind === 'worldsettings') {
                 const n = ++counters.worldsettings;
                 obj = { type: 'worldsettings', name: dn('worldsettings') + ' ' + n, parent: space, timeOfDay: 14, gravity: 9.8, killY: -5000 };
@@ -2070,8 +2132,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             { const ax = document.getElementById('set-axislen'); if (ax !== document.activeElement) ax.value = settings.axisLength; }
             document.getElementById('opt-uid').checked = !!settings.showUid;
             document.getElementById('opt-syntax').checked = settings.syntax !== false;
-            ['prism6', 'ball', 'model', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el && el !== document.activeElement) el.value = dn(t); });
-            ['Scripts', 'Instance', 'World', 'Storage', 'Scripting'].forEach(n => { document.getElementById('pre-' + n).checked = !!settings.preinclude[n]; });
+            ['prism6', 'ball', 'model', 'human', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el && el !== document.activeElement) el.value = dn(t); });
+            ['Scripts', 'Instance', 'World', 'Storage', 'Scripting', 'Players', 'GetPlayers'].forEach(n => { document.getElementById('pre-' + n).checked = !!settings.preinclude[n]; });
             canvas.classList.toggle('no-grab', !settings.leftDrag);
             const look = document.getElementById('hint-look');
             look.hidden = !settings.leftDrag && !settings.rightClick;
@@ -2126,8 +2188,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         }
         document.getElementById('opt-uid').addEventListener('change', (e) => { settings.showUid = e.target.checked; saveSettings(); renderExplorer(); });
         document.getElementById('opt-syntax').addEventListener('change', (e) => { settings.syntax = e.target.checked; saveSettings(); reCheckEditor(); });
-        ['prism6', 'ball', 'model', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el) el.addEventListener('change', () => { const v = el.value.trim().slice(0, 24); if (v) settings.defaultNames[t] = v; else delete settings.defaultNames[t]; el.value = dn(t); saveSettings(); }); });
-        ['Scripts', 'Instance', 'World', 'Storage', 'Scripting'].forEach(n => document.getElementById('pre-' + n).addEventListener('change', (e) => { settings.preinclude[n] = e.target.checked; saveSettings(); reCheckEditor(); }));
+        ['prism6', 'ball', 'model', 'human', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el) el.addEventListener('change', () => { const v = el.value.trim().slice(0, 24); if (v) settings.defaultNames[t] = v; else delete settings.defaultNames[t]; el.value = dn(t); saveSettings(); }); });
+        ['Scripts', 'Instance', 'World', 'Storage', 'Scripting', 'Players', 'GetPlayers'].forEach(n => document.getElementById('pre-' + n).addEventListener('change', (e) => { settings.preinclude[n] = e.target.checked; saveSettings(); reCheckEditor(); }));
         document.querySelectorAll('.set-tab').forEach(b => b.addEventListener('click', () => {
             document.querySelectorAll('.set-tab').forEach(x => x.setAttribute('aria-selected', String(x === b)));
             document.querySelectorAll('.set-pane').forEach(p => p.hidden = p.id !== 'set-' + b.dataset.pane);
@@ -2275,6 +2337,29 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         }
         // The controls hint hides itself 10 seconds after the editor opens.
         setTimeout(() => { const h = document.getElementById('hint'); h.dataset.elapsed = '1'; if (settings.hintMode === 'auto') h.classList.add('dismissed'); }, 10000);
+        // Worlds saved before players existed are offered the default player setup. Nothing changes unless the person agrees.
+        async function maybeOfferPlayerSetup(data) {
+            const major = parseInt(String(data.engineVersion || '0').split('.')[0], 10) || 0;
+            if (major >= 3) return;
+            const objs = data.objects, entries = Object.entries(objs);
+            const hasScript = entries.some(([, o]) => o && o.type === 'script' && o.name === 'PlayerManagement');
+            const modelEntry = entries.find(([, o]) => o && o.type === 'model' && o.name === 'DefaultPlayer');
+            const hasHuman = (mid) => entries.some(([, o]) => o && o.type === 'human' && o.parent === mid);
+            if (hasScript && modelEntry && modelEntry[1].parent === 'storage' && hasHuman(modelEntry[0])) return;
+            const what = modelEntry ? 'This moves the DefaultPlayer model into Storage and adds a Human inside it' : 'This adds a DefaultPlayer model to Storage with a Human inside it';
+            const text = 'This world was made before players existed. ' + what + (hasScript ? '' : ', and adds the PlayerManagement script that gives every player a model') + '. Choose Cancel to open the world without it.';
+            if (!(await confirmDialog('Add the player setup?', text, 'Add', false))) return;
+            const used = new Set(Object.keys(objs));
+            const gen = () => { let id; do { id = newId(); } while (used.has(id)); used.add(id); return id; };
+            if (modelEntry) {
+                if (modelEntry[1].parent === 'world') modelEntry[1].parent = 'storage';
+                if (!hasHuman(modelEntry[0])) objs[gen()] = makeHuman(dn('human') + 1, modelEntry[0]);
+            }
+            for (const [id, o] of makePlayerSetup(gen)) {
+                if (o.type === 'script' ? hasScript : !!modelEntry) continue;
+                objs[id] = o;
+            }
+        }
         function confirmDialog(title, text, okLabel, danger) {
             return new Promise(resolve => {
                 const ov = document.getElementById('confirm-overlay'), ok = document.getElementById('cf-ok'), no = document.getElementById('cf-cancel');
@@ -2328,9 +2413,10 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function validateWorldFile(data) {
             if (!data || data.format !== 'VanillaWorld' || data.formatVersion !== 1 || !data.objects || typeof data.objects !== 'object' || Array.isArray(data.objects)) throw new Error('This is not a supported .vnw Vanilla World file.');
             sanitizeWorldFile(data);
+            { let spawnSeen = false; for (const o of Object.values(data.objects)) { if (!o || typeof o !== 'object') continue; if (o.type === 'prism6' && o.spawnpoint === true && !spawnSeen) spawnSeen = true; else if (o.spawnpoint !== undefined) delete o.spawnpoint; } }
             for (const [uid, obj] of Object.entries(data.objects)) {
                 if (!/^[A-Za-z][A-Za-z0-9]*$/.test(uid) || !obj || typeof obj !== 'object' || !(SPACE_IDS.includes(obj.parent) || (data.objects[obj.parent] && obj.parent !== uid))) throw new Error('The file contains an invalid object or UID: ' + uid);
-                if (!['prism6', 'ball', 'model', 'worldsettings', 'script', 'texture'].includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
+                if (!['prism6', 'ball', 'model', 'worldsettings', 'script', 'texture', 'human'].includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
             }
             for (const [uid, obj] of Object.entries(data.objects)) { let p = obj, n = 0; while (p && !SPACE_IDS.includes(p.parent) && n++ < 64) p = data.objects[p.parent]; if (!p) throw new Error('Object ' + uid + ' has a circular parent chain.'); }
             return data;
@@ -2346,6 +2432,11 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     if (obj.language !== 'vanillalua' && obj.language !== 'json') obj.language = 'vanillalua';
                     if (typeof obj.source !== 'string') obj.source = '';
                 }
+                if (obj.type === 'human') {
+                    for (const k of Object.keys(HUMAN_DEFAULTS)) if (!Number.isFinite(obj[k]) || obj[k] < 0) obj[k] = HUMAN_DEFAULTS[k];
+                    if (typeof obj.playerName !== 'string' || !obj.playerName) obj.playerName = (typeof obj.name === 'string' && obj.name && obj.name !== 'Human') ? obj.name : 'Player1';
+                    obj.name = 'Human';
+                }
                 if (isShape(obj) && !HEX6.test(obj.color)) obj.color = '#888888';
                 if (isShape(obj)) for (const k of ['rotX', 'rotY', 'rotZ']) if (!Number.isFinite(obj[k])) obj[k] = 0;
                 if (obj.type === 'texture') {
@@ -2355,7 +2446,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 sceneObjects[uid] = obj;
             }
             vlInstCache.clear(); physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear(); selectedObjectId = null; renamingId = null; menuItemId = null;
-            for (const [k, t] of [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball']]) counters[k] = Object.values(sceneObjects).filter(o => o.type === t).length;
+            for (const [k, t] of [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball'], ['human', 'human']]) counters[k] = Object.values(sceneObjects).filter(o => o.type === t).length;
             uiDirty = true;
             renderTabs(); renderExplorer(); renderProperties();
         }
@@ -2380,10 +2471,12 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 if (!saved) { toast('No browser save found. Use Save in browser first.', 'warn'); return; }
                 try { validateWorldFile(saved); } catch (err) { toast('Browser save is damaged: ' + err.message, 'bad'); return; }
                 if (!(await confirmDialog('Open browser save?', 'This replaces everything in World, Storage and Scripts. Unsaved changes will be lost.', 'Open', true))) return;
-                try { applyWorldFile(saved); toast('Browser save opened.'); } catch (err) { toast('Could not open: ' + err.message, 'bad'); }
+                try { await maybeOfferPlayerSetup(saved); applyWorldFile(saved); toast('Browser save opened.'); } catch (err) { toast('Could not open: ' + err.message, 'bad'); }
             } else if (action === 'new-world') {
                 if (!(await confirmDialog('Start a new world?', 'This clears World, Storage and Scripts. Unsaved changes will be lost.', 'Clear world', true))) return;
-                applyWorldFile({ format: 'VanillaWorld', formatVersion: 1, objects: { Amber417: { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 } } });
+                const objs = { Amber417: { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 } };
+                for (const [id, o] of makePlayerSetup(() => { let id; do { id = newId(); } while (id === 'Amber417'); return id; })) objs[id] = o;
+                applyWorldFile({ format: 'VanillaWorld', formatVersion: 1, engineVersion: ENGINE_VERSION, objects: objs });
                 toast('New empty world.');
                 askToast('Do you want to create the plate?', 'Yes', 'No', createPlate);
             }
@@ -2406,6 +2499,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             try {
                 const data = validateWorldFile(JSON.parse(await file.text()));
                 if (!(await confirmDialog('Open "' + file.name + '"?', 'This replaces everything in World, Storage and Scripts. Unsaved changes will be lost.', 'Open', true))) return;
+                await maybeOfferPlayerSetup(data);
                 applyWorldFile(data); toast('Opened ' + file.name + '.');
             } catch (err) { toast('Could not open file: ' + (err instanceof SyntaxError ? 'it is not valid JSON.' : err.message), 'bad'); }
             finally { vnwInput.value = ''; }
@@ -2437,7 +2531,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 const kids = Object.entries(sceneObjects).filter(([, o]) => o.parent === sid);
                 const open = !collapsed.has(sid);
                 const rows = kids.length ? kids.map(([id, o]) => rowHtml(id, o, 0)).join('')
-                    : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : 'Empty'}</div>`;
+                    : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : sid === 'players' ? 'Players join when the simulation runs' : 'Empty'}</div>`;
                 return `
                     <div class="tree-space">
                         <div class="tree-row">
@@ -2568,7 +2662,9 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         // ───────── Explorer item context menu ─────────
         const itemMenu = document.getElementById('item-menu');
         let clipboard = null;   // { data, cut, pastes }
-        const cloneData = (o) => JSON.parse(JSON.stringify(o));
+        // Copies never keep Spawnpoint: only one block can be the spawnpoint.
+        const cloneData = (o) => { const c = JSON.parse(JSON.stringify(o)); if (c.spawnpoint) c.spawnpoint = false; return c; };
+        const spawnTaken = (exceptId) => Object.entries(sceneObjects).some(([k, o]) => k !== exceptId && o.type === 'prism6' && o.spawnpoint);
 
         function placeMenu(menu, rect, alignLeft) {
             const mw = menu.offsetWidth, mh = menu.offsetHeight;
@@ -2586,7 +2682,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             menuItemId = id;
             itemMenu.dataset.id = id;
             const off = (act, v) => { itemMenu.querySelector(`[data-act="${act}"]`).disabled = v; };
-            off('rename', !!o.locked);
+            off('rename', !!o.locked || o.type === 'human');
             off('cut', !!o.locked);
             off('delete', !!o.locked);
             off('paste', !clipboard);
@@ -2696,7 +2792,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function collectTree(id) { const out = []; (function w(i) { for (const [k, o] of Object.entries(sceneObjects)) if (o.parent === i) { out.push([k, cloneData(o)]); w(k); } })(id); return out; }
         function reparent(id, target) {
             const o = sceneObjects[id], t = SPACE_KEYS.includes(target) ? true : sceneObjects[target];
-            if (!o || !t || o.readOnly || id === target || isInside(target, id) || (sceneObjects[target] && sceneObjects[target].readOnly) || o.parent === target) return;
+            if (!o || !t || o.readOnly || target === 'players' || id === target || isInside(target, id) || (sceneObjects[target] && sceneObjects[target].readOnly) || o.parent === target) return;
             o.parent = target; collapsed.delete(target); renderExplorer(); renderProperties();
         }
         function pasteInto(space) {
@@ -2831,7 +2927,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const objHead = (id, o, ic, extra = '') =>
             `<div class="obj-head">${icon(ic)}<div class="obj-meta"><div class="obj-name">${esc(o.name)}</div>
                 <div class="obj-id"><span title="Instance type">${o.type}</span><span class="uid" title="Unique ID">${id}</span></div></div>${extra}</div>`;
-        const defaultNames = { prism6: 'Block', ball: 'Ball', model: 'Model', script: 'Script', worldsettings: 'Settings' };
+        const defaultNames = { prism6: 'Block', ball: 'Ball', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player' };
         const nameField = (o, dis = '') =>
             `<div class="field-label">Name</div><input class="text" type="text" id="prop-name" maxlength="48" value="${esc(o.name)}" aria-label="Name" ${dis}>`;
         function bindName(obj) {
@@ -2875,6 +2971,18 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             }
             const obj = sceneObjects[selectedObjectId];
 
+            if (obj.type === 'player') {
+                const pm = obj.currentModel && sceneObjects[obj.currentModel];
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, 'i-human')}
+                    ${section('Player', `
+                        <div class="field-label">Name</div>
+                        <input class="text" value="${esc(obj.name)}" aria-label="Name" disabled>
+                        <div class="field-label">Current model</div>
+                        <input class="text" value="${pm ? esc(pm.name) : 'None'}" aria-label="Current model" disabled>
+                        <div class="field-note">${obj.dead ? 'This player is dead and waiting for a new model. ' : ''}Players are read-only in the editor. Scripts give them a model with Players.AssignModelToPlayer.</div>`)}`;
+                return;
+            }
             if (obj.readOnly) {
                 container.innerHTML = `<div class="empty">${icon('i-lock')}<p>${esc(obj.name)}</p><span>This is an engine component and can’t be edited.</span></div>`;
                 return;
@@ -2990,6 +3098,34 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 return;
             }
 
+            if (obj.type === 'human') {
+                const HF = (key, label, unit, step) => `
+                    <div class="field-label">${label}</div>
+                    <label class="num hnum"><input type="number" id="prop-h-${key}" min="0" step="${step}" value="${Number.isFinite(obj[key]) ? obj[key] : HUMAN_DEFAULTS[key]}" aria-label="${label}"><span class="tag">${unit}</span></label>`;
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, 'i-human')}
+                    ${section('Editor', `
+                        <div class="field-label">Name</div>
+                        <input class="text" value="Human" aria-label="Name" disabled>
+                        <div class="field-label">Player name</div>
+                        <input class="text" id="prop-h-playername" maxlength="24" value="${esc(obj.playerName || '')}" aria-label="Player name">`)}
+                    ${section('Health', HF('health', 'Health', 'HP', 1) + HF('maxHealth', 'Max health', 'HP', 1))}
+                    ${section('Movement', HF('walkSpeed', 'Walk speed', 'Vm/s', 0.1) + HF('runSpeed', 'Run speed', 'Vm/s', 0.1) + HF('jumpHeight', 'Jump height', 'Vm', 0.05))}
+                    ${section('Stamina', HF('stamina', 'Stamina', '', 1) + HF('maxStamina', 'Max stamina', '', 1) + HF('runStaminaLoss', 'Run stamina loss', '/s', 0.5) + HF('jumpStaminaLoss', 'Jump stamina loss', '/jump', 1) + HF('staminaGain', 'Stamina gain', '/s', 0.5))}
+                    <div class="sec-body"><div class="field-note">Most of these values are only stored for now. Health is the exception: at 0 the player using this model dies.</div></div>`;
+                for (const key of Object.keys(HUMAN_DEFAULTS)) {
+                    const el = document.getElementById('prop-h-' + key);
+                    el.addEventListener('input', () => { const v = parseFloat(el.value); if (Number.isFinite(v) && v >= 0) obj[key] = v; });
+                    el.addEventListener('change', () => {
+                        const v = parseFloat(el.value);
+                        obj[key] = Number.isFinite(v) && v >= 0 ? v : HUMAN_DEFAULTS[key];
+                        el.value = obj[key];
+                    });
+                }
+                document.getElementById('prop-h-playername').addEventListener('input', (e) => { obj.playerName = e.target.value; });
+                return;
+            }
+
             if (obj.type === 'script') {
                 ensureScript(obj);
                 const opts = (list, cur) => list.map(([v, l]) => `<option value="${v}"${v === cur ? ' selected' : ''}>${l}</option>`).join('');
@@ -3046,6 +3182,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     ${nameField(obj, dis)}
                     <div class="switch-stack">
                     ${switchRow('prop-locked', 'Locked', obj.locked, '')}
+                    ${obj.type === 'prism6' ? switchRow('prop-spawnpoint', 'Spawnpoint', !!obj.spawnpoint, (dis || (!obj.spawnpoint && spawnTaken(selectedObjectId))) ? 'disabled' : '') : ''}
                     ${switchRow('prop-face-coloring', 'Face coloring', obj.faceColoring, dis)}
                     ${switchRow('prop-labels', 'Face labels', obj.showLabels, dis)}
                     </div>
@@ -3064,6 +3201,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             `;
 
             document.getElementById('prop-locked').addEventListener('change', (e) => { obj.locked = e.target.checked; renderProperties(); });
+            const spawnEl = document.getElementById('prop-spawnpoint');
+            if (spawnEl) spawnEl.addEventListener('change', (e) => { if (e.target.checked && spawnTaken(selectedObjectId)) { e.target.checked = false; return; } obj.spawnpoint = e.target.checked; renderProperties(); });
 
             if (!obj.locked) {
                 bindName(obj);
@@ -4424,7 +4563,7 @@ void main() { o = texture(uTex, vT); }`;
                 const missing = selectedObjectId && !sceneObjects[selectedObjectId];
                 if (missing) selectedObjectId = null;
                 renderExplorer();
-                if (missing) renderProperties();
+                if (missing || (selectedObjectId && sceneObjects[selectedObjectId] && sceneObjects[selectedObjectId].type === 'player')) renderProperties();
             }
             if (outputDirty) { outputDirty = false; renderOutput(); }
 
@@ -4695,6 +4834,8 @@ void main() { o = texture(uTex, vT); }`;
         // ───────── Boot ─────────
         initGL();
         applySettings();
+        // A new world starts with the DefaultPlayer model in Storage and the PlayerManagement script.
+        for (const [id, o] of makePlayerSetup(newId)) sceneObjects[id] = o;
         refreshTheme();
         renderExplorer();
         renderProperties();

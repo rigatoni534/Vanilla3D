@@ -123,6 +123,7 @@
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   }
   #hint .group { display: flex; align-items: center; gap: 6px; }
+  #hint [hidden] { display: none; }
   kbd {
     font: 600 11px/1 var(--mono); color: var(--text); background: var(--panel-2);
     border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 3px 5px; min-width: 20px; text-align: center;
@@ -765,6 +766,7 @@
           <span class="group" id="hint-mode"></span>
           <span class="group" id="hint-look"><kbd></kbd> rotate view</span>
           <span class="group"><span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span> move</span>
+          <span class="group" id="hint-play" hidden><kbd>Space</kbd> jump <kbd>Shift</kbd> sprint <kbd>↑</kbd><kbd>↓</kbd> zoom</span>
         </div>
       </div>
     </div>
@@ -996,7 +998,7 @@
         </ul>
         <p>Children live in the same space as their parent and keep their own position; they do not move with the parent. A script placed under an object, anywhere inside World or Scripts, runs like any other script and can reach that object with <code>script.Parent</code>.</p>
         <p>A <b>Ball</b> is a smooth 3D sphere with the same properties as a prism: position, size, color, face coloring, face labels, wireframe, locked, and the physics switches. Its Size is the radius on each axis, so it defaults to 0.5 on every axis. When the simulation runs, a ball rolls: it spins to match its speed as it moves over a surface, bounces a little when it lands hard, and keeps its spin while it is in the air. The panels and seams painted on it make the rolling easy to see. Stopping the simulation puts it back the way it was.</p>
-        <p>A <b>Human</b> is a character instance that holds health, movement and stamina values. It is always named <b>Human</b>, and its <b>PlayerName</b> property holds the player's name. A new Human starts with a PlayerName of <b>Player</b> followed by a number (Player1, Player2 and so on), and when its model is given to a player, the model and the PlayerName both become that player's name. It has no body and does not render. Only Health does anything yet: when it reaches 0, the player using the model dies. The defaults are Health 100, MaxHealth 100, WalkSpeed 1.3 Vm/s, RunSpeed 3.5 Vm/s, Stamina 100, MaxStamina 100, RunStaminaLoss 3 per second, JumpHeight 0.5 Vm, JumpStaminaLoss 20 per jump and StaminaGain 6.5 per second.</p>
+        <p>A <b>Human</b> is a character instance that holds health, movement and stamina values. It is always named <b>Human</b>, and its <b>PlayerName</b> property holds the player's name. A new Human starts with a PlayerName of <b>Player</b> followed by a number (Player1, Player2 and so on), and when its model is given to a player, the model and the PlayerName both become that player's name. It has no body and does not render. These values are used by the player you control, and at 0 Health the player using the model dies. The defaults are Health 100, MaxHealth 100, WalkSpeed 1.3 Vm/s, RunSpeed 3.5 Vm/s, Stamina 100, MaxStamina 100, RunStaminaLoss 3 per second, JumpHeight 0.5 Vm, JumpStaminaLoss 20 per jump and StaminaGain 6.5 per second.</p>
         <h3 data-group="Editor guide">Textures</h3>
         <p>A <b>Texture</b> paints chosen faces of a Rectangular Prism. Use <b>Add Child…</b> in a prism's three-dot menu and choose <b>Texture</b>; it appears as a child of that prism and always affects its parent.</p>
         <ul>
@@ -1186,7 +1188,7 @@ print(block)</code></pre>
           <tr><td>Velocity</td><td>For prisms and balls: a vector you can read or set while the simulation runs, for example <code>ball.Velocity = vanilla3D.Position(4, 0, 0)</code> rolls a ball along +X.</td></tr>
           <tr><td>Prism blocks</td><td><code>Position</code>, <code>Size</code> (vectors, each axis at least 0.05 for Size), <code>Locked</code>, <code>Anchored</code>, <code>ReactsToPhysics</code>, <code>Collidable</code>, <code>Wireframe</code>, <code>FaceColoring</code>, <code>ShowLabels</code> (True or False), <code>Color</code> (a hex string such as <code>"#ff8800"</code>; <code>FaceColoring</code> overrides it)</td></tr>
           <tr><td>World Settings</td><td><code>TimeOfDay</code> (0 to 24), <code>Gravity</code> (0 to 1000), <code>KillLayer</code> (number)</td></tr>
-          <tr><td>Humans</td><td><code>Health</code>, <code>MaxHealth</code>, <code>WalkSpeed</code>, <code>RunSpeed</code>, <code>Stamina</code>, <code>MaxStamina</code>, <code>RunStaminaLoss</code>, <code>JumpHeight</code>, <code>JumpStaminaLoss</code>, <code>StaminaGain</code> (numbers, never below 0) and <code>PlayerName</code> (text). Only Health does anything yet: at 0 the player using the model dies.</td></tr>
+          <tr><td>Humans</td><td><code>Health</code>, <code>MaxHealth</code>, <code>WalkSpeed</code>, <code>RunSpeed</code>, <code>Stamina</code>, <code>MaxStamina</code>, <code>RunStaminaLoss</code>, <code>JumpHeight</code>, <code>JumpStaminaLoss</code>, <code>StaminaGain</code> (numbers, never below 0) and <code>PlayerName</code> (text). All of these except MaxHealth are used by the player you control, and at 0 Health the player dies.</td></tr>
           <tr><td>Blocks</td><td><code>Spawnpoint</code> (true or false). Only one block can be the spawnpoint.</td></tr>
           <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr>
         </tbody></table>
@@ -1232,7 +1234,9 @@ child.Parent = part</code></pre>
         </ul>
         <p>Listen to an event with <code>:Connect</code> and a function. <code>object:Method(args)</code> is the same call as <code>object.Method(args)</code>. <code>Connect</code> returns a connection, and <code>connection:Disconnect()</code> stops listening. Each time an event fires its function runs as its own task, so it can use <code>wait()</code>. A function can be written without a name right where it is used: <code>function(player) ... end</code>. A script that connects late can read <code>Players.Players</code> to find players who already joined.</p>
         <p><b>Death.</b> When the Health of a Human inside a player's model reaches 0, the player dies. The model's parts are released so they fall apart, then <code>OnPlayerDeath</code> fires. Giving the player a new model removes the old one.</p>
-        <p><b>Spawn position.</b> A model spawns with its feet at 0, 5, 0. If one block has <b>Spawnpoint</b> turned on, the model spawns on top of that block instead. Only one block can be the spawnpoint. The editor will not let you pick a second one, and setting a second one in a script prints a warning and is skipped. Because there is no walking or rigid-body physics yet, a living model stays where it spawns.</p>
+        <p><b>Spawn position.</b> A model spawns with its feet at 0, 5, 0. If one block has <b>Spawnpoint</b> turned on, the model spawns on top of that block instead. Only one block can be the spawnpoint. The editor will not let you pick a second one, and setting a second one in a script prints a warning and is skipped.</p>
+        <p><b>Playing your player.</b> While the simulation runs you control the first player, the one the editor joins as Player1. <b>W A S D</b> move, <b>Space</b> jumps, <b>Shift</b> sprints, and the <b>Up</b> and <b>Down</b> arrow keys zoom the camera. The camera follows the player's head, and you turn the view with the same camera setting as the editor (Right-drag or Drag). Zoomed all the way in you are in first person: the head is hidden and the rest of the body stays. The model swings round to face the way it moves. There is no limb animation yet. Walking speed comes from the Human's <code>WalkSpeed</code>, sprinting from <code>RunSpeed</code> and jump height from <code>JumpHeight</code>. Sprinting costs <code>RunStaminaLoss</code> every second and each jump costs <code>JumpStaminaLoss</code>. Stamina comes back at <code>StaminaGain</code> per second while you stand on something and are not sprinting. If it runs out you are exhausted: you cannot sprint or jump, and it comes back at 4 per second (or StaminaGain, if that is lower) until it is full. The player is stopped by blocks that are Collidable, and falling below the kill layer sets its Health to 0.</p>
+        <p><b>Physics.</b> Everything is made of the same material, so a body's mass comes from its volume. Falling bodies speed up with gravity, and air slows them more the faster they go, so every body has a terminal velocity (a person falls at about 55 Vm/s). Air is thick where gravity is strong and gone on the Moon and in Space, so there bodies keep speeding up. When two bodies collide momentum is conserved, so a heavy body pushes a light one much more than the other way round. Fast impacts bounce and lose energy, and sliding bodies slow down and stop because of friction. Boxes still do not rotate or tip over.</p>
         <p><b>Threads.</b> <code>Scripting.NewThread(fn, threadId, ...)</code> runs <code>fn</code> in a new thread, and any extra arguments are passed to it. <code>threadId</code> is a number, a string, or <code>auto</code>, which uses the next free number. Reusing an id that is still running prints a warning and makes no new thread. A script can have at most the player count times 3 threads made this way. Server scripts share thread ids with other Server scripts, and Local scripts share theirs with other Local scripts.</p>
         <p>New worlds start with the <code>DefaultPlayer</code> model in Storage (with a Human inside it) and a <b>PlayerManagement</b> script in Scripts that spawns every player who joins and respawns them after they die:</p>
         <pre><code># PlayerManagement: gives every player a model when they join, and respawns them after they die.
@@ -1500,6 +1504,48 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const GRAVITY_MAX = 1000;
         const GRAVITY_PRESETS = [['Earth', 9.8], ['Moon', 1.62], ['Space', 0], ['Jupiter', 24.8]];
         const DEFAULT_KILL_Y = -5000;
+        // Real-world constants. Everything in the world is the same material, so a body's mass follows from its volume.
+        const MATERIAL_DENSITY = 1000;   // kg per cubic Vm
+        const AIR_DENSITY = 1.2;         // kg per cubic Vm of Earth air
+        const SURFACE_FRICTION = 0.5;    // Coulomb friction between two touching surfaces
+        const BOX_RESTITUTION = 0.2, BALL_RESTITUTION = 0.35, BOUNCE_MIN_SPEED = 1.5;
+        // Strong gravity holds a thick atmosphere. The Moon and Space have none, so nothing slows a fall there.
+        function airDensityFor(g) { return AIR_DENSITY * Math.max(0, Math.min(2.5, (Math.abs(g) - 2) / 7.8)); }
+        function bodyMass(o) {
+            const vol = o.type === 'ball' ? (4 / 3) * Math.PI * Math.pow(ballRadius(o), 3) : 8 * o.width * o.height * o.length;
+            return Math.max(1e-3, vol * MATERIAL_DENSITY);
+        }
+        // Air drag: F = 1/2 rho Cd A v^2. A body speeds up until drag matches its weight, which is its terminal velocity.
+        function applyDrag(o, v, h, rho) {
+            if (rho <= 0) return;
+            const sp = Math.hypot(v.x, v.y, v.z);
+            if (sp < 1e-6) return;
+            let area, cd;
+            if (o.type === 'ball') { const r = ballRadius(o); area = Math.PI * r * r; cd = 0.47; }
+            else { area = 4 * (Math.abs(v.x) * o.height * o.length + Math.abs(v.y) * o.width * o.length + Math.abs(v.z) * o.width * o.height) / sp; cd = 1.05; }
+            const f = 1 / (1 + rho * cd * area / (2 * bodyMass(o)) * sp * h);
+            v.x *= f; v.y *= f; v.z *= f;
+        }
+        // Equal and opposite impulse along the contact normal n (pointing from b to a), weighted by mass, with bounce and Coulomb friction.
+        function applyContactImpulse(av, bv, n, invA, invB, restitution, friction) {
+            const invSum = invA + invB;
+            if (invSum <= 0) return;
+            let rx = av.x - bv.x, ry = av.y - bv.y, rz = av.z - bv.z;
+            const rel = rx * n[0] + ry * n[1] + rz * n[2];
+            if (rel >= 0) return;
+            const e = -rel > BOUNCE_MIN_SPEED ? restitution : 0;
+            const j = -(1 + e) * rel / invSum;
+            av.x += n[0] * j * invA; av.y += n[1] * j * invA; av.z += n[2] * j * invA;
+            bv.x -= n[0] * j * invB; bv.y -= n[1] * j * invB; bv.z -= n[2] * j * invB;
+            if (!friction) return;
+            rx = av.x - bv.x; ry = av.y - bv.y; rz = av.z - bv.z;
+            const rn = rx * n[0] + ry * n[1] + rz * n[2];
+            const tx = rx - n[0] * rn, ty = ry - n[1] * rn, tz = rz - n[2] * rn, tl = Math.hypot(tx, ty, tz);
+            if (tl < 1e-6) return;
+            const k = Math.min(tl / invSum, SURFACE_FRICTION * j) / tl;
+            av.x -= tx * k * invA; av.y -= ty * k * invA; av.z -= tz * k * invA;
+            bv.x += tx * k * invB; bv.y += ty * k * invB; bv.z += tz * k * invB;
+        }
 
         // Simulation properties live on the World Settings instance.
         function activeWorldSettings() {
@@ -1557,21 +1603,29 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 const nb = [R[0] * nl[0] + R[1] * nl[1] + R[2] * nl[2], R[3] * nl[0] + R[4] * nl[1] + R[5] * nl[2], R[6] * nl[0] + R[7] * nl[1] + R[8] * nl[2]];
                 n = ball === a ? nb : [-nb[0], -nb[1], -nb[2]];
             }
-            const shareA = aMoves && bMoves ? 0.5 : (aMoves ? 1 : 0), shareB = aMoves && bMoves ? 0.5 : (bMoves ? 1 : 0);
+            const invA = aMoves ? 1 / bodyMass(a) : 0, invB = bMoves ? 1 / bodyMass(b) : 0;
+            const shareA = invA / (invA + invB), shareB = invB / (invA + invB);   // the lighter body gives way more
             a.x += n[0] * pen * shareA; a.y += n[1] * pen * shareA; a.z += n[2] * pen * shareA;
             b.x -= n[0] * pen * shareB; b.y -= n[1] * pen * shareB; b.z -= n[2] * pen * shareB;
             const av = physicsVelocityFor(idA), bv = physicsVelocityFor(idB);
-            const rel = (av.x - bv.x) * n[0] + (av.y - bv.y) * n[1] + (av.z - bv.z) * n[2];
-            if (rel < 0) {
-                const e = -rel > 1.5 ? 0.35 : 0, dv = -(1 + e) * rel;
-                const fa = aMoves && bMoves ? dv / 2 : (aMoves ? dv : 0), fb = aMoves && bMoves ? dv / 2 : (bMoves ? dv : 0);
-                av.x += n[0] * fa; av.y += n[1] * fa; av.z += n[2] * fa;
-                bv.x -= n[0] * fb; bv.y -= n[1] * fb; bv.z -= n[2] * fb;
-            }
+            applyContactImpulse(av, bv, n, invA, invB, BALL_RESTITUTION, false);
             if (a.type === 'ball' && aMoves) ballContacts.set(idA, { nx: n[0], ny: n[1], nz: n[2], ovx: bv.x, ovy: bv.y, ovz: bv.z });
             if (b.type === 'ball' && bMoves) ballContacts.set(idB, { nx: -n[0], ny: -n[1], nz: -n[2], ovx: av.x, ovy: av.y, ovz: av.z });
         }
 
+        // Boxes resting on boxes: a stack settles from the bottom up so it never jitters.
+        const supportContacts = new Map();
+        function settleSupports() {
+            if (!supportContacts.size) return;
+            const pairs = [...supportContacts.values()].sort((p, q) => sceneObjects[p[1]].y - sceneObjects[q[1]].y);
+            for (const [u, l] of pairs) {
+                const U = sceneObjects[u], L = sceneObjects[l];
+                if (!U || !L || !isMovable(U)) continue;
+                const uv = physicsVelocityFor(u), floor = isMovable(L) ? physicsVelocityFor(l).y : 0;
+                if (uv.y < floor) uv.y = floor;
+            }
+            supportContacts.clear();
+        }
         function resolvePhysicsCollisions(bodies) {
             // Every collidable prism blocks movers. There is no ground plane: things fall until they land on something.
             const colliders = bodies.filter(([, o]) => o.collidable !== false);
@@ -1597,32 +1651,31 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     const signZ = a.z < b.z ? -1 : 1;
                     const av = physicsVelocityFor(idA);
                     const bv = physicsVelocityFor(idB);
-                    const shareA = aMoves && bMoves ? 0.5 : (aMoves ? 1 : 0);
-                    const shareB = aMoves && bMoves ? 0.5 : (bMoves ? 1 : 0);
-
+                    const invA = aMoves ? 1 / bodyMass(a) : 0, invB = bMoves ? 1 / bodyMass(b) : 0;
+                    const shareA = invA / (invA + invB), shareB = invB / (invA + invB);   // the lighter body gives way more
+                    let n;
                     if (dy <= dx && dy <= dz) {
                         a.y += signY * dy * shareA;
                         b.y -= signY * dy * shareB;
-                        if (av.y * signY < 0) av.y = 0;
-                        if (bv.y * signY > 0) bv.y = 0;
+                        n = [0, signY, 0];
                     } else if (dx <= dz) {
                         a.x += signX * dx * shareA;
                         b.x -= signX * dx * shareB;
-                        if (av.x * signX < 0) av.x = 0;
-                        if (bv.x * signX > 0) bv.x = 0;
+                        n = [signX, 0, 0];
                     } else {
                         a.z += signZ * dz * shareA;
                         b.z -= signZ * dz * shareB;
-                        if (av.z * signZ < 0) av.z = 0;
-                        if (bv.z * signZ > 0) bv.z = 0;
+                        n = [0, 0, signZ];
                     }
+                    applyContactImpulse(av, bv, n, invA, invB, BOX_RESTITUTION, true);
+                    if (n[1] !== 0) supportContacts.set(n[1] > 0 ? idA + '|' + idB : idB + '|' + idA, n[1] > 0 ? [idA, idB] : [idB, idA]);
                 }
             }
         }
 
         function physicsStep(dt) {
             if (!simulationRunning) return;
-            const g = currentGravity(), killY = currentKillY();
+            const g = currentGravity(), killY = currentKillY(), rho = airDensityFor(g);
             const bodies = physicsBodyList();
 
             // Long falls get fast, so split the step to keep a body from skipping through thin objects.
@@ -1639,12 +1692,14 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     if (!isMovable(o)) continue;
                     const v = physicsVelocityFor(id);
                     v.y += g * h;
+                    applyDrag(o, v, h, rho);
                     o.x += v.x * h;
                     o.y += v.y * h;
                     o.z += v.z * h;
                 }
                 // A few passes help stacked boxes settle without obvious overlap.
                 for (let pass = 0; pass < 3; pass++) resolvePhysicsCollisions(bodies);
+                settleSupports();
                 // Rolling: a touching ball spins so its surface does not slip, and rolling slowly loses speed
                 for (const [id, c] of ballContacts) {
                     const o = sceneObjects[id];
@@ -1674,6 +1729,155 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 }
             }
             if (removed) { pruneOrphans(); renderExplorer(); renderProperties(); }
+        }
+
+
+        // ───────── Player control ─────────
+        // While the simulation runs, the player the editor joined as (the lowest-numbered Player) is driven with WASD, Space and Shift.
+        // A model is a set of parts, so the whole model moves as one box that is stopped by every collidable block.
+        const pc = { modelId: null, vy: 0, onGround: false, last: 0, zoom: 6, theta: 0, exhausted: false, hideId: null, headId: null, parts: [], pos: { x: 0, y: 0, z: 0 }, hr: 0.5, hh: 2 };
+        const PLAYER_ZOOM_MAX = 20, PLAYER_ZOOM_SPEED = 8, FIRST_PERSON_ZOOM = 1.2, PLAYER_TURN_RATE = 14;
+        const STAMINA_PENALTY_GAIN = 4;   // per second, while exhausted
+        // A person is about 80 kg and falls feet first at roughly 55 Vm/s in Earth air.
+        const PLAYER_MASS = 80, PLAYER_CD = 1, PLAYER_AREA = 0.4;
+        function controlledModel() {
+            let best = null;
+            for (const o of Object.values(sceneObjects)) if (o.type === 'player' && (!best || o.order < best.order)) best = o;
+            if (!best || !best.currentModel || !sceneObjects[best.currentModel]) return null;
+            const ids = [], stack = [best.currentModel];
+            while (stack.length) { const cur = stack.pop(); for (const [id, o] of Object.entries(sceneObjects)) if (o.parent === cur) { ids.push(id); stack.push(id); } }
+            const parts = ids.filter(id => isShape(sceneObjects[id]));
+            if (!parts.length) return null;
+            const humanId = ids.find(id => sceneObjects[id].type === 'human') || null;
+            return { modelId: best.currentModel, parts, humanId, human: humanId ? sceneObjects[humanId] : null, dead: !!best.dead };
+        }
+        function partsBox(parts) {
+            const b = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
+            for (const id of parts) {
+                const o = sceneObjects[id], e = shapeHalfExt(o);
+                b.minX = Math.min(b.minX, o.x - e[0]); b.maxX = Math.max(b.maxX, o.x + e[0]);
+                b.minY = Math.min(b.minY, o.y - e[1]); b.maxY = Math.max(b.maxY, o.y + e[1]);
+                b.minZ = Math.min(b.minZ, o.z - e[2]); b.maxZ = Math.max(b.maxZ, o.z + e[2]);
+            }
+            return b;
+        }
+        const PC_EPS = 1e-4;
+        const pcOverlap = (b, c) => b.maxX > c[0] + PC_EPS && b.minX < c[1] - PC_EPS && b.maxY > c[2] + PC_EPS && b.minY < c[3] - PC_EPS && b.maxZ > c[4] + PC_EPS && b.minZ < c[5] - PC_EPS;
+        // Move the box along one axis (0 x, 1 y, 2 z) and slide out of anything it runs into. Returns true when something blocked it.
+        function pcMoveAxis(b, cols, axis, d) {
+            if (d === 0) return false;
+            const lo = ['minX', 'minY', 'minZ'][axis], hi = ['maxX', 'maxY', 'maxZ'][axis];
+            b[lo] += d; b[hi] += d;
+            let hit = false;
+            for (const c of cols) {
+                if (!pcOverlap(b, c)) continue;
+                hit = true;
+                const push = d > 0 ? b[hi] - c[axis * 2] : c[axis * 2 + 1] - b[lo];
+                const sgn = d > 0 ? -1 : 1;
+                b[lo] += sgn * push; b[hi] += sgn * push;
+            }
+            return hit;
+        }
+        // Remember the model as it was spawned. Turning it later is done from these offsets, so nothing drifts.
+        function setupPlayerBody(m) {
+            const b = partsBox(m.parts);
+            pc.pos = { x: (b.minX + b.maxX) / 2, y: b.minY, z: (b.minZ + b.maxZ) / 2 };
+            // The collision box is a square so it does not change when the model turns.
+            pc.hr = Math.max((b.maxX - b.minX) / 2, (b.maxZ - b.minZ) / 2);
+            pc.hh = b.maxY - b.minY;
+            pc.parts = m.parts.map(id => { const o = sceneObjects[id]; return { id, dx: o.x - pc.pos.x, dy: o.y - pc.pos.y, dz: o.z - pc.pos.z, rotY: +o.rotY || 0 }; });
+            let head = null;
+            for (const id of m.parts) if (/^head$/i.test(sceneObjects[id].name)) head = id;
+            if (!head) for (const id of m.parts) if (!head || sceneObjects[id].y > sceneObjects[head].y) head = id;
+            pc.headId = head; pc.theta = 0; pc.vy = 0; pc.onGround = false; pc.exhausted = false;
+        }
+        // Positions every part from the player's position and facing. Facing 0 looks along -Z, like the camera does.
+        function placePlayerParts() {
+            const c = Math.cos(pc.theta), s = Math.sin(pc.theta);
+            for (const p of pc.parts) {
+                const o = sceneObjects[p.id];
+                if (!o) continue;
+                o.x = pc.pos.x + p.dx * c - p.dz * s;
+                o.z = pc.pos.z + p.dx * s + p.dz * c;
+                o.y = pc.pos.y + p.dy;
+                o.rotY = p.rotY - pc.theta * 180 / Math.PI;
+                const v = physicsVelocity.get(p.id); if (v) { v.x = 0; v.y = 0; v.z = 0; }
+            }
+        }
+        // Moves the controlled player, then puts the camera on its head. Returns true when the camera is being driven.
+        function stepPlayerControl(dt) {
+            const m = controlledModel();
+            if (!m) { pc.modelId = null; pc.hideId = null; return false; }
+            if (pc.modelId !== m.modelId) { pc.modelId = m.modelId; setupPlayerBody(m); angleX = -0.25; }
+            if (!m.dead && dt > 0) {
+                const hv = m.human || {};
+                const num = (v, d) => Number.isFinite(v) ? v : d;
+                const walk = num(hv.walkSpeed, 1.3), run = num(hv.runSpeed, 3.5), jumpH = num(hv.jumpHeight, 0.5);
+                const maxSt = num(hv.maxStamina, 100), runLoss = num(hv.runStaminaLoss, 3), jumpLoss = num(hv.jumpStaminaLoss, 20), gain = num(hv.staminaGain, 6.5);
+                let st = Math.min(maxSt, num(hv.stamina, maxSt));
+                const g = currentGravity(), rho = airDensityFor(g);
+                const b = { minX: pc.pos.x - pc.hr, maxX: pc.pos.x + pc.hr, minY: pc.pos.y, maxY: pc.pos.y + pc.hh, minZ: pc.pos.z - pc.hr, maxZ: pc.pos.z + pc.hr };
+                const own = new Set(m.parts), cols = [];
+                for (const [id, o] of physicsBodyList()) {
+                    if (own.has(id) || o.collidable === false) continue;
+                    const e = shapeHalfExt(o);
+                    cols.push([o.x - e[0], o.x + e[0], o.y - e[1], o.y + e[1], o.z - e[2], o.z + e[2]]);
+                }
+                // Walking is relative to where the camera looks.
+                const f = (keyState['w'] ? 1 : 0) - (keyState['s'] ? 1 : 0), r = (keyState['d'] ? 1 : 0) - (keyState['a'] ? 1 : 0);
+                let mx = Math.sin(angleY) * f + rgtX * r, mz = -Math.cos(angleY) * f + rgtZ * r;
+                const len = Math.hypot(mx, mz);
+                if (len > 0) { mx /= len; mz /= len; } else { mx = 0; mz = 0; }
+                // The model swings round to face the way it is going.
+                if (len > 0) {
+                    const d = Math.atan2(Math.sin(Math.atan2(mx, -mz) - pc.theta), Math.cos(Math.atan2(mx, -mz) - pc.theta));
+                    pc.theta += d * (1 - Math.exp(-PLAYER_TURN_RATE * dt));
+                }
+                // Sprinting needs stamina and costs RunStaminaLoss every second.
+                const sprinting = len > 0 && keyState['shift'] && !pc.exhausted && st > 0;
+                const speed = sprinting ? run : walk;
+                if (sprinting) st -= runLoss * dt;
+                let jumped = false;
+                // Small steps, like the physics: a fast fall must not skip through a thin block.
+                const steps = Math.max(1, Math.ceil(dt / PHYSICS_MAX_STEP)), hs = dt / steps;
+                const kDrag = rho * PLAYER_CD * PLAYER_AREA / (2 * PLAYER_MASS);
+                for (let s = 0; s < steps; s++) {
+                    if (keyState[' '] && pc.onGround && g < 0 && !pc.exhausted && st > 0) {
+                        pc.vy = Math.sqrt(2 * -g * Math.max(0, jumpH)); pc.onGround = false; jumped = true;
+                        st = Math.max(0, st - jumpLoss);
+                    }
+                    pc.vy += g * hs;
+                    pc.vy /= 1 + kDrag * Math.abs(pc.vy) * hs;   // air drag: falling speeds up, then levels off at terminal velocity
+                    pcMoveAxis(b, cols, 0, mx * speed * hs);
+                    pcMoveAxis(b, cols, 2, mz * speed * hs);
+                    const dy = pc.vy * hs;
+                    if (pcMoveAxis(b, cols, 1, dy)) { pc.onGround = dy < 0; pc.vy = 0; } else pc.onGround = false;
+                }
+                pc.pos = { x: b.minX + pc.hr, y: b.minY, z: b.minZ + pc.hr };
+                // Stamina comes back while standing on something and not sprinting. Once emptied it comes back slower, until it is full.
+                if (!sprinting && pc.onGround && !jumped) st += (pc.exhausted ? Math.min(STAMINA_PENALTY_GAIN, gain) : gain) * dt;
+                if (st <= 0) { st = 0; pc.exhausted = true; }
+                st = Math.min(maxSt, st);
+                if (pc.exhausted && st >= maxSt) pc.exhausted = false;
+                if (m.human) {
+                    m.human.stamina = st;
+                    if (selectedObjectId === m.humanId) { const el = document.getElementById('prop-h-stamina'); if (el && document.activeElement !== el) el.value = Math.round(st * 100) / 100; }
+                }
+                placePlayerParts();
+                // Falling past the kill layer kills the player, like it deletes anything else.
+                if (pc.pos.y < currentKillY() && m.human) m.human.health = 0;
+            }
+            // Up and Down zoom. All the way in is first person, and then the head is hidden.
+            if (dt > 0) {
+                if (keyState['arrowup']) pc.zoom -= PLAYER_ZOOM_SPEED * dt;
+                if (keyState['arrowdown']) pc.zoom += PLAYER_ZOOM_SPEED * dt;
+                pc.zoom = Math.max(0, Math.min(PLAYER_ZOOM_MAX, pc.zoom));
+            }
+            const head = sceneObjects[pc.headId];
+            if (!head) { pc.hideId = null; return false; }
+            pc.hideId = pc.zoom < FIRST_PERSON_ZOOM ? pc.headId : null;
+            camPosX = head.x - fwdX * pc.zoom; camPosY = head.y - fwdY * pc.zoom; camPosZ = head.z - fwdZ * pc.zoom;
+            return true;
         }
 
         function takeSnapshot() {
@@ -1717,6 +1921,9 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             btn.title = running ? 'Stop and restore the world to how it was before Run.' : 'Run the simulation.';
             btn.setAttribute('aria-pressed', String(running));
             document.getElementById('canvas-container').classList.toggle('simulating', running);
+            document.getElementById('hint-play').hidden = !running;
+            if (running && document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); // Space must not press the Stop button
+            if (!running) { pc.last = 0; pc.modelId = null; pc.vy = 0; pc.hideId = null; }
         }
         document.getElementById('run-btn').addEventListener('click', () => setSimulationRunning(!simulationRunning));
 
@@ -3112,7 +3319,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     ${section('Health', HF('health', 'Health', 'HP', 1) + HF('maxHealth', 'Max health', 'HP', 1))}
                     ${section('Movement', HF('walkSpeed', 'Walk speed', 'Vm/s', 0.1) + HF('runSpeed', 'Run speed', 'Vm/s', 0.1) + HF('jumpHeight', 'Jump height', 'Vm', 0.05))}
                     ${section('Stamina', HF('stamina', 'Stamina', '', 1) + HF('maxStamina', 'Max stamina', '', 1) + HF('runStaminaLoss', 'Run stamina loss', '/s', 0.5) + HF('jumpStaminaLoss', 'Jump stamina loss', '/jump', 1) + HF('staminaGain', 'Stamina gain', '/s', 0.5))}
-                    <div class="sec-body"><div class="field-note">Most of these values are only stored for now. Health is the exception: at 0 the player using this model dies.</div></div>`;
+                    <div class="sec-body"><div class="field-note">These values are used by the player you control, and at 0 Health the player dies.</div></div>`;
                 for (const key of Object.keys(HUMAN_DEFAULTS)) {
                     const el = document.getElementById('prop-h-' + key);
                     el.addEventListener('input', () => { const v = parseFloat(el.value); if (Number.isFinite(v) && v >= 0) obj[key] = v; });
@@ -3339,6 +3546,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             if (isTyping()) return;
             const k = e.key.toLowerCase();
             if (['w', 'a', 's', 'd'].includes(k)) keyState[k] = true;
+            if (simulationRunning && (k === ' ' || k === 'shift' || k === 'arrowup' || k === 'arrowdown')) { keyState[k] = true; if (k !== 'shift') e.preventDefault(); }
             if (!manip && !e.ctrlKey && !e.metaKey && !e.altKey) {
                 if (k === '1') setMode('select');
                 else if (k === '2') setMode('move');
@@ -3346,7 +3554,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 else if (k === '4') setMode('rotate');
             }
         });
-        window.addEventListener('keyup', (e) => { keyState[e.key.toLowerCase()] = false; });
+        window.addEventListener('keyup', (e) => { keyState[e.key.toLowerCase()] = false; if (simulationRunning && e.key === ' ' && !isTyping()) e.preventDefault(); });
         window.addEventListener('blur', () => { for (const k in keyState) keyState[k] = false; });
 
         function shadeRGB(hex, b) {
@@ -4571,7 +4779,13 @@ void main() { o = texture(uTex, vT); }`;
 
             // WASD camera movement (locked while dragging a handle)
             const moveSpeed = settings.camSpeed > 0 ? settings.camSpeed : 0.1;
-            if (!manip && !isTyping()) {
+            let playerCam = false;
+            if (simulationRunning) {
+                const nowT = performance.now();
+                playerCam = stepPlayerControl(pc.last ? Math.min(0.05, (nowT - pc.last) / 1000) : 0);
+                pc.last = nowT;
+            }
+            if (!playerCam && !manip && !isTyping()) {
                 const forwardX = fwdX, forwardY = fwdY, forwardZ = fwdZ;
                 const rightX = rgtX, rightY = 0, rightZ = rgtZ;
                 if (keyState['w']) { camPosX += forwardX * moveSpeed; camPosY += forwardY * moveSpeed; camPosZ += forwardZ * moveSpeed; }
@@ -4585,8 +4799,8 @@ void main() { o = texture(uTex, vT); }`;
             renderViewfinder();
 
             ctx.clearRect(0, 0, width, height);
-            const prisms = Object.entries(sceneObjects).filter(([, o]) => o.type === 'prism6' && spaceOf(o) === 'world');
-            const balls = Object.entries(sceneObjects).filter(([, o]) => o.type === 'ball' && spaceOf(o) === 'world');
+            const prisms = Object.entries(sceneObjects).filter(([id, o]) => o.type === 'prism6' && spaceOf(o) === 'world' && id !== pc.hideId);
+            const balls = Object.entries(sceneObjects).filter(([id, o]) => o.type === 'ball' && spaceOf(o) === 'world' && id !== pc.hideId);
             const visibleCount = GL ? drawGL(prisms, balls) : drawFallback(prisms, balls);
 
             // Handles are drawn last so they sit above every shape (only the UI is above them)

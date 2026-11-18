@@ -967,6 +967,7 @@
         <p><b>Multi-select:</b> hold <kbd>Shift</kbd> and click to add or remove single objects. Hold <kbd>Ctrl</kbd> (<kbd>Cmd</kbd> on Mac) and click to select every object between your last click and the one you click. Copy, cut, paste, delete and dragging then apply to all selected objects.</p>
         <p>Hover an instance in the Explorer and press the three-dot button for <b>Rename, Copy, Paste, Cut, Delete</b> and <b>Move Camera To</b>.</p>
         <p>A Rectangular Prism also has a <b>Color</b> in its Render section: pick one with the color box or type a hex code such as <code>#ff8800</code>. Turning on <b>Face coloring</b> overrides it, because each face then shows its own debug color.</p>
+        <p>Every block, wedge, cylinder and union has an <b>Outline</b> switch in Render for the thin dark line drawn along its edges. The cylinder is treated as one round surface: it gets a single outline around each end rather than a line at every facet, and its Size scales its shading with it.</p>
         <h3 data-group="Editor guide">Camera and selection</h3>
         <p>The camera looks like a first-person view: the horizon stays level and dragging turns your head up, down, left and right. There is no momentum, so it stops the moment you let go. Move with <code>W</code> <code>A</code> <code>S</code> <code>D</code>.</p>
         <p>In <b>Settings</b>, <b>Drag to move</b> turns the camera with the left mouse button and <b>Right click to move</b> uses the right button. The camera is locked while you drag a gizmo handle.</p>
@@ -3814,6 +3815,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     <div class="accent-ctl"><input type="color" class="color-pick" id="prop-color" value="${prismColor(obj)}" aria-label="Color" ${dis}><input class="text hex-in" id="prop-color-hex" maxlength="7" spellcheck="false" value="${prismColor(obj)}" aria-label="Color hex code" ${dis}></div>
                     ${obj.faceColoring ? '<div class="field-note">Face coloring is on, so each face uses its own color instead of this one.</div>' : ''}
                     ${switchRow('prop-wireframe', 'Wireframe', obj.wireframe, dis)}
+                    ${obj.type !== 'ball' ? switchRow('prop-outline', 'Outline', obj.outline !== false, dis) : ''}
                 `)}
                 ${section('Simulation', `
                     ${switchRow('prop-physics', 'Reacts to physics', obj.reactsToPhysics, dis)}
@@ -3844,6 +3846,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 const negEl = document.getElementById('prop-negated');
                 if (negEl) negEl.addEventListener('change', (e) => { obj.negated = e.target.checked; });
                 document.getElementById('prop-wireframe').addEventListener('change', (e) => { obj.wireframe = e.target.checked; });
+                const outlineEl = document.getElementById('prop-outline');
+                if (outlineEl) outlineEl.addEventListener('change', (e) => { obj.outline = e.target.checked; });
                 document.getElementById('prop-physics').addEventListener('change', (e) => {
                     obj.reactsToPhysics = e.target.checked;
                     renderProperties();
@@ -4586,7 +4590,7 @@ flat out vec3 vN;
 flat out float vFace;
 void main() {
     vec3 w = uCenter + uRot * (aPos * uHalf);
-    vec3 n = uRot * aNormal;
+    vec3 n = uRot * normalize(aNormal / max(uHalf, vec3(1e-4)));   // Size scales the shape, so the normal undoes it
     vUV = aUV; vFace = aFace; vW = w; vN = n;
     if (dot(n, w - uCam) >= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }   // back face
     gl_Position = project(w);
@@ -4830,7 +4834,9 @@ void main() { o = texture(uTex, vT); }`;
             const put = (p, n, uv) => v.push(p[0], p[1], p[2], n[0], n[1], n[2], uv[0], uv[1], meshFaceIndex(n));
             const tri = (a, b, c, n, uv) => { put(a, n, uv[0]); put(b, n, uv[1]); put(c, n, uv[2]); };
             const quad = (a, b, c, d, n) => { tri(a, b, c, n, [[-1, -1], [1, -1], [1, 1]]); tri(a, c, d, n, [[-1, -1], [1, 1], [-1, 1]]); };
-            return { v, tri, quad };
+            // A quad with no edge UVs: its surface is part of a round side, so it must not get an outline of its own.
+            const quadFlat = (a, b, c, d, n) => { tri(a, b, c, n, [[0, 0], [0, 0], [0, 0]]); tri(a, c, d, n, [[0, 0], [0, 0], [0, 0]]); };
+            return { v, tri, quad, quadFlat };
         }
         // A wedge is the box with its top-front half cut away: the slope is the plane y = z.
         function wedgeMesh() {
@@ -4848,17 +4854,16 @@ void main() { o = texture(uTex, vT); }`;
             for (let i = 0; i < n; i++) {
                 const a0 = i / n * TAU, a1 = (i + 1) / n * TAU, am = (a0 + a1) / 2;
                 const x0 = Math.cos(a0), z0 = Math.sin(a0), x1 = Math.cos(a1), z1 = Math.sin(a1);
-                m.quad([x0, -1, z0], [x0, 1, z0], [x1, 1, z1], [x1, -1, z1], [Math.cos(am), 0, Math.sin(am)]);
+                m.quadFlat([x0, -1, z0], [x0, 1, z0], [x1, 1, z1], [x1, -1, z1], [Math.cos(am), 0, Math.sin(am)]);
             }
-            // Caps: a fan whose edge UVs land on the uv square's border, so the rim gets an outline like a block's edge.
-            const rimUV = (p) => { const d = Math.max(Math.abs(p[0]), Math.abs(p[2])) || 1; return [p[0] / d, p[2] / d]; };
+            // Caps: a fan from the centre (uv 0) to the rim (uv 1), so each end gets one clean circular outline.
             for (const y of [1, -1]) {
                 const nrm = [0, y, 0];
                 for (let i = 0; i < n; i++) {
                     const a0 = i / n * TAU, a1 = (i + 1) / n * TAU;
                     const p0 = [Math.cos(a0), y, Math.sin(a0)], p1 = [Math.cos(a1), y, Math.sin(a1)];
                     const qa = y > 0 ? p1 : p0, qb = y > 0 ? p0 : p1;   // each cap faces outwards
-                    m.tri([0, y, 0], qa, qb, nrm, [[0, 0], rimUV(qa), rimUV(qb)]);
+                    m.tri([0, y, 0], qa, qb, nrm, [[0, 0], [1, 1], [1, 1]]);
                 }
             }
             return m.v;
@@ -4883,7 +4888,7 @@ void main() { o = texture(uTex, vT); }`;
                     return { vao, count: data.length / 9 };
                 };
                 mesh.wedge = meshVao(wedgeMesh());
-                mesh.cylinder = meshVao(cylinderMesh(24));
+                mesh.cylinder = meshVao(cylinderMesh(48));
                 const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
                 // unit sphere (32 x 20), shared by every ball: one triangle list and one wireframe list
                 const SEG = 32, RING = 20, sv = [], tri = [], lin = [];
@@ -4975,7 +4980,7 @@ void main() { o = texture(uTex, vT); }`;
             gl.uniform3fv(P.u.uColors, colors); gl.uniform3fv(P.u.uAlbedo, albedo);
             gl.uniform1iv(P.u.uFaceTex, faceTex.get(id) || noTex);
             const sel = id === selectedObjectId || (selectedObjectId && isInside(id, selectedObjectId));
-            let wire = 0, edge = [0, 0, 0], edgeA = 0.5, w = 0.9;
+            let wire = 0, edge = [0, 0, 0], edgeA = o.outline === false ? 0 : 0.5, w = 0.9;
             if (sel) { edge = accentRGB; edgeA = 1; w = 1.9; wire = o.wireframe ? 1 : 0; }
             else if (o.wireframe) { wire = o.faceColoring ? 2 : 1; edge = skyBright ? [0.059, 0.09, 0.165] : [0.22, 0.74, 0.97]; w = 1.0; }
             gl.uniform1i(P.u.uWire, wire);
@@ -5061,7 +5066,7 @@ void main() { o = texture(uTex, vT); }`;
                 gl.uniform3fv(P.u.uColors, colors); gl.uniform3fv(P.u.uAlbedo, albedo);
                 gl.uniform1iv(P.u.uFaceTex, faceTex.get(id) || noTex);
                 const sel = id === selectedObjectId || id === texParent || (selectedObjectId && isInside(id, selectedObjectId));
-                let wire = 0, edge = [0, 0, 0], edgeA = 0.5, w = 0.9;
+                let wire = 0, edge = [0, 0, 0], edgeA = o.outline === false ? 0 : 0.5, w = 0.9;
                 if (sel) { edge = accentRGB; edgeA = 1; w = 1.9; wire = o.wireframe ? 1 : 0; }
                 else if (o.wireframe) { wire = o.faceColoring ? 2 : 1; edge = wireRGB; w = 1.0; }
                 gl.uniform1i(P.u.uWire, wire);

@@ -4870,7 +4870,7 @@ void main() { o = texture(uTex, vT); }`;
                 if (!gl) return;
                 const prism = glProgram(gl, PRISM_VS, PRISM_FS, SHAPE_UNIFORMS);
                 const shadow = glProgram(gl, SHADOW_VS, SHADOW_FS, ['uCenter', 'uHalf', 'uRot', 'uLVP'], true);
-                const mesh = { prog: glProgram(gl, MESH_VS, PRISM_FS, SHAPE_UNIFORMS) };
+                const mesh = glProgram(gl, MESH_VS, PRISM_FS, SHAPE_UNIFORMS);   // returns { prog, u }, so cells below hang off it
                 const meshVao = (data) => {
                     const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
                     const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);

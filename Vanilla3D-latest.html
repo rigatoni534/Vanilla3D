@@ -1235,7 +1235,7 @@ child.Parent = part</code></pre>
         <p>Listen to an event with <code>:Connect</code> and a function. <code>object:Method(args)</code> is the same call as <code>object.Method(args)</code>. <code>Connect</code> returns a connection, and <code>connection:Disconnect()</code> stops listening. Each time an event fires its function runs as its own task, so it can use <code>wait()</code>. A function can be written without a name right where it is used: <code>function(player) ... end</code>. A script that connects late can read <code>Players.Players</code> to find players who already joined.</p>
         <p><b>Death.</b> When the Health of a Human inside a player's model reaches 0, the player dies. The model's parts are released so they fall apart, then <code>OnPlayerDeath</code> fires. Giving the player a new model removes the old one.</p>
         <p><b>Spawn position.</b> A model spawns with its feet at 0, 5, 0. If one block has <b>Spawnpoint</b> turned on, the model spawns on top of that block instead. Only one block can be the spawnpoint. The editor will not let you pick a second one, and setting a second one in a script prints a warning and is skipped.</p>
-        <p><b>Playing your player.</b> While the simulation runs you control the first player, the one the editor joins as Player1. <b>W A S D</b> move, <b>Space</b> jumps, <b>Shift</b> sprints, and the <b>Up</b> and <b>Down</b> arrow keys zoom the camera. The camera follows the player's head, and you turn the view with the same camera setting as the editor (Right-drag or Drag). Zoomed all the way in you are in first person: the head is hidden and the rest of the body stays. The model swings round to face the way it moves. There is no limb animation yet. Walking speed comes from the Human's <code>WalkSpeed</code>, sprinting from <code>RunSpeed</code> and jump height from <code>JumpHeight</code>. Sprinting costs <code>RunStaminaLoss</code> every second and each jump costs <code>JumpStaminaLoss</code>. Stamina comes back at <code>StaminaGain</code> per second while you stand on something and are not sprinting. If it runs out you are exhausted: you cannot sprint or jump, and it comes back at 4 per second (or StaminaGain, if that is lower) until it is full. The player is stopped by blocks that are Collidable, and falling below the kill layer sets its Health to 0.</p>
+        <p><b>Playing your player.</b> While the simulation runs you control the first player, the one the editor joins as Player1. <b>W A S D</b> move, <b>Space</b> jumps, <b>Shift</b> sprints, and the <b>Up</b> and <b>Down</b> arrow keys zoom the camera. The camera follows the player's head, and you turn the view with the same camera setting as the editor (Right-drag or Drag). Zoomed all the way in you are in first person: the head is hidden and the rest of the body stays. The model swings round to face the way it moves, and its arms and legs swing as it walks, faster when it sprints. In the air its arms trail behind and its legs tuck up. Walking speed comes from the Human's <code>WalkSpeed</code>, sprinting from <code>RunSpeed</code> and jump height from <code>JumpHeight</code>. Sprinting costs <code>RunStaminaLoss</code> every second and each jump costs <code>JumpStaminaLoss</code>. Stamina comes back at <code>StaminaGain</code> per second while you stand on something and are not sprinting. If it runs out you are exhausted: you cannot sprint or jump, and it comes back at 4 per second (or StaminaGain, if that is lower) until it is full. The player is stopped by blocks that are Collidable, and falling below the kill layer sets its Health to 0.</p>
         <p><b>Physics.</b> Everything is made of the same material, so a body's mass comes from its volume. Falling bodies speed up with gravity, and air slows them more the faster they go, so every body has a terminal velocity (a person falls at about 55 Vm/s). Air is thick where gravity is strong and gone on the Moon and in Space, so there bodies keep speeding up. When two bodies collide momentum is conserved, so a heavy body pushes a light one much more than the other way round. Fast impacts bounce and lose energy, and sliding bodies slow down and stop because of friction. Boxes still do not rotate or tip over.</p>
         <p><b>Threads.</b> <code>Scripting.NewThread(fn, threadId, ...)</code> runs <code>fn</code> in a new thread, and any extra arguments are passed to it. <code>threadId</code> is a number, a string, or <code>auto</code>, which uses the next free number. Reusing an id that is still running prints a warning and makes no new thread. A script can have at most the player count times 3 threads made this way. Server scripts share thread ids with other Server scripts, and Local scripts share theirs with other Local scripts.</p>
         <p>New worlds start with the <code>DefaultPlayer</code> model in Storage (with a Human inside it) and a <b>PlayerManagement</b> script in Scripts that spawns every player who joins and respawns them after they die:</p>
@@ -1735,7 +1735,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         // ───────── Player control ─────────
         // While the simulation runs, the player the editor joined as (the lowest-numbered Player) is driven with WASD, Space and Shift.
         // A model is a set of parts, so the whole model moves as one box that is stopped by every collidable block.
-        const pc = { modelId: null, vy: 0, onGround: false, last: 0, zoom: 6, theta: 0, exhausted: false, hideId: null, headId: null, parts: [], pos: { x: 0, y: 0, z: 0 }, hr: 0.5, hh: 2 };
+        const pc = { modelId: null, vy: 0, onGround: false, last: 0, zoom: 6, theta: 0, exhausted: false, hideId: null, headId: null, parts: [], pos: { x: 0, y: 0, z: 0 }, hr: 0.5, hh: 2, phase: 0, gait: 0 };
         const PLAYER_ZOOM_MAX = 20, PLAYER_ZOOM_SPEED = 8, FIRST_PERSON_ZOOM = 1.2, PLAYER_TURN_RATE = 14;
         const STAMINA_PENALTY_GAIN = 4;   // per second, while exhausted
         // A person is about 80 kg and falls feet first at roughly 55 Vm/s in Earth air.
@@ -1778,6 +1778,13 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             }
             return hit;
         }
+        // Limbs are the parts called Arm or Leg, with or without a Left or Right in front. An arm swings opposite its own leg.
+        function limbPose(name) {
+            const m = /^(left|right)?\s*(arm|leg)$/i.exec(String(name).trim());
+            if (!m) return null;
+            const side = /^left$/i.test(m[1] || '') ? -1 : 1, arm = /arm/i.test(m[2]);
+            return { walk: (arm ? -24 : 30) * side, air: arm ? -45 : 18 * side };
+        }
         // Remember the model as it was spawned. Turning it later is done from these offsets, so nothing drifts.
         function setupPlayerBody(m) {
             const b = partsBox(m.parts);
@@ -1785,21 +1792,30 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             // The collision box is a square so it does not change when the model turns.
             pc.hr = Math.max((b.maxX - b.minX) / 2, (b.maxZ - b.minZ) / 2);
             pc.hh = b.maxY - b.minY;
-            pc.parts = m.parts.map(id => { const o = sceneObjects[id]; return { id, dx: o.x - pc.pos.x, dy: o.y - pc.pos.y, dz: o.z - pc.pos.z, rotY: +o.rotY || 0 }; });
+            pc.parts = m.parts.map(id => {
+                const o = sceneObjects[id], pose = limbPose(o.name);
+                return { id, dx: o.x - pc.pos.x, dy: o.y - pc.pos.y, dz: o.z - pc.pos.z, rotY: +o.rotY || 0, h: o.height, swing: pose ? pose.walk : 0, air: pose ? pose.air : 0, angle: 0 };
+            });
             let head = null;
             for (const id of m.parts) if (/^head$/i.test(sceneObjects[id].name)) head = id;
             if (!head) for (const id of m.parts) if (!head || sceneObjects[id].y > sceneObjects[head].y) head = id;
-            pc.headId = head; pc.theta = 0; pc.vy = 0; pc.onGround = false; pc.exhausted = false;
+            pc.headId = head; pc.theta = 0; pc.vy = 0; pc.onGround = false; pc.exhausted = false; pc.phase = 0; pc.gait = 0;
         }
-        // Positions every part from the player's position and facing. Facing 0 looks along -Z, like the camera does.
-        function placePlayerParts() {
+        // Positions every part from the player's position and facing, and swings the limbs. Facing 0 looks along -Z, like the camera does.
+        function placePlayerParts(dt) {
             const c = Math.cos(pc.theta), s = Math.sin(pc.theta);
+            const stride = Math.sin(pc.phase) * pc.gait;
             for (const p of pc.parts) {
                 const o = sceneObjects[p.id];
                 if (!o) continue;
-                o.x = pc.pos.x + p.dx * c - p.dz * s;
-                o.z = pc.pos.z + p.dx * s + p.dz * c;
-                o.y = pc.pos.y + p.dy;
+                // A limb turns about its shoulder or hip, so it pivots around its top rather than its middle.
+                const want = p.swing ? (pc.onGround ? stride * p.swing : p.air) : 0;
+                p.angle = dt > 0 ? p.angle + (want - p.angle) * (1 - Math.exp(-18 * dt)) : want;
+                const a = p.angle * Math.PI / 180, lift = p.h * (1 - Math.cos(a)), dz = p.dz - p.h * Math.sin(a);
+                o.x = pc.pos.x + p.dx * c - dz * s;
+                o.z = pc.pos.z + p.dx * s + dz * c;
+                o.y = pc.pos.y + p.dy + lift;
+                o.rotX = p.angle;
                 o.rotY = p.rotY - pc.theta * 180 / Math.PI;
                 const v = physicsVelocity.get(p.id); if (v) { v.x = 0; v.y = 0; v.z = 0; }
             }
@@ -1863,7 +1879,11 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     m.human.stamina = st;
                     if (selectedObjectId === m.humanId) { const el = document.getElementById('prop-h-stamina'); if (el && document.activeElement !== el) el.value = Math.round(st * 100) / 100; }
                 }
-                placePlayerParts();
+                // The limbs swing while the player walks, faster and wider when sprinting, and settle again when standing still.
+                const striding = len > 0 && pc.onGround;
+                pc.gait += ((striding ? (sprinting ? 1 : 0.65) : 0) - pc.gait) * (1 - Math.exp(-12 * dt));
+                if (striding) pc.phase += (sprinting ? 12 : 8) * dt;
+                placePlayerParts(dt);
                 // Falling past the kill layer kills the player, like it deletes anything else.
                 if (pc.pos.y < currentKillY() && m.human) m.human.health = 0;
             }

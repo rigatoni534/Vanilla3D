@@ -851,18 +851,27 @@ const PLAYER_MANAGEMENT_SOURCE = [
     "end)"
 ].join('\n');
 
+// The DefaultPlayer model is a blocky six-part character laid out like a Roblox R6 avatar: two legs side by side,
+// a torso with an arm on each side, and a cube head on the shoulders. A stud is 0.48 Vm here, so the body is four
+// studs wide and a little over five tall, with its feet at 0.
 function makePlayerModel(newIdFn) {
     const used = new Set(), out = [];
     const uid = () => { let id; do { id = newIdFn(); } while (used.has(id)); used.add(id); return id; };
     const add = (o) => { const id = uid(); out.push([id, o]); return id; };
+    const H = 0.24;                    // half a stud: the thickness of an arm, a leg or the torso
+    const X = 2.88, Z = 0.875;         // the model is built around this centre
+    const SKIN = '#ffcc85', SHIRT = '#0d69ac', PANTS = '#4b974b';
     const model = add({ type: 'model', name: 'DefaultPlayer', parent: 'storage' });
     add(makeHuman(dn('human') + 1, model));
-    add(makePrism('RightLeg', model, { x: 2.625, y: 0.5, z: 0.875, length: 0.125, width: 0.125, height: 0.5, color: '#000000' }));
-    add(makePrism('LeftLeg', model, { x: 3.13, y: 0.5, z: 0.875, length: 0.125, width: 0.125, height: 0.5, color: '#000000' }));
-    add(makePrism('Torso', model, { x: 2.88, y: 1.5, z: 0.875, length: 0.125, width: 0.375, height: 0.5, color: '#ff8800' }));
-    add(makePrism('LeftArm', model, { x: 3.38, y: 1.5, z: 0.875, length: 0.125, width: 0.125, height: 0.5, color: '#ffcc85' }));
-    add(makePrism('RightArm', model, { x: 2.38, y: 1.5, z: 0.875, length: 0.125, width: 0.125, height: 0.5, color: '#ffcc85' }));
-    add(makeBall('Head', model, { x: 2.9, y: 2.3, z: 0.9, length: 0.25, width: 0.25, height: 0.25, color: '#ffcc85' }));
+    // Legs: one stud thick, two studs tall, side by side with the feet at 0.
+    add(makePrism('RightLeg', model, { x: X - H, y: H * 2, z: Z, length: H, width: H, height: H * 2, color: PANTS }));
+    add(makePrism('LeftLeg', model, { x: X + H, y: H * 2, z: Z, length: H, width: H, height: H * 2, color: PANTS }));
+    // Torso: two studs wide and tall, with one arm hanging from each side.
+    add(makePrism('Torso', model, { x: X, y: H * 6, z: Z, length: H, width: H * 2, height: H * 2, color: SHIRT }));
+    add(makePrism('LeftArm', model, { x: X + H * 3, y: H * 6, z: Z, length: H, width: H, height: H * 2, color: SKIN }));
+    add(makePrism('RightArm', model, { x: X - H * 3, y: H * 6, z: Z, length: H, width: H, height: H * 2, color: SKIN }));
+    // Head: a cube one and a quarter studs across, sitting on the shoulders.
+    add(makePrism('Head', model, { x: X, y: H * 9.25, z: Z, length: H * 1.25, width: H * 1.25, height: H * 1.25, color: SKIN }));
     return out;
 }
 function makePlayerScript(newIdFn) {

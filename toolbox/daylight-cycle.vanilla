@@ -1,0 +1,15 @@
+{
+  "format": "VanillaInstance",
+  "formatVersion": 1,
+  "objects": {
+    "DaylightCycle": {
+      "type": "script",
+      "name": "Daylight Cycle",
+      "parent": "scripts",
+      "scriptType": "Server",
+      "runWhen": "simulation",
+      "language": "vanillalua",
+      "source": "# Daylight Cycle: shifts the time of day smoothly, so a whole day passes in a few minutes.\n# Needs a World Settings named \"Settings\" in World, which every new world starts with.\ncall Scripts\ncall World\nget Instance\nget Scripting\n\nlocal dayMinutes = 8        # how long one whole day takes\nlocal tick = 0.1            # seconds between updates\nlocal step = 24 * tick / (dayMinutes * 60)\n\nlocal uid = Instance.GetUID(\"Settings\", World)\nlocal settings = World[uid]\nsettings.TimeOfDay = 6\n\nprint(\"Daylight Cycle running. One day takes\", dayMinutes, \"minutes.\")\n\nwhile True do\n    local hour = settings.TimeOfDay + step\n    if hour >= 24 then\n        hour = hour - 24\n    end\n    settings.TimeOfDay = hour\n    wait(tick)\nend\n"
+    }
+  }
+}

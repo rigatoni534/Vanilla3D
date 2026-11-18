@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#171a21">
+<meta name="description" content="Play Vanilla3D games in the browser. Coming later.">
+<title>Vanilla Player</title>
+<link rel="stylesheet" href="../assets/vanilla.css">
+<style>
+  /* The engine stylesheet is an app shell: this page is a plain document. */
+  html, body { height: auto; min-height: 100%; overflow: auto; }
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+
+  .pl-top {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 0 22px; height: 54px;
+    border-bottom: 1px solid var(--line);
+  }
+  .pl-brand { margin-right: auto; font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+  .pl-brand span { color: var(--accent); }
+  .pl-nav { display: flex; align-items: center; gap: 4px; }
+  .pl-nav a {
+    display: inline-flex; align-items: center; height: 30px; padding: 0 11px;
+    border: 1px solid transparent; border-radius: 7px;
+    color: var(--text-2); font-size: 12.5px; white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  .pl-nav a:hover { background: var(--hover); color: var(--text); }
+  .pl-nav a[aria-current="page"] { background: var(--accent-soft); color: var(--text); }
+
+  .pl-main { flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 620px; margin: 0 auto; padding: 48px 22px; }
+  .pl-main h1 { margin: 0 0 12px; font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+  .pl-main h1 .pl-dot { color: var(--accent); }
+  .pl-main p { margin: 0 0 12px; color: var(--text-2); font-size: 13.5px; line-height: 1.65; }
+  .pl-main a { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+  .pl-main a:hover { border-bottom-color: var(--accent); }
+  .pl-badge {
+    display: inline-flex; align-items: center; height: 22px; padding: 0 9px; margin-bottom: 18px;
+    border: 1px solid var(--line); border-radius: 99px;
+    color: var(--muted); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+  }
+  .pl-foot {
+    display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    max-width: 620px; margin: 0 auto; width: 100%; padding: 18px 22px 34px;
+    border-top: 1px solid var(--line-soft);
+    color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <header class="pl-top">
+    <a class="pl-brand" href="../index.html">Vanilla<span>3D</span></a>
+    <nav class="pl-nav" aria-label="Vanilla3D">
+      <a href="../engine/">Editor</a>
+      <a href="../language/">Language</a>
+      <a href="../toolbox/">Toolbox</a>
+      <a href="../player/" aria-current="page">Player</a>
+    </nav>
+  </header>
+
+  <main class="pl-main">
+    <span class="pl-badge">Not built yet</span>
+    <h1>Player<span class="pl-dot">.</span></h1>
+    <p>A standalone way to play Vanilla3D games in the browser, without the editor around it.</p>
+    <p>The engine cannot run playable games yet, so this page is a placeholder. When it is ready, a world you make in the editor will open here.</p>
+    <p>For now, build and play your worlds in the <a href="../engine/">editor</a>, and pick up premade scripts and models in the <a href="../toolbox/">toolbox</a>.</p>
+  </main>
+
+  <footer class="pl-foot">
+    <span>Vanilla3D</span>
+    <span>player</span>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#171a21">
+<meta name="description" content="Premade Vanillalua scripts and models for Vanilla3D, ready to add to your world.">
+<title>Vanilla Toolbox</title>
+<link rel="stylesheet" href="../assets/vanilla.css">
+<style>
+  /* The engine stylesheet is an app shell: this page scrolls like a document instead. */
+  html, body { height: auto; min-height: 100%; overflow: auto; }
+  body { display: block; }
+
+  .tb-top {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 0 22px; height: 54px;
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+  }
+  .tb-brand { margin-right: auto; font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+  .tb-brand span { color: var(--accent); }
+  .tb-nav { display: flex; align-items: center; gap: 4px; }
+  .tb-nav a {
+    display: inline-flex; align-items: center; height: 30px; padding: 0 11px;
+    border: 1px solid transparent; border-radius: 7px;
+    color: var(--text-2); font-size: 12.5px; white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  .tb-nav a:hover { background: var(--hover); color: var(--text); }
+  .tb-nav a[aria-current="page"] { background: var(--accent-soft); color: var(--text); }
+
+  .tb-main { max-width: 980px; margin: 0 auto; padding: 40px 22px 64px; }
+  .tb-main h1 { margin: 0 0 10px; font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+  .tb-main h1 .tb-dot { color: var(--accent); }
+  .tb-lede { max-width: 62ch; margin: 0 0 28px; color: var(--text-2); font-size: 13.5px; line-height: 1.6; }
+  .tb-lede b { color: var(--text); font-weight: 650; }
+
+  .tb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; }
+  .tb-card {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 16px 18px 18px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  }
+  .tb-card-top { display: flex; align-items: baseline; gap: 10px; }
+  .tb-card h2 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
+  .tb-tag {
+    margin-left: auto; padding: 2px 8px; border-radius: 99px;
+    background: var(--accent-soft); color: var(--accent);
+    font: 600 10.5px/1.6 var(--ui); letter-spacing: .04em; text-transform: uppercase;
+  }
+  .tb-card p { margin: 0; color: var(--text-2); font-size: 12.5px; line-height: 1.6; }
+  .tb-meta { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 12px; }
+  .tb-meta li { display: flex; gap: 8px; }
+  .tb-meta li::before { content: "–"; color: var(--line); }
+  .tb-card code { font-family: var(--mono); font-size: 11.5px; color: var(--text); }
+  .tb-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+  .tb-source { margin-top: 4px; }
+  .tb-source summary {
+    cursor: pointer; color: var(--text-2); font-size: 12px;
+    padding: 4px 0; list-style: none;
+  }
+  .tb-source summary::-webkit-details-marker { display: none; }
+  .tb-source summary::before { content: "▸ "; color: var(--muted); }
+  .tb-source[open] summary::before { content: "▾ "; }
+  .tb-source summary:hover { color: var(--text); }
+  .tb-source pre {
+    margin: 6px 0 0; padding: 12px 14px; max-height: 320px; overflow: auto;
+    background: var(--viewport); border: 1px solid var(--line-soft); border-radius: 9px;
+    font: 11.5px/1.55 var(--mono); color: var(--text-2);
+  }
+
+  .tb-empty {
+    padding: 22px; border: 1px dashed var(--line); border-radius: 12px;
+    color: var(--muted); font-size: 12.5px;
+  }
+  .tb-foot {
+    display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    max-width: 980px; margin: 0 auto; padding: 18px 22px 34px;
+    border-top: 1px solid var(--line-soft);
+    color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  }
+  @media (max-width: 560px) {
+    .tb-main { padding: 26px 16px 48px; }
+    .tb-main h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+  <header class="tb-top">
+    <a class="tb-brand" href="../index.html">Vanilla<span>3D</span></a>
+    <nav class="tb-nav" aria-label="Vanilla3D">
+      <a href="../engine/">Editor</a>
+      <a href="../language/">Language</a>
+      <a href="../toolbox/" aria-current="page">Toolbox</a>
+      <a href="../player/">Player</a>
+    </nav>
+  </header>
+
+  <main class="tb-main">
+    <h1>Toolbox<span class="tb-dot">.</span></h1>
+    <p class="tb-lede">
+      Premade scripts and models for your worlds. Download a file, then add it to the editor with
+      <b>File → Add .vanilla instance…</b>. Each one is added next to your own instances, so nothing you have built is
+      replaced. The format is documented under <b>Premade scripts and models</b> in the editor's guide.
+    </p>
+
+    <div class="tb-grid">
+      <article class="tb-card">
+        <div class="tb-card-top">
+          <h2>Daylight Cycle</h2>
+          <span class="tb-tag">Script</span>
+        </div>
+        <p>
+          Moves the time of day smoothly, so a whole day passes in a few minutes: sunrise, sunset, a short night and
+          back to morning. Nothing in the world has to be touched, so it works in any scene with a World Settings in it.
+        </p>
+        <ul class="tb-meta">
+          <li>Adds one Server script that runs when the simulation starts</li>
+          <li>Needs a World Settings named <code>Settings</code> in World</li>
+          <li>A full day takes 8 minutes: change <code>dayMinutes</code> to taste</li>
+        </ul>
+        <div class="tb-actions">
+          <a class="btn btn-primary" href="daylight-cycle.vanilla" download="DaylightCycle.vanilla">Download .vanilla</a>
+        </div>
+        <details class="tb-source">
+          <summary>View the script</summary>
+          <pre><code># Daylight Cycle: shifts the time of day smoothly, so a whole day passes in a few minutes.
+# Needs a World Settings named "Settings" in World, which every new world starts with.
+call Scripts
+call World
+get Instance
+get Scripting
+
+local dayMinutes = 8        # how long one whole day takes
+local tick = 0.1            # seconds between updates
+local step = 24 * tick / (dayMinutes * 60)
+
+local uid = Instance.GetUID("Settings", World)
+local settings = World[uid]
+settings.TimeOfDay = 6
+
+print("Daylight Cycle running. One day takes", dayMinutes, "minutes.")
+
+while True do
+    local hour = settings.TimeOfDay + step
+    if hour &gt;= 24 then
+        hour = hour - 24
+    end
+    settings.TimeOfDay = hour
+    wait(tick)
+end
+</code></pre>
+        </details>
+      </article>
+
+      <div class="tb-empty">
+        More premade scripts and models are on the way. Anything you add to this folder and list here works the same way.
+      </div>
+    </div>
+  </main>
+
+  <footer class="tb-foot">
+    <span>Vanilla3D</span>
+    <span>premade scripts and models</span>
+  </footer>
+</body>
+</html>

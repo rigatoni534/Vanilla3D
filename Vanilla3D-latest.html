@@ -907,6 +907,8 @@
             <div class="setting"><div><div class="setting-title">Shadows</div><div class="setting-desc">Soft sun and moon shadows. Higher quality is sharper but needs a faster graphics card.</div></div>
               <select id="set-shadows" class="sel" aria-label="Shadow quality"><option value="off">Off</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
             <label class="setting" for="opt-haze"><div><div class="setting-title">Atmospheric haze</div><div class="setting-desc">Distant objects fade into the color of the sky, so far edges blend into the horizon.</div></div><input type="checkbox" id="opt-haze" class="switch"></label>
+            <div class="setting"><div><div class="setting-title">Render distance</div><div class="setting-desc">How far away shapes are drawn. Off draws everything. Anything past the distance fades into the sky color and is skipped, which is faster on large worlds.</div></div>
+              <select id="set-renderdist" class="sel" aria-label="Render distance"><option value="0">Off</option><option value="40">40 Vm</option><option value="60">60 Vm</option><option value="80">80 Vm</option><option value="120">120 Vm</option><option value="160">160 Vm</option><option value="250">250 Vm</option><option value="400">400 Vm</option></select></div>
             <div class="set-sub">Interface in the viewport</div>
             <label class="setting" for="opt-axes"><div><div class="setting-title">Show origin marker</div><div class="setting-desc">The red, green and blue lines at 0, 0, 0.</div></div><input type="checkbox" id="opt-axes" class="switch"></label>
             <div class="setting"><div><div class="setting-title">Origin marker length</div><div class="setting-desc">How far the lines reach each way, from 0.1 to 100 Vm (Vanillameters, the engine's meters).</div></div>
@@ -1037,6 +1039,7 @@
           <tr><td>Lighting style</td><td>Enhanced uses sky light, sun highlights and shadows that follow the World Settings time of day. Classic is the earlier flat shading.</td></tr>
           <tr><td>Shadows</td><td>Off, Low, Medium or High. Shadows are soft, follow the sun by day and the moon by night, and stay sharp around where you are looking.</td></tr>
           <tr><td>Atmospheric haze</td><td>Fades distant objects into the sky color. Only applies to Enhanced lighting.</td></tr>
+          <tr><td>Render distance</td><td>Off draws the whole world. Otherwise 40 to 400 Vm: shapes past the distance fade into the sky color and are no longer drawn.</td></tr>
           <tr><td>Show origin marker</td><td>Turns the red, green and blue lines at the origin on or off.</td></tr>
           <tr><td>Origin marker length</td><td>How far the origin lines reach each way, from 0.1 to 100 Vm (Vanillameters). Ticks spread out to match.</td></tr>
           <tr><td>Show view cube</td><td>Shows or hides the orientation cube in the top right of the viewport.</td></tr>
@@ -2591,7 +2594,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
         // Camera control settings (saved in this browser)
         let FOV = 450;
-        const defaultSettings = () => ({ leftDrag: true, rightClick: false, gizmoOffset: 0.5, rotOffset: 45, camSpeed: 0.1, axisLength: 8, lookSens: 1, invertY: false, fov: 75, lighting: 'enhanced', shadows: 'medium', haze: true, showAxes: true, showViewfinder: true, hintMode: 'auto', showStatus: true, seFont: 13, autosave: 0, accent: 'vanilla', light: false, showUid: false, syntax: true, defaultNames: {}, preinclude: {} });
+        const defaultSettings = () => ({ leftDrag: true, rightClick: false, gizmoOffset: 0.5, rotOffset: 45, camSpeed: 0.1, axisLength: 8, lookSens: 1, invertY: false, fov: 75, lighting: 'enhanced', shadows: 'medium', haze: true, renderDistance: 0, showAxes: true, showViewfinder: true, hintMode: 'auto', showStatus: true, seFont: 13, autosave: 0, accent: 'vanilla', light: false, showUid: false, syntax: true, defaultNames: {}, preinclude: {} });
         const settings = defaultSettings();
         let autosaveTimer = null, autosaveMins = -1, autosaveBase = '';
         // Accent colors: each preset has a dark-theme and a light-theme shade.
@@ -2649,6 +2652,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             document.getElementById('set-shadows').disabled = settings.lighting === 'classic';
             document.getElementById('opt-haze').checked = settings.haze !== false;
             document.getElementById('opt-haze').disabled = settings.lighting === 'classic';
+            settings.renderDistance = pick(settings.renderDistance, [0, 40, 60, 80, 120, 160, 250, 400], 0);
+            document.getElementById('set-renderdist').value = String(settings.renderDistance);
             isLightMode = !!settings.light;
             document.body.classList.toggle('light-theme', isLightMode);
             document.getElementById('theme-toggle').checked = isLightMode;
@@ -2704,6 +2709,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const bindChk = (id, key) => document.getElementById(id).addEventListener('change', (e) => { settings[key] = e.target.checked; saveSettings(); });
         bindSel('set-looksens', 'lookSens', parseFloat); bindSel('set-hint', 'hintMode', v => v); bindSel('set-sefont', 'seFont', Number); bindSel('set-autosave', 'autosave', Number);
         bindSel('set-lighting', 'lighting', v => v); bindSel('set-shadows', 'shadows', v => v); bindChk('opt-haze', 'haze');
+        bindSel('set-renderdist', 'renderDistance', Number);
         bindChk('opt-inverty', 'invertY'); bindChk('opt-axes', 'showAxes'); bindChk('opt-viewcube', 'showViewfinder'); bindChk('opt-status', 'showStatus');
         document.getElementById('set-fov').addEventListener('input', (e) => { settings.fov = parseInt(e.target.value, 10); saveSettings(); });
         // Accent color: preset swatches, a custom picker, a hex box and a reset button
@@ -4024,6 +4030,18 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function applyLighting(hexColor, brightness) {
             return `rgb(${shadeRGB(hexColor, brightness).map(v => Math.round(v * 255)).join(', ')})`;
         }
+        // Fog: the haze thickens with distance, and a render distance fades a shape into the sky completely by its
+        // edge, so the distance it stops being drawn at is never visible as a hard line.
+        function fogAmount(dist) {
+            const far = settings.renderDistance > 0 ? settings.renderDistance : 0;
+            let f = settings.haze !== false && settings.lighting !== 'classic'
+                ? Math.min(0.9, 1 - Math.exp(-Math.pow(dist * 0.0035, 2))) : 0;
+            if (far > 0) f = Math.max(f, smooth(far * 0.5, far, dist));
+            return f;
+        }
+        const shadedCss = (hex, brightness, fog = 0) => fog > 0.002
+            ? rgbStr(mixRGB(shadeRGB(hex, brightness).map(v => v * 255), sky.hor, fog))
+            : applyLighting(hex, brightness);
 
         // ───────── Viewfinder ─────────
         function renderViewfinder() {
@@ -4465,7 +4483,7 @@ uniform float uEdgeAlpha, uEdgeW;
 uniform int uWire;
 uniform int uMode;                // 0 classic, 1 enhanced
 uniform vec3 uSunDir, uSunCol, uSkyCol, uGndCol, uHazeCol;
-uniform float uHaze, uShStr, uSpec;
+uniform float uHaze, uFogFar, uShStr, uSpec;
 uniform int uShadowOn;
 uniform highp sampler2DShadow uSh0;
 uniform highp sampler2DShadow uSh1;
@@ -4522,6 +4540,13 @@ float sunShadow(vec3 wp, vec3 N) {
     if (w0 < 1.0) s1 = cascadeShadow(uSh1, uLVP1, wp, N, uShInfo.z, uShInfo.w, uShSize.y, ang, w1);
     return mix(mix(1.0, s1, w1), s0, w0);
 }
+// Distance fade: the haze thickens with distance, and a render distance fades a shape into the sky completely by its
+// edge, so the distance it stops being drawn at is never visible as a hard line.
+float viewFog(vec3 wp) {
+    float d = length(uCam - wp);
+    float f = uHaze > 0.0 ? min(0.9, 1.0 - exp(-pow(d * uHaze, 2.0))) : 0.0;
+    return uFogFar > 0.0 ? max(f, smoothstep(uFogFar * 0.5, uFogFar, d)) : f;
+}
 void main() {
     vec2 d = (1.0 - abs(vUV)) / max(fwidth(vUV), vec2(1e-6));
     float line = 1.0 - smoothstep(uEdgeW - 0.75, uEdgeW + 0.75, min(d.x, d.y));
@@ -4529,7 +4554,7 @@ void main() {
     vec3 base = uColors[fi];
     if (uWire != 0) {
         if (line < 0.02) discard;
-        vec3 c = uWire == 2 ? base : uEdgeColor;
+        vec3 c = mix(uWire == 2 ? base : uEdgeColor, uHazeCol, viewFog(vW));
         o = vec4(c * line, line);
         return;
     }
@@ -4551,9 +4576,9 @@ void main() {
         vec3 H = normalize(uSunDir + V);
         col += uSunCol * pow(max(dot(N, H), 0.0), 64.0) * step(0.0, ndl) * sh * uSpec;
         col += uSkyCol * pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.1;
-        float fog = uHaze > 0.0 ? min(0.9, 1.0 - exp(-pow(length(uCam - vW) * uHaze, 2.0))) : 0.0;
-        lit = toSRGB(mix(col, uHazeCol, fog));
+        lit = toSRGB(col);
     }
+    lit = mix(lit, uHazeCol, viewFog(vW));
     o = vec4(mix(lit, uEdgeColor, line * uEdgeAlpha), 1.0);
 }`;
         const BALL_VS = `
@@ -4593,7 +4618,7 @@ int domFace(vec3 p) {
 void main() {
     vec3 N = normalize(vN), L = normalize(vLoc), V = normalize(uCam - vW);
     int fi = domFace(L);
-    if (uWire != 0) { o = vec4(uWire == 2 ? uFaceCols[fi] : uEdgeColor, 1.0); return; }
+    if (uWire != 0) { o = vec4(mix(uWire == 2 ? uFaceCols[fi] : uEdgeColor, uHazeCol, viewFog(vW)), 1.0); return; }
     vec3 alb = uBase;
     if (uFaceCol != 0) alb = uFaceCols[fi];
     vec3 lit;
@@ -4608,9 +4633,9 @@ void main() {
         vec3 H = normalize(uSunDir + V);
         col += uSunCol * pow(max(dot(N, H), 0.0), 72.0) * step(0.0, ndl) * sh * uSpec * 1.6;
         col += uSkyCol * pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.1;
-        float fog = uHaze > 0.0 ? min(0.9, 1.0 - exp(-pow(length(uCam - vW) * uHaze, 2.0))) : 0.0;
-        lit = toSRGB(mix(col, uHazeCol, fog));
+        lit = toSRGB(col);
     }
+    lit = mix(lit, uHazeCol, viewFog(vW));
     float rim = 1.0 - max(dot(N, V), 0.0);
     lit = mix(lit, uEdgeColor, uSel * smoothstep(0.8, 0.94, rim));
     o = vec4(lit, 1.0);
@@ -4857,7 +4882,7 @@ void main() { o = texture(uTex, vT); }`;
         }
 
         // Uniforms shared by the prism and mesh programs, which use the same fragment shader.
-        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize'];
+        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize'];
 
         // ── Meshes for the shapes a box cannot describe ──
         // Vertices are position (3), normal (3), edge UV (2) and face index (1) in the same -1..1 space as a box, so Size
@@ -4928,7 +4953,7 @@ void main() { o = texture(uTex, vT); }`;
                 };
                 mesh.wedge = meshVao(wedgeMesh());
                 mesh.cylinder = meshVao(cylinderMesh(48));
-                const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
+                const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
                 // unit sphere (32 x 20), shared by every ball: one triangle list and one wireframe list
                 const SEG = 32, RING = 20, sv = [], tri = [], lin = [];
                 for (let i = 0; i <= RING; i++) for (let j = 0; j <= SEG; j++) {
@@ -5060,11 +5085,14 @@ void main() { o = texture(uTex, vT); }`;
             // screen. It is a bounding-sphere test against the four side planes of the view, so nothing visible is
             // dropped; the shadow pass still gets the full lists, because off-screen shapes cast shadows into view.
             const tanX = width / (2 * FOV), tanY = height / (2 * FOV);
+            const fogFar = settings.renderDistance > 0 ? settings.renderDistance : 0;
             const onScreen = (o) => {
                 const dx = o.x - cam[0], dy = o.y - cam[1], dz = o.z - cam[2];
                 const d = dx * fwdX + dy * fwdY + dz * fwdZ;
                 const r = Math.sqrt(o.width * o.width + o.height * o.height + o.length * o.length);
                 if (d < -r) return false;
+                // Past the render distance the fog has already turned it into sky, so the draw can be skipped.
+                if (fogFar > 0 && Math.sqrt(dx * dx + dy * dy + dz * dz) - r > fogFar) return false;
                 const span = d + r;
                 if (span <= 0) return false;
                 if (Math.abs(dx * rgtX + dz * rgtZ) > tanX * span + r) return false;
@@ -5090,6 +5118,7 @@ void main() { o = texture(uTex, vT); }`;
                 gl.uniform3f(P.u.uSunDir, Ldir.x, Ldir.y, Ldir.z);
                 gl.uniform3fv(P.u.uSunCol, lt.sun); gl.uniform3fv(P.u.uSkyCol, lt.sky); gl.uniform3fv(P.u.uGndCol, lt.gnd); gl.uniform3fv(P.u.uHazeCol, lt.haze);
                 gl.uniform1f(P.u.uHaze, enhanced && settings.haze !== false ? 0.0035 : 0);
+                gl.uniform1f(P.u.uFogFar, fogFar);
                 gl.uniform1f(P.u.uSpec, lt.spec); gl.uniform1f(P.u.uShStr, shStr);
                 gl.uniform1i(P.u.uShadowOn, shadowSet ? 1 : 0);
                 const sm = shadowSet && GL.sm;
@@ -5400,7 +5429,9 @@ void main() { o = texture(uTex, vT); }`;
                     // sunlight / moonlight comes from the sky, so faces light up depending on the time of day
                     const diffuse = Math.max(0, (Rf[0] * face.normal.x + Rf[1] * face.normal.y + Rf[2] * face.normal.z) * sky.lightWorld.x + (Rf[3] * face.normal.x + Rf[4] * face.normal.y + Rf[5] * face.normal.z) * sky.lightWorld.y + (Rf[6] * face.normal.x + Rf[7] * face.normal.y + Rf[8] * face.normal.z) * sky.lightWorld.z);
                     const intensity = sky.ambient + (1 - sky.ambient) * diffuse * sky.lightStrength;
-                    const shaded = applyLighting(obj.faceColoring ? face.color : prismColor(obj), intensity);
+                    const fog = fogAmount(Math.hypot(cx3, cy3, cz3));
+                    if (fog > 0.995) continue;   // past the render distance: nothing of this face is left to see
+                    const shaded = shadedCss(obj.faceColoring ? face.color : prismColor(obj), intensity, fog);
                     const rightT = rotateVector(face.right), upT = rotateVector(face.up);
                     const scaleC = FOV / cz3;
                     const cx2d = cx3 * scaleC + cx, cy2d = cy3 * scaleC + cy;
@@ -5452,12 +5483,12 @@ void main() { o = texture(uTex, vT); }`;
             }
 
             // balls: shaded circles, farthest first (this simple renderer has no depth buffer)
-            const bl = balls.map(([id, o]) => ({ id, o, p: transformPoint(new Vec3(o.x, o.y, o.z)) })).filter(b => b.p.z > 0.1).sort((a, b) => b.p.z - a.p.z);
-            for (const { id, o, p } of bl) {
+            const bl = balls.map(([id, o]) => ({ id, o, p: transformPoint(new Vec3(o.x, o.y, o.z)), fog: fogAmount(Math.hypot(o.x - camPosX, o.y - camPosY, o.z - camPosZ)) })).filter(b => b.p.z > 0.1 && b.fog < 0.995).sort((a, b) => b.p.z - a.p.z);
+            for (const { id, o, p, fog } of bl) {
                 const sc = FOV / p.z, r = Math.max(1, ballRadius(o) * sc), x = p.x * sc + cx, y = p.y * sc + cy;
                 const lit = sky.ambient + (1 - sky.ambient) * 0.6 * sky.lightStrength, col = o.faceColoring ? '#a855f7' : prismColor(o);
                 const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
-                g.addColorStop(0, applyLighting(col, Math.min(1, lit + 0.4))); g.addColorStop(1, applyLighting(col, lit * 0.35));
+                g.addColorStop(0, shadedCss(col, Math.min(1, lit + 0.4), fog)); g.addColorStop(1, shadedCss(col, lit * 0.35, fog));
                 ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
                 ctx.fillStyle = g; ctx.fill();
                 ctx.lineWidth = id === selectedObjectId ? 3 : 1; ctx.strokeStyle = id === selectedObjectId ? accentCol : 'rgba(0, 0, 0, 0.4)'; ctx.stroke();

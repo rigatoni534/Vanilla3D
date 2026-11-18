@@ -711,16 +711,20 @@
         <button id="file-btn" class="btn" type="button" aria-haspopup="menu" aria-expanded="false" title="Save, open or start a Vanilla World">File <span aria-hidden="true">▾</span></button>
         <div id="file-menu" class="menu file-menu" role="menu" aria-label="File" hidden>
           <div class="menu-title">Save</div>
-          <button class="menu-item" role="menuitem" data-file-act="save-browser"><svg class="ic"><use href="#i-save"/></svg>Save in browser<span class="menu-meta">Ctrl S</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="save-autosave"><svg class="ic"><use href="#i-save"/></svg>Autosave<span class="menu-meta" data-slot="autosave">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="save-slot1"><svg class="ic"><use href="#i-save"/></svg>Browser Slot 1<span class="menu-meta" data-slot="slot1">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="save-slot2"><svg class="ic"><use href="#i-save"/></svg>Browser Slot 2<span class="menu-meta" data-slot="slot2">empty</span></button>
           <button class="menu-item" role="menuitem" data-file-act="save-file"><svg class="ic"><use href="#i-download"/></svg>Download as .vnw<span class="menu-meta">Ctrl Shift S</span></button>
           <div class="menu-separator"></div>
           <div class="menu-title">Open</div>
-          <button class="menu-item" role="menuitem" data-file-act="import-browser"><svg class="ic"><use href="#i-folder"/></svg>Open browser save</button>
-          <button class="menu-item" role="menuitem" data-file-act="import-file"><svg class="ic"><use href="#i-upload"/></svg>Open .vnw file…</button>
+          <button class="menu-item" role="menuitem" data-file-act="open-autosave"><svg class="ic"><use href="#i-folder"/></svg>Autosave<span class="menu-meta" data-slot="autosave">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="open-slot1"><svg class="ic"><use href="#i-folder"/></svg>Browser Slot 1<span class="menu-meta" data-slot="slot1">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="open-slot2"><svg class="ic"><use href="#i-folder"/></svg>Browser Slot 2<span class="menu-meta" data-slot="slot2">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="open-file"><svg class="ic"><use href="#i-upload"/></svg>Open .vnw file…</button>
           <div class="menu-separator"></div>
           <button class="menu-item danger" role="menuitem" data-file-act="new-world"><svg class="ic"><use href="#i-plus"/></svg>New empty world</button>
           <button class="menu-item" role="menuitem" data-file-act="docs"><svg class="ic"><use href="#i-book"/></svg>Documentation</button>
-          <div class="fm-foot" id="file-status">No browser save yet</div>
+          <div class="fm-foot" id="file-status">No saves yet</div>
         </div>
       </div>
       <button id="version-btn" class="btn" title="Version info"><svg class="ic"><use href="#i-info"/></svg><span class="label">Version</span></button>
@@ -857,6 +861,20 @@
     </div>
   </div>
 
+  <div id="modal-update" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mu-title">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 class="modal-title" id="mu-title">An update is available</h2>
+        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <p id="mu-ver"></p>
+        <p class="set-note">Reloading saves this world to Autosave first, opens the new version and puts your world back.</p>
+        <div class="cf-actions"><button class="btn cf-btn" data-close type="button">Not now</button><button class="btn btn-primary cf-btn" id="mu-reload" type="button">Save and reload</button></div>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-settings" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ms-title">
     <div class="modal-card settings-card">
       <div class="modal-head">
@@ -889,8 +907,29 @@
               <label for="dn-worldsettings">World Settings</label><input class="text" id="dn-worldsettings" maxlength="24" placeholder="Settings">
             </div>
             <div class="set-sub">Saving</div>
-            <div class="setting"><div><div class="setting-title">Autosave to this browser</div><div class="setting-desc">Updates the browser save after you change something. It never saves an untouched world and pauses while a simulation runs.</div></div>
-              <select id="set-autosave" class="sel" aria-label="Autosave"><option value="0">Off</option><option value="1">Every minute</option><option value="2">Every 2 minutes</option><option value="5">Every 5 minutes</option><option value="10">Every 10 minutes</option></select></div>
+            <div class="setting"><div><div class="setting-title">Autosave to this browser</div><div class="setting-desc">Writes the Autosave slot after you change something, and always saves when the tab closes. It never saves an untouched world and pauses while a simulation runs.</div></div>
+              <select id="set-autosave" class="sel" aria-label="Autosave"><option value="0">Off</option><option value="1">Every minute</option><option value="2">Every 2 minutes</option><option value="3">Every 3 minutes</option><option value="5">Every 5 minutes</option><option value="10">Every 10 minutes</option></select></div>
+            <div class="setting-desc set-note">Browser saves have three slots: Autosave, Browser Slot 1 and Browser Slot 2. Any other save is a .vnw file you download.</div>
+            <div class="set-sub">What gets saved</div>
+            <div class="setting-desc set-note">Applies to every save, autosave and download. Unticked spaces and instance types are left out of the file.</div>
+            <label class="setting" for="sv-world"><div><div class="setting-title">World</div><div class="setting-desc">Blocks, models and everything placed in World.</div></div><input type="checkbox" id="sv-world" class="switch"></label>
+            <label class="setting" for="sv-storage"><div><div class="setting-title">Storage</div><div class="setting-desc">Templates kept in Storage, such as DefaultPlayer.</div></div><input type="checkbox" id="sv-storage" class="switch"></label>
+            <label class="setting" for="sv-scripts"><div><div class="setting-title">Scripts</div><div class="setting-desc">The Scripts space, including every script's source.</div></div><input type="checkbox" id="sv-scripts" class="switch"></label>
+            <div class="set-sub">Instance types</div>
+            <div class="name-grid">
+              <label for="sv-prism6">Blocks</label><input type="checkbox" id="sv-prism6" class="switch">
+              <label for="sv-ball">Balls</label><input type="checkbox" id="sv-ball" class="switch">
+              <label for="sv-wedge">Wedges</label><input type="checkbox" id="sv-wedge" class="switch">
+              <label for="sv-cylinder">Cylinders</label><input type="checkbox" id="sv-cylinder" class="switch">
+              <label for="sv-union">Unions</label><input type="checkbox" id="sv-union" class="switch">
+              <label for="sv-model">Models</label><input type="checkbox" id="sv-model" class="switch">
+              <label for="sv-human">Humans</label><input type="checkbox" id="sv-human" class="switch">
+              <label for="sv-script">Script instances</label><input type="checkbox" id="sv-script" class="switch">
+              <label for="sv-worldsettings">World Settings</label><input type="checkbox" id="sv-worldsettings" class="switch">
+              <label for="sv-texture">Textures</label><input type="checkbox" id="sv-texture" class="switch">
+              <label for="sv-sound">Sounds</label><input type="checkbox" id="sv-sound" class="switch">
+              <label for="sv-highlight">Highlights</label><input type="checkbox" id="sv-highlight" class="switch">
+            </div>
             <div class="set-sub">Reset</div>
             <div class="setting"><div><div class="setting-title">Reset all settings</div><div class="setting-desc">Puts every setting back to its default. Your world is not changed.</div></div><button class="btn btn-outline" id="reset-settings" type="button">Reset settings</button></div>
           </section>
@@ -957,7 +996,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.0.0.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.1.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of three <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -993,11 +1032,12 @@
         </tbody></table>
         <p>There is no invisible ground at <code>y = 0</code>. Objects fall until they land on something solid or pass the kill layer.</p>
         <h3 data-group="Editor guide">File menu and .vnw files</h3>
-        <p>The <b>File</b> menu in the top bar saves and opens whole worlds. A world file (<code>.vnw</code>) is plain JSON holding everything in World, Storage and Scripts, including script source. Engine-owned objects such as the Viewfinder are not saved.</p>
+        <p>The <b>File</b> menu in the top bar saves and opens whole worlds. This browser keeps three saves: <b>Autosave</b>, <b>Browser Slot 1</b> and <b>Browser Slot 2</b>. Any other save is a <code>.vnw</code> file on your computer. A world file is plain JSON holding everything in World, Storage and Scripts, including script source. Engine-owned objects such as the Viewfinder are not saved.</p>
+        <p>The page checks every 30 seconds whether a newer version of the engine or of Vanillalua has been published. If one has, a prompt offers to save and reload; your world is saved to Autosave first and opened again in the new version.</p>
         <table class="docs-table"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
-          <tr><td>Save in browser <span class="kbd">Ctrl S</span></td><td>Keeps one save in this browser's local storage. Saving again overwrites it.</td></tr>
-          <tr><td>Download as .vnw <span class="kbd">Ctrl Shift S</span></td><td>Downloads <code>World.vnw</code> to share or back up.</td></tr>
-          <tr><td>Open browser save</td><td>Replaces the current world with your browser save.</td></tr>
+          <tr><td>Save to Autosave, Browser Slot 1 or 2 <span class="kbd">Ctrl S</span></td><td>Writes that slot in this browser's local storage. Saving again overwrites only that slot. Ctrl S writes Autosave.</td></tr>
+          <tr><td>Download as .vnw <span class="kbd">Ctrl Shift S</span></td><td>Downloads <code>World.vnw</code> to share or back up. Anything that is not one of the three browser slots is a file like this.</td></tr>
+          <tr><td>Open Autosave, Browser Slot 1 or 2</td><td>Replaces the current world with that slot. Empty slots are greyed out.</td></tr>
           <tr><td>Open .vnw file…</td><td>Replaces the current world with a file you choose. Invalid files are rejected with a message and nothing changes.</td></tr>
           <tr><td>New empty world</td><td>Clears World, Storage and Scripts, leaving one World Settings.</td></tr>
         </tbody></table>
@@ -1032,7 +1072,8 @@
         <table class="docs-table"><thead><tr><th>Setting</th><th>What it does</th></tr></thead><tbody>
           <tr><td>Camera move method</td><td>Choose whether dragging with the left button or the right button turns the camera.</td></tr>
           <tr><td>Camera speed</td><td>How fast W, A, S and D move the camera: Slow, Normal, Fast, Very fast or Turbo. Normal is the default.</td></tr>
-          <tr><td>Autosave to this browser</td><td>Off, or every 1, 2, 5 or 10 minutes. It only updates the browser save when your world has changed, and it waits while a simulation runs.</td></tr>
+          <tr><td>Autosave to this browser</td><td>Off, or every 1, 2, 3, 5 or 10 minutes; every 3 minutes by default. It also saves when the tab closes. It only updates the Autosave slot when your world has changed, and it waits while a simulation runs.</td></tr>
+          <tr><td>What gets saved</td><td>Choose whether World, Storage and Scripts are saved, and whether each instance type is saved. Everything is included by default.</td></tr>
           <tr><td>Look sensitivity</td><td>How far the view turns for each mouse movement, from Very slow to Very fast.</td></tr>
           <tr><td>Invert vertical look</td><td>Flips the up and down direction of looking around.</td></tr>
           <tr><td>Field of view</td><td>40 to 110 degrees. Higher shows more of the world. The default is 75.</td></tr>
@@ -1348,7 +1389,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
   <script src="https://rigatoni534.github.io/Vanilla3D/vanillalua.js"></script>
   <script>
-        const ENGINE_VERSION = '3.0.0.0';
+        const ENGINE_VERSION = '3.1.0.0';
         const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
@@ -2594,7 +2635,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
         // Camera control settings (saved in this browser)
         let FOV = 450;
-        const defaultSettings = () => ({ leftDrag: true, rightClick: false, gizmoOffset: 0.5, rotOffset: 45, camSpeed: 0.1, axisLength: 8, lookSens: 1, invertY: false, fov: 75, lighting: 'enhanced', shadows: 'medium', haze: true, renderDistance: 0, showAxes: true, showViewfinder: true, hintMode: 'auto', showStatus: true, seFont: 13, autosave: 0, accent: 'vanilla', light: false, showUid: false, syntax: true, defaultNames: {}, preinclude: {} });
+        const defaultSettings = () => ({ leftDrag: true, rightClick: false, gizmoOffset: 0.5, rotOffset: 45, camSpeed: 0.1, axisLength: 8, lookSens: 1, invertY: false, fov: 75, lighting: 'enhanced', shadows: 'medium', haze: true, renderDistance: 0, showAxes: true, showViewfinder: true, hintMode: 'auto', showStatus: true, seFont: 13, autosave: 3, saveWhat: {}, accent: 'vanilla', light: false, showUid: false, syntax: true, defaultNames: {}, preinclude: {} });
         const settings = defaultSettings();
         let autosaveTimer = null, autosaveMins = -1, autosaveBase = '';
         // Accent colors: each preset has a dark-theme and a light-theme shade.
@@ -2642,7 +2683,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             const pick = (v, list, d) => list.includes(+v) ? +v : d;
             settings.lookSens = pick(settings.lookSens, [0.5, 0.75, 1, 1.5, 2], 1);
             settings.seFont = pick(settings.seFont, [12, 13, 15, 17], 13);
-            settings.autosave = pick(settings.autosave, [0, 1, 2, 5, 10], 0);
+            settings.autosave = pick(settings.autosave, [0, 1, 2, 3, 5, 10], 3);
             settings.fov = Math.round(Math.min(110, Math.max(40, Number.isFinite(parseFloat(settings.fov)) ? parseFloat(settings.fov) : 75)));
             if (!['auto', 'always', 'never'].includes(settings.hintMode)) settings.hintMode = 'auto';
             if (!['enhanced', 'classic'].includes(settings.lighting)) settings.lighting = 'enhanced';
@@ -2687,6 +2728,12 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             if (document.getElementById('set-camspeed').value !== String(settings.camSpeed)) document.getElementById('set-camspeed').value = '0.1';
             settings.axisLength = clampAxis(settings.axisLength);
             { const ax = document.getElementById('set-axislen'); if (ax !== document.activeElement) ax.value = settings.axisLength; }
+            // What gets saved: normalise to a plan, then show it in the settings panel.
+            { const w = settings.saveWhat && typeof settings.saveWhat === 'object' ? settings.saveWhat : {};
+              const types = w.types && typeof w.types === 'object' ? w.types : {};
+              settings.saveWhat = { types: {} };
+              for (const [id] of SAVED_SPACES) { settings.saveWhat[id] = w[id] !== false; document.getElementById('sv-' + id).checked = settings.saveWhat[id]; }
+              for (const [t] of SAVED_TYPES) { settings.saveWhat.types[t] = types[t] !== false; document.getElementById('sv-' + t).checked = settings.saveWhat.types[t]; } }
             document.getElementById('opt-uid').checked = !!settings.showUid;
             document.getElementById('opt-syntax').checked = settings.syntax !== false;
             ['prism6', 'ball', 'model', 'human', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el && el !== document.activeElement) el.value = dn(t); });
@@ -2738,12 +2785,22 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function setupAutosave() {
             clearInterval(autosaveTimer); autosaveTimer = null;
             if (!(settings.autosave > 0)) return;
-            try { autosaveBase = JSON.stringify(buildWorldFile()); } catch (e) { autosaveBase = ''; }
-            autosaveTimer = setInterval(() => {
-                if (simulationRunning) return;
-                try { const now = JSON.stringify(buildWorldFile()); if (now === autosaveBase) return; localStorage.setItem(VN_WORLD_SAVE_KEY, now); autosaveBase = now; } catch (e) {}
-            }, settings.autosave * 60000);
+            autosaveTimer = setInterval(() => autosaveNow(), settings.autosave * 60000);
         }
+        // Writes the Autosave slot when the world has changed since the last autosave. The timer, the tab closing and
+        // the reload button on the update prompt all come through here.
+        function autosaveNow() {
+            if (simulationRunning) return false;             // a running simulation is a snapshot, not the saved world
+            let json; try { json = JSON.stringify(buildWorldFile()); } catch (e) { return false; }
+            if (!json || json === autosaveBase) return false;
+            if (!writeSlot('autosave', json)) return false;
+            autosaveBase = json;
+            if (!fileMenu.hidden) refreshFileStatus();
+            return true;
+        }
+        const saveOnExit = () => { try { autosaveNow(); } catch (e) {} };
+        window.addEventListener('pagehide', saveOnExit);
+        window.addEventListener('beforeunload', saveOnExit);
         document.getElementById('opt-uid').addEventListener('change', (e) => { settings.showUid = e.target.checked; saveSettings(); renderExplorer(); });
         document.getElementById('opt-syntax').addEventListener('change', (e) => { settings.syntax = e.target.checked; saveSettings(); reCheckEditor(); });
         ['prism6', 'ball', 'model', 'human', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el) el.addEventListener('change', () => { const v = el.value.trim().slice(0, 24); if (v) settings.defaultNames[t] = v; else delete settings.defaultNames[t]; el.value = dn(t); saveSettings(); }); });
@@ -2860,7 +2917,22 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         document.getElementById('status-version').textContent = 'v' + ENGINE_VERSION;
 
         // ───────── Vanilla World (.vnw) save/import ─────────
-        const VN_WORLD_SAVE_KEY = 'vanilla-engine-world-save-v1';
+        const VN_WORLD_SAVE_KEY = 'vanilla-engine-world-save-v1';   // the one browser save from before save slots
+        // Browser saves: an autosave plus two slots you save into by hand. Anything else is a .vnw file on your computer.
+        const SAVE_SLOTS = [
+            { id: 'autosave', label: 'Autosave', key: 'vanilla-engine-slot-autosave-v1' },
+            { id: 'slot1', label: 'Browser Slot 1', key: 'vanilla-engine-slot-1-v1' },
+            { id: 'slot2', label: 'Browser Slot 2', key: 'vanilla-engine-slot-2-v1' },
+        ];
+        const slotOf = (id) => SAVE_SLOTS.find(s => s.id === id) || null;
+        const VN_RELOAD_RESTORE_KEY = 'vanilla-engine-reload-restore';
+        // What a save can include. Settings > What gets saved switches these off one by one.
+        const SAVED_SPACES = [['world', 'World'], ['storage', 'Storage'], ['scripts', 'Scripts']];
+        const SAVED_TYPES = [['prism6', 'Blocks'], ['ball', 'Balls'], ['wedge', 'Wedges'], ['cylinder', 'Cylinders'], ['union', 'Unions'], ['model', 'Models'], ['human', 'Humans'], ['script', 'Script instances'], ['worldsettings', 'World Settings'], ['texture', 'Textures'], ['sound', 'Sounds'], ['highlight', 'Highlights']];
+        for (const [id] of SAVED_SPACES) document.getElementById('sv-' + id).addEventListener('change', (e) => { settings.saveWhat[id] = e.target.checked; saveSettings(); });
+        for (const [t] of SAVED_TYPES) document.getElementById('sv-' + t).addEventListener('change', (e) => { settings.saveWhat.types[t] = e.target.checked; saveSettings(); });
+        // The single browser save older versions wrote becomes Browser Slot 1, so nothing is lost.
+        try { const legacy = localStorage.getItem(VN_WORLD_SAVE_KEY); if (legacy && !localStorage.getItem(SAVE_SLOTS[1].key)) localStorage.setItem(SAVE_SLOTS[1].key, legacy); } catch (e) {}
         const fileBtn = document.getElementById('file-btn');
         const fileMenu = document.getElementById('file-menu');
         const fileStatus = document.getElementById('file-status');
@@ -2933,12 +3005,23 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 ov.classList.add('active'); no.focus();
             });
         }
-        function readBrowserSave() { try { return JSON.parse(localStorage.getItem(VN_WORLD_SAVE_KEY) || 'null'); } catch (e) { return null; } }
+        function readSlot(id) { const s = slotOf(id); if (!s) return null; try { return JSON.parse(localStorage.getItem(s.key) || 'null'); } catch (e) { return null; } }
+        function writeSlot(id, json) { const s = slotOf(id); if (!s) return false; try { localStorage.setItem(s.key, json); return true; } catch (e) { return false; } }
+        function slotTime(id) {
+            const saved = readSlot(id);
+            if (!saved || !saved.savedAt) return '';
+            const d = new Date(saved.savedAt);
+            return Number.isNaN(d.getTime()) ? '' : d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
         function refreshFileStatus() {
-            const saved = readBrowserSave();
-            const importBtn = fileMenu.querySelector('[data-file-act="import-browser"]');
-            importBtn.disabled = !saved;
-            fileStatus.textContent = saved && saved.savedAt ? 'Browser save: ' + new Date(saved.savedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'No browser save yet';
+            const stamps = [];
+            for (const s of SAVE_SLOTS) {
+                const saved = readSlot(s.id), when = slotTime(s.id);
+                fileMenu.querySelectorAll('[data-slot="' + s.id + '"]').forEach(el => el.textContent = when || 'empty');
+                fileMenu.querySelectorAll('[data-file-act="open-' + s.id + '"]').forEach(el => el.disabled = !saved);
+                stamps.push(s.label + ': ' + (when || 'empty'));
+            }
+            fileStatus.textContent = stamps.join('  ·  ');
         }
         function toggleFileMenu(force) {
             const show = typeof force === 'boolean' ? force : fileMenu.hidden;
@@ -2947,9 +3030,33 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             fileBtn.setAttribute('aria-expanded', String(show));
             if (show) fileMenu.querySelector('.menu-item:not(:disabled)').focus();
         }
+        // Which spaces and instance types a save takes, from Settings > What gets saved.
+        function saveIncludes() {
+            const w = settings.saveWhat && typeof settings.saveWhat === 'object' ? settings.saveWhat : {};
+            const types = w.types && typeof w.types === 'object' ? w.types : {};
+            const spaces = {}, keepTypes = {};
+            for (const [id] of SAVED_SPACES) spaces[id] = w[id] !== false;
+            for (const [t] of SAVED_TYPES) keepTypes[t] = types[t] !== false;
+            return { spaces, types: keepTypes };
+        }
         function buildWorldFile() {
-            const objects = {};
-            for (const [uid, obj] of Object.entries(sceneObjects)) if (SPACE_IDS.includes(spaceOf(obj))) objects[uid] = JSON.parse(JSON.stringify(obj));
+            const inc = saveIncludes(), objects = {};
+            const allowed = new Map();
+            // An object is only saved if its space, its type and its whole parent chain are included.
+            const included = (uid, depth = 0) => {
+                if (allowed.has(uid)) return allowed.get(uid);
+                const obj = sceneObjects[uid];
+                let keep = false;
+                if (obj && depth < 64) {
+                    const sp = spaceOf(obj);
+                    keep = SPACE_IDS.includes(sp) && !!inc.spaces[sp] && !!inc.types[obj.type];
+                    // A child can only be saved if everything it sits inside is saved too, or the file would not load.
+                    if (keep && !SPACE_IDS.includes(obj.parent)) keep = included(obj.parent, depth + 1);
+                }
+                allowed.set(uid, keep);
+                return keep;
+            };
+            for (const [uid, obj] of Object.entries(sceneObjects)) if (SPACE_IDS.includes(spaceOf(obj)) && included(uid)) objects[uid] = JSON.parse(JSON.stringify(obj));
             return { format: 'VanillaWorld', formatVersion: 1, engineVersion: ENGINE_VERSION, savedAt: new Date().toISOString(), spaces: SPACE_IDS, objects };
         }
         // Engine-owned objects (the Viewfinder) are built in and never come from a file: strip them, and re-key any file object that reuses an engine UID.
@@ -3032,23 +3139,36 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             a.href = url; a.download = 'World.vnw'; document.body.appendChild(a); a.click(); a.remove();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
-        function saveInBrowser() {
-            try { localStorage.setItem(VN_WORLD_SAVE_KEY, JSON.stringify(buildWorldFile())); toast('World saved in this browser.'); }
-            catch (err) { toast('Could not save: browser storage is full or disabled.', 'bad'); }
+        function saveToSlot(id, quiet) {
+            const s = slotOf(id);
+            if (!s) return false;
+            let json; try { json = JSON.stringify(buildWorldFile()); } catch (e) { json = ''; }
+            if (!json) { toast('Could not build the save.', 'bad'); return false; }
+            if (!writeSlot(id, json)) { toast('Could not save: browser storage is full or disabled.', 'bad'); return false; }
+            if (id === 'autosave') autosaveBase = json;
+            if (!quiet) { toast('Saved to ' + s.label + '.'); refreshFileStatus(); }
+            return true;
+        }
+        async function openSlot(id) {
+            const s = slotOf(id);
+            if (!s) return;
+            const saved = readSlot(id);
+            if (!saved) { toast('Nothing saved in ' + s.label + ' yet.', 'warn'); return; }
+            try { validateWorldFile(saved); } catch (err) { toast(s.label + ' is damaged: ' + err.message, 'bad'); return; }
+            if (!(await confirmDialog('Open ' + s.label + '?', 'This replaces everything in World, Storage and Scripts. Unsaved changes will be lost.', 'Open', true))) return;
+            try { await maybeOfferPlayerSetup(saved); applyWorldFile(saved); toast(s.label + ' opened.'); }
+            catch (err) { toast('Could not open: ' + err.message, 'bad'); }
         }
         async function runFileAction(action) {
             if (action === 'docs') { openDocs('file'); return; }
             if (simulationRunning) { toast('Stop the simulation first. Stop restores your world.', 'warn'); return; }
-            if (action === 'save-browser') saveInBrowser();
+            if (action === 'save-autosave') saveToSlot('autosave');
+            else if (action === 'save-slot1') saveToSlot('slot1');
+            else if (action === 'save-slot2') saveToSlot('slot2');
             else if (action === 'save-file') { downloadWorldFile(); toast('Downloaded World.vnw.'); }
-            else if (action === 'import-file') vnwInput.click();
-            else if (action === 'import-browser') {
-                const saved = readBrowserSave();
-                if (!saved) { toast('No browser save found. Use Save in browser first.', 'warn'); return; }
-                try { validateWorldFile(saved); } catch (err) { toast('Browser save is damaged: ' + err.message, 'bad'); return; }
-                if (!(await confirmDialog('Open browser save?', 'This replaces everything in World, Storage and Scripts. Unsaved changes will be lost.', 'Open', true))) return;
-                try { await maybeOfferPlayerSetup(saved); applyWorldFile(saved); toast('Browser save opened.'); } catch (err) { toast('Could not open: ' + err.message, 'bad'); }
-            } else if (action === 'new-world') {
+            else if (action === 'open-file') vnwInput.click();
+            else if (action.startsWith('open-') && slotOf(action.slice(5))) openSlot(action.slice(5));
+            else if (action === 'new-world') {
                 if (!(await confirmDialog('Start a new world?', 'This clears World, Storage and Scripts. Unsaved changes will be lost.', 'Clear world', true))) return;
                 const objs = { Amber417: { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 } };
                 for (const [id, o] of makePlayerSetup(() => { let id; do { id = newId(); } while (id === 'Amber417'); return id; })) objs[id] = o;
@@ -3061,7 +3181,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         document.addEventListener('click', (e) => { if (!e.target.closest('.file-menu-wrap')) toggleFileMenu(false); });
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && !fileMenu.hidden) { toggleFileMenu(false); fileBtn.focus(); }
-            if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 's') { e.preventDefault(); runFileAction(e.shiftKey ? 'save-file' : 'save-browser'); }
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 's') { e.preventDefault(); runFileAction(e.shiftKey ? 'save-file' : 'save-autosave'); }
         });
         fileMenu.addEventListener('keydown', (e) => {
             if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
@@ -3080,6 +3200,74 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             } catch (err) { toast('Could not open file: ' + (err instanceof SyntaxError ? 'it is not valid JSON.' : err.message), 'bad'); }
             finally { vnwInput.value = ''; }
         });
+
+        // ───────── Update check ─────────
+        // Every 30 seconds the page asks the site whether this file or vanillalua.js has a newer version. Header
+        // checks keep that cheap; a file is only downloaded when its header says it changed.
+        const UPDATE_CHECK_MS = 30000;
+        const versionCompare = (a, b) => {
+            const A = String(a).split('.').map(n => parseInt(n, 10) || 0), B = String(b).split('.').map(n => parseInt(n, 10) || 0);
+            for (let i = 0; i < Math.max(A.length, B.length); i++) { const d = (A[i] || 0) - (B[i] || 0); if (d) return d > 0 ? 1 : -1; }
+            return 0;
+        };
+        const vlScriptUrl = () => {
+            const el = [...document.querySelectorAll('script[src]')].find(s => /vanillalua\.js/i.test(s.src));
+            return el ? el.src : '';
+        };
+        async function fetchText(url) { try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? await r.text() : ''; } catch (e) { return ''; } }
+        async function fetchTag(url) {
+            try {
+                const r = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+                if (!r.ok) return '';
+                return r.headers.get('etag') || r.headers.get('last-modified') || '';
+            } catch (e) { return ''; }
+        }
+        let updateTags = null, updateSeen = '';
+        async function checkForUpdates() {
+            if (location.protocol === 'file:' || navigator.onLine === false) return;   // a local copy has nothing to compare
+            const pageUrl = location.href.split('#')[0], vlUrl = vlScriptUrl();
+            const tags = { page: await fetchTag(pageUrl), vl: vlUrl ? await fetchTag(vlUrl) : null };
+            if (!updateTags) { updateTags = tags; return; }                            // the first pass only records the state
+            // A server that sends no header is always re-downloaded, which is the only way to tell then.
+            const pageMoved = !tags.page || tags.page !== updateTags.page;
+            const vlMoved = tags.vl !== null && (!tags.vl || tags.vl !== updateTags.vl);
+            updateTags = tags;
+            if (!pageMoved && !vlMoved) return;
+            const [page, vl] = await Promise.all([pageMoved ? fetchText(pageUrl) : Promise.resolve(''), vlMoved ? fetchText(vlUrl) : Promise.resolve('')]);
+            const pageVer = (page.match(/const ENGINE_VERSION = '([\d.]+)'/) || [])[1] || '';
+            const vlVer = (vl.match(/const VL_VERSION = '([\d.]+)'/) || [])[1] || '';
+            const loadedVl = window.VanillaluaShared && window.VanillaluaShared.version;
+            const engineNewer = !!pageVer && versionCompare(pageVer, ENGINE_VERSION) > 0;
+            const vlNewer = !!vlVer && !!loadedVl && versionCompare(vlVer, loadedVl) > 0;
+            if (!engineNewer && !vlNewer) return;
+            const found = (engineNewer ? 'engine ' + pageVer : '') + (engineNewer && vlNewer ? ' and ' : '') + (vlNewer ? 'Vanillalua ' + vlVer : '');
+            if (found === updateSeen) return;                                          // this version was already offered
+            updateSeen = found;
+            document.getElementById('mu-ver').textContent = 'A newer ' + found + ' is available. You are on engine ' + ENGINE_VERSION + (loadedVl ? ' with Vanillalua ' + loadedVl : '') + '.';
+            openModal('modal-update', '#mu-reload');
+        }
+        document.getElementById('mu-reload').addEventListener('click', () => {
+            if (!simulationRunning) { autosaveNow(); saveToSlot('autosave', true); }   // keep the world, changed or not
+            try { localStorage.setItem(VN_RELOAD_RESTORE_KEY, 'autosave'); } catch (e) {}
+            closeModals();
+            const base = location.href.split('#')[0];
+            location.replace(base + (base.includes('?') ? '&' : '?') + 'v=' + Date.now());
+        });
+        setInterval(checkForUpdates, UPDATE_CHECK_MS);
+
+        // Puts the world back after the reload button, and opens your autosave when the editor loads.
+        function bootRestore() {
+            let pending = '';
+            try { pending = localStorage.getItem(VN_RELOAD_RESTORE_KEY) || ''; } catch (e) {}
+            if (pending) { try { localStorage.removeItem(VN_RELOAD_RESTORE_KEY); } catch (e) {} }
+            const slotId = pending && slotOf(pending) ? pending : (settings.autosave > 0 ? 'autosave' : '');
+            if (!slotId) return;
+            const saved = readSlot(slotId);
+            if (!saved) return;
+            try { validateWorldFile(saved); applyWorldFile(saved); }
+            catch (e) { if (pending) toast('Could not restore the last save: ' + e.message, 'bad'); return; }
+            if (pending) toast('Your world was saved and reopened in the new version.');
+        }
 
         // ───────── Explorer ─────────
         const explorerEl = document.getElementById('explorer-content');
@@ -5808,6 +5996,9 @@ void main() { o = texture(uTex, vT); }`;
         applySettings();
         // A new world starts with the DefaultPlayer model in Storage and the PlayerManagement script.
         for (const [id, o] of makePlayerSetup(newId)) sceneObjects[id] = o;
+        bootRestore();
+        // The autosave baseline is the world as it is now, so an untouched world is never written over your save.
+        try { autosaveBase = JSON.stringify(buildWorldFile()); } catch (e) { autosaveBase = ''; }
         refreshTheme();
         renderExplorer();
         renderProperties();

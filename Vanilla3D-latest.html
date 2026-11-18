@@ -677,6 +677,11 @@
     <symbol id="i-target" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.75"/><circle cx="8" cy="8" r="1.25"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/></symbol>
     <symbol id="i-ruler" viewBox="0 0 16 16"><path d="M2 10.5 10.5 2 14 5.5 5.5 14z M5 8l1.5 1.5M7 6l1.5 1.5M9 4l1.5 1.5"/></symbol>
     <symbol id="i-err" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.75"/><path d="M8 4.9v3.6M8 10.9h.01"/></symbol>
+    <symbol id="i-wedge" viewBox="0 0 16 16"><path d="M2.5 13h11V3.5z"/><path d="M2.5 13V9.75"/></symbol>
+    <symbol id="i-cylinder" viewBox="0 0 16 16"><ellipse cx="8" cy="4" rx="4.75" ry="1.9"/><path d="M3.25 4v8c0 1.05 2.13 1.9 4.75 1.9s4.75-.85 4.75-1.9V4"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 16 16"><path d="M2.75 6.25h2.5L8.75 3.5v9L5.25 9.75h-2.5z"/><path d="M11 6.1a3 3 0 0 1 0 3.8M12.8 4.5a5.4 5.4 0 0 1 0 7"/></symbol>
+    <symbol id="i-highlight" viewBox="0 0 16 16"><path d="M8 2.25l1.6 4.15L13.75 8l-4.15 1.6L8 13.75 6.4 9.6 2.25 8 6.4 6.4z"/></symbol>
+    <symbol id="i-union" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="7.5" height="7.5" rx="1.25"/><rect x="6" y="6" width="7.5" height="7.5" rx="1.25"/></symbol>
     <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 2.5 14.2 13H1.8z M8 6.6v3M8 11.4h.01"/></symbol>
     <symbol id="i-engine" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1.5"/><path d="M6.5 1.75V4M9.5 1.75V4M6.5 12v2.25M9.5 12v2.25M1.75 6.5H4M1.75 9.5H4M12 6.5h2.25M12 9.5h2.25"/></symbol>
   </svg>
@@ -800,6 +805,10 @@
     <div class="menu-title" id="add-menu-title">Add</div>
     <button class="menu-item" role="menuitem" data-kind="prism6"><svg class="ic"><use href="#i-cube"/></svg>Rectangular Prism<span class="menu-meta">prism6</span></button>
     <button class="menu-item" role="menuitem" data-kind="ball"><svg class="ic"><use href="#i-ball"/></svg>Ball<span class="menu-meta">ball</span></button>
+    <button class="menu-item" role="menuitem" data-kind="wedge"><svg class="ic"><use href="#i-wedge"/></svg>Wedge<span class="menu-meta">wedge</span></button>
+    <button class="menu-item" role="menuitem" data-kind="cylinder"><svg class="ic"><use href="#i-cylinder"/></svg>Cylinder<span class="menu-meta">cylinder</span></button>
+    <button class="menu-item" role="menuitem" data-kind="sound"><svg class="ic"><use href="#i-sound"/></svg>Sound<span class="menu-meta">sound</span></button>
+    <button class="menu-item" role="menuitem" data-kind="highlight"><svg class="ic"><use href="#i-highlight"/></svg>Highlight<span class="menu-meta">highlight</span></button>
     <button class="menu-item" role="menuitem" data-kind="texture"><svg class="ic"><use href="#i-grid"/></svg>Texture<span class="menu-meta">texture</span></button>
     <button class="menu-item" role="menuitem" data-kind="model"><svg class="ic"><use href="#i-model"/></svg>Model<span class="menu-meta">model</span></button>
     <button class="menu-item" role="menuitem" data-kind="human"><svg class="ic"><use href="#i-human"/></svg>Human<span class="menu-meta">human</span></button>
@@ -812,6 +821,8 @@
     <button class="menu-item" role="menuitem" data-act="rename"><svg class="ic"><use href="#i-edit"/></svg>Rename</button>
     <button class="menu-item" role="menuitem" data-act="group"><svg class="ic"><use href="#i-model"/></svg>Group into Model<span class="menu-meta">Ctrl G</span></button>
     <button class="menu-item" role="menuitem" data-act="ungroup"><svg class="ic"><use href="#i-cube"/></svg>Ungroup<span class="menu-meta">Ctrl Shift G</span></button>
+    <button class="menu-item" role="menuitem" data-act="union"><svg class="ic"><use href="#i-union"/></svg>Union Selected</button>
+    <button class="menu-item" role="menuitem" data-act="intersect"><svg class="ic"><use href="#i-union"/></svg>Intersect Selected</button>
     <button class="menu-item" role="menuitem" data-act="copy"><svg class="ic"><use href="#i-copy"/></svg>Copy</button>
     <button class="menu-item" role="menuitem" data-act="paste"><svg class="ic"><use href="#i-paste"/></svg>Paste</button>
     <button class="menu-item" role="menuitem" data-act="cut"><svg class="ic"><use href="#i-cut"/></svg>Cut</button>
@@ -948,7 +959,7 @@
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of three <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
-          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b> and <b>Scripts</b> spaces. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Human, a World Settings or a Script. Storage holds objects kept for scripts and never renders; only World renders.</td></tr>
+          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b> and <b>Scripts</b> spaces. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Wedge, a Cylinder, a Ball, a Sound, a Highlight, a Human, a World Settings or a Script. Storage holds objects kept for scripts and never renders; only World renders.</td></tr>
           <tr><td>Viewport</td><td>The 3D view. Select, Move and Scale modes work here.</td></tr>
           <tr><td>Properties</td><td>Edits the selected instance: name, position, size, physics flags, script options.</td></tr>
           <tr><td>Tab bar</td><td>World is always open. Scripts open as tabs over the viewport.</td></tr>
@@ -998,7 +1009,14 @@
         </ul>
         <p>Children live in the same space as their parent and keep their own position; they do not move with the parent. A script placed under an object, anywhere inside World or Scripts, runs like any other script and can reach that object with <code>script.Parent</code>.</p>
         <p>A <b>Ball</b> is a smooth 3D sphere with the same properties as a prism: position, size, color, face coloring, face labels, wireframe, locked, and the physics switches. Its Size is the radius on each axis, so it defaults to 0.5 on every axis. When the simulation runs, a ball rolls: it spins to match its speed as it moves over a surface, bounces a little when it lands hard, and keeps its spin while it is in the air. The panels and seams painted on it make the rolling easy to see. Stopping the simulation puts it back the way it was.</p>
-        <p>A <b>Human</b> is a character instance that holds health, movement and stamina values. It is always named <b>Human</b>, and its <b>PlayerName</b> property holds the player's name. A new Human starts with a PlayerName of <b>Player</b> followed by a number (Player1, Player2 and so on), and when its model is given to a player, the model and the PlayerName both become that player's name. It has no body and does not render. These values are used by the player you control, and at 0 Health the player using the model dies. The defaults are Health 100, MaxHealth 100, WalkSpeed 1.3 Vm/s, RunSpeed 3.5 Vm/s, Stamina 100, MaxStamina 100, RunStaminaLoss 3 per second, JumpHeight 0.5 Vm, JumpStaminaLoss 20 per jump and StaminaGain 6.5 per second.</p>
+        <p>A <b>Human</b> is a character instance that holds health, movement and stamina values. It is always named <b>Human</b>, and its <b>PlayerName</b> property holds the player's name. A new Human starts with a PlayerName of <b>Player</b> followed by a number (Player1, Player2 and so on), and when its model is given to a player, the model and the PlayerName both become that player's name. It has no body and does not render. These values are used by the player you control, and at 0 Health the player using the model dies. The defaults are Health 100, MaxHealth 100, WalkSpeed 3.5 Vm/s, RunSpeed 6 Vm/s, Stamina 100, MaxStamina 100, RunStaminaLoss 3 per second, JumpHeight 1.5 Vm, JumpStaminaLoss 20 per jump and StaminaGain 6.5 per second.</p>
+        <p>A <b>Wedge</b> is a ramp: a block with its top-front half sliced away, so it is solid underneath and rises from its front edge up to the top of its back (+Z) face. It has the same properties as a prism, including Color, rotation and the physics switches, and its Size is a half size on each axis like a prism's.</p>
+        <p>A <b>Cylinder</b> is a round column standing on its ends, with a flat top and bottom. Its Size is a half size too: Width and Length are the radius on the X and Z axes and Height is half the column's height. Rotating it tilts the column, and physics treats it as the box around it.</p>
+        <p>A <b>Union</b> is one solid built from other parts. Select the parts in World, then choose <b>Union Selected</b> in the three-dot menu: they are merged into a single instance and the originals are removed. Turn on <b>Negated (subtract in a union)</b> in a part's properties to cut that part away instead of adding it, and use <b>Intersect Selected</b> to keep only the space every selected part shares. That is how you cut a doorway: build the wall, put a block where the doorway belongs, make that block Negated, select both and choose Union Selected.</p>
+        <p>The union stores the result as merged blocks, so it draws with the same shader as a prism. A union of plain blocks stays perfectly sharp, while sloping and round parts become stepped blocks, so uniting a wedge gives a staircase along the slope. The union keeps the size of the parts it was built from, its properties say how many blocks it holds, and the player is blocked by those blocks rather than by the space between them, so a cut doorway can be walked through. Building a union again from new parts is how you change one.</p>
+        <p>A <b>Sound</b> plays one of the built-in sounds: Beep, Chime, Click, Thud or Siren. They are synthesised, so a world never needs an audio file. <b>Playing</b> starts and stops it, <b>Looped</b> repeats it while it plays, and <b>Volume</b> is a slider from 0 to 1. Sounds play while the simulation runs; Stop silences them and restores the world.</p>
+        <p><b>Max distance</b> makes a Sound positional and only applies when the Sound is a child of an object: it is heard within that many meters of its parent and fades out as the camera moves away, so a Sound inside a block is loud beside the block and silent further off. A Sound placed straight in a Space is heard at the same volume everywhere. Scripts can change Playing, Looped, Volume, MaxDistance and Preset while the simulation runs.</p>
+        <p>A <b>Highlight</b> draws an outline around the parts of the object it sits inside. Put one inside a model to outline a player, or inside a part to outline just that part. <b>Color</b> sets the outline color, and <b>Appears over objects</b> decides whether the outline is hidden by anything in front of it (off) or always drawn on top (on, the default), so a player can be seen through a wall.</p>
         <h3 data-group="Editor guide">Textures</h3>
         <p>A <b>Texture</b> paints chosen faces of a Rectangular Prism. Use <b>Add Child…</b> in a prism's three-dot menu and choose <b>Texture</b>; it appears as a child of that prism and always affects its parent.</p>
         <ul>
@@ -1148,7 +1166,7 @@ print(block.Name)</code></pre>
         <p>When a dot member on a Space matches a local variable, its string value is treated as the UID. Bracket lookup also works: <code>World[blockUID]</code>. You can pass the Space to <code>GetUID</code> when names are duplicated, for example <code>Instance.GetUID("Block", World)</code>.</p>
         <h3 data-group="Vanillalua language">10. The Instance module</h3>
         <ul>
-          <li><code>Instance.create(type, space)</code> — creates and returns an instance. Supported types: <code>"prism6"</code>, <code>"ball"</code>, <code>"script"</code>, <code>"worldsettings"</code>, and <code>"human"</code>.</li>
+          <li><code>Instance.create(type, space)</code> — creates and returns an instance. Supported types: <code>"prism6"</code>, <code>"ball"</code>, <code>"wedge"</code>, <code>"cylinder"</code>, <code>"sound"</code>, <code>"highlight"</code>, <code>"script"</code>, <code>"worldsettings"</code>, and <code>"human"</code>.</li>
           <li><code>Instance.duplicate(instance)</code> — duplicates an instance in its current space.</li>
           <li><code>Instance.duplicate(instance, space)</code> — duplicates it into a chosen loaded space.</li>
           <li><code>Instance.delete(instance)</code> — deletes the instance. References to it become deleted references.</li>
@@ -1189,6 +1207,9 @@ print(block)</code></pre>
           <tr><td>Prism blocks</td><td><code>Position</code>, <code>Size</code> (vectors, each axis at least 0.05 for Size), <code>Locked</code>, <code>Anchored</code>, <code>ReactsToPhysics</code>, <code>Collidable</code>, <code>Wireframe</code>, <code>FaceColoring</code>, <code>ShowLabels</code> (True or False), <code>Color</code> (a hex string such as <code>"#ff8800"</code>; <code>FaceColoring</code> overrides it)</td></tr>
           <tr><td>World Settings</td><td><code>TimeOfDay</code> (0 to 24), <code>Gravity</code> (0 to 1000), <code>KillLayer</code> (number)</td></tr>
           <tr><td>Humans</td><td><code>Health</code>, <code>MaxHealth</code>, <code>WalkSpeed</code>, <code>RunSpeed</code>, <code>Stamina</code>, <code>MaxStamina</code>, <code>RunStaminaLoss</code>, <code>JumpHeight</code>, <code>JumpStaminaLoss</code>, <code>StaminaGain</code> (numbers, never below 0) and <code>PlayerName</code> (text). All of these except MaxHealth are used by the player you control, and at 0 Health the player dies.</td></tr>
+          <tr><td>Wedges, cylinders and unions</td><td>The same properties as a prism, except <code>Spawnpoint</code>.</td></tr>
+          <tr><td>Sounds</td><td><code>Playing</code> and <code>Looped</code> (True or False), <code>Volume</code> (0 to 1), <code>MaxDistance</code> (meters, 0 or more, used only when the Sound is inside an object) and <code>Preset</code> (one of <code>beep</code>, <code>chime</code>, <code>click</code>, <code>thud</code>, <code>siren</code>)</td></tr>
+          <tr><td>Highlights</td><td><code>Color</code> (a hex string) and <code>OverObjects</code> (True or False)</td></tr>
           <tr><td>Blocks</td><td><code>Spawnpoint</code> (true or false). Only one block can be the spawnpoint.</td></tr>
           <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr>
         </tbody></table>
@@ -1342,7 +1363,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             let changed = true;
             while (changed) { changed = false; for (const [id, o] of Object.entries(sceneObjects)) if (o.parent !== 'engine' && !SPACE_KEYS.includes(o.parent) && !sceneObjects[o.parent]) { delete sceneObjects[id]; physicsVelocity.delete(id); vlInstCache.delete(id); if (selectedObjectId === id) selectedObjectId = null; changed = true; } }
         }
-        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player' })[type] || 'Instance'; }
+        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player', wedge: 'Wedge', cylinder: 'Cylinder', sound: 'Sound', highlight: 'Highlight', union: 'Union' })[type] || 'Instance'; }
         function preInc(n) { return typeof settings !== 'undefined' && !!(settings.preinclude && settings.preinclude[n]); }
         // Textures: a child of a prism6 that paints chosen faces. Faces use the engine's face order.
         const FACE_LABELS = ['Front', 'Back', 'Right', 'Left', 'Top', 'Bottom'];
@@ -1355,7 +1376,25 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function makeBall(name, parent, dims) {
             return Object.assign(makePrism(name, parent, {}), { type: 'ball', length: 0.5, width: 0.5, height: 0.5 }, dims);
         }
-        const isShape = (o) => !!o && (o.type === 'prism6' || o.type === 'ball');
+        // A wedge is a triangular prism: a ramp whose high side is the back (+Z) and whose slope runs down to the front.
+        function makeWedge(name, parent, dims) {
+            return Object.assign(makePrism(name, parent, {}), { type: 'wedge' }, dims);
+        }
+        // A cylinder stands on its end: a round column along Y. Turn it with Rotation to lay it down.
+        function makeCylinder(name, parent, dims) {
+            return Object.assign(makePrism(name, parent, {}), { type: 'cylinder' }, dims);
+        }
+        // A union is a shape built out of blocks: its cells are the boxes that survived the union, subtraction and intersection.
+        function makeUnion(name, parent, dims) {
+            return Object.assign(makePrism(name, parent, {}), { type: 'union', cells: [] }, dims);
+        }
+        function makeSound(name, parent) {
+            return { type: 'sound', name, parent, preset: 'beep', playing: false, looped: false, volume: 0.6, maxDistance: 20 };
+        }
+        function makeHighlight(name, parent) {
+            return { type: 'highlight', name, parent, color: '#ffd23f', overObjects: true };
+        }
+        const isShape = (o) => !!o && (o.type === 'prism6' || o.type === 'ball' || o.type === 'wedge' || o.type === 'cylinder' || o.type === 'union');
         // Rotation: degrees about X, Y and Z, applied as R = Ry * Rx * Rz (turn, then tilt, then roll). Matrices are 3x3 row-major.
         const ROT_IDENT = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
         const rotCache = new WeakMap();
@@ -1405,6 +1444,116 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             return id;
         }
         
+        // A union stores its cells around its own centre, in its own axes, so turning the union turns all of them.
+        function unionCellWorld(u, c) {
+            const R = rotMat(u);
+            return { x: u.x + R[0] * c.x + R[1] * c.y + R[2] * c.z,
+                     y: u.y + R[3] * c.x + R[4] * c.y + R[5] * c.z,
+                     z: u.z + R[6] * c.x + R[7] * c.y + R[8] * c.z };
+        }
+        // What a Highlight outlines: its parent object and every shape under it.
+        function highlightTargets(h) {
+            const parent = sceneObjects[h.parent];
+            if (!parent) return [];
+            const out = [];
+            if (isShape(parent) && spaceOf(parent) === 'world') out.push([h.parent, parent]);
+            for (const [id, o] of Object.entries(sceneObjects)) if (isShape(o) && spaceOf(o) === 'world' && isInside(id, h.parent)) out.push([id, o]);
+            return out;
+        }
+
+        // ───────── Unions ─────────
+        // A union turns a set of shapes into one solid: the union of the normal parts, minus the negated parts, or for
+        // Intersect only the space every part shares. The solid is stored as boxes, so it draws with the block shader.
+        const shapeIsAxisBox = (o) => o.type === 'prism6' || o.type === 'union';
+        function shapeContains(o, px, py, pz) {
+            const R = rotMat(o), dx = px - o.x, dy = py - o.y, dz = pz - o.z;
+            const x = R[0] * dx + R[3] * dy + R[6] * dz, y = R[1] * dx + R[4] * dy + R[7] * dz, z = R[2] * dx + R[5] * dy + R[8] * dz;
+            if (o.type === 'wedge') return Math.abs(x) <= o.width && Math.abs(z) <= o.length && y >= -o.height && y <= o.height * (z / (o.length || 1));
+            if (o.type === 'cylinder') { const rx = x / (o.width || 1), rz = z / (o.length || 1); return rx * rx + rz * rz <= 1 && Math.abs(y) <= o.height; }
+            if (o.type === 'ball') { const rx = x / (o.width || 1), ry = y / (o.height || 1), rz = z / (o.length || 1); return rx * rx + ry * ry + rz * rz <= 1; }
+            if (o.type === 'union') return (o.cells || []).some(c => Math.abs(x - c.x) <= c.width && Math.abs(y - c.y) <= c.height && Math.abs(z - c.z) <= c.length);
+            return Math.abs(x) <= o.width && Math.abs(y) <= o.height && Math.abs(z) <= o.length;
+        }
+        // parts: [{ shape, op: 'add' | 'subtract' | 'intersect' }]. Returns merged boxes in world space.
+        function unionSolid(parts, mode) {
+            const spans = { x: [], y: [], z: [] };
+            const add = (axis, v) => { const a = spans[axis]; if (!a.some(t => Math.abs(t - v) < 1e-6)) a.push(v); };
+            const SLICES = 16;
+            for (const { shape } of parts) {
+                const lo = [shape.x - shape.width, shape.y - shape.height, shape.z - shape.length];
+                const hi = [shape.x + shape.width, shape.y + shape.height, shape.z + shape.length];
+                ['x', 'y', 'z'].forEach((axis, i) => {
+                    add(axis, lo[i]); add(axis, hi[i]);
+                    if (!shapeIsAxisBox(shape)) for (let s = 1; s < SLICES; s++) add(axis, lo[i] + (hi[i] - lo[i]) * s / SLICES);
+                });
+            }
+            const xs = spans.x.sort((a, b) => a - b), ys = spans.y.sort((a, b) => a - b), zs = spans.z.sort((a, b) => a - b);
+            const nx = xs.length - 1, ny = ys.length - 1, nz = zs.length - 1;
+            if (nx < 1 || ny < 1 || nz < 1) return { cells: [] };
+            const at = (i, j, k) => (k * ny + j) * nx + i;
+            const inside = new Uint8Array(nx * ny * nz);
+            for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+                const px = (xs[i] + xs[i + 1]) / 2, py = (ys[j] + ys[j + 1]) / 2, pz = (zs[k] + zs[k + 1]) / 2;
+                let added = false, cut = false, sharedAll = true, sharedAny = false;
+                for (const { shape, op } of parts) {
+                    const hit = shapeContains(shape, px, py, pz);
+                    if (op === 'intersect') { sharedAny = true; if (!hit) sharedAll = false; }
+                    else if (op === 'subtract') { if (hit) cut = true; }
+                    else if (hit) added = true;
+                }
+                inside[at(i, j, k)] = (mode === 'intersect' ? sharedAny && sharedAll : added && !cut && sharedAll) ? 1 : 0;
+            }
+            // Merge neighbouring cells into the largest boxes possible, so uniting plain blocks gives plain blocks.
+            const used = new Uint8Array(inside.length), cells = [];
+            for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+                if (!inside[at(i, j, k)] || used[at(i, j, k)]) continue;
+                let i2 = i;
+                while (i2 + 1 < nx && inside[at(i2 + 1, j, k)] && !used[at(i2 + 1, j, k)]) i2++;
+                let j2 = j;
+                growJ: while (j2 + 1 < ny) { for (let ii = i; ii <= i2; ii++) if (!inside[at(ii, j2 + 1, k)] || used[at(ii, j2 + 1, k)]) break growJ; j2++; }
+                let k2 = k;
+                growK: while (k2 + 1 < nz) { for (let jj = j; jj <= j2; jj++) for (let ii = i; ii <= i2; ii++) if (!inside[at(ii, jj, k2 + 1)] || used[at(ii, jj, k2 + 1)]) break growK; k2++; }
+                for (let kk = k; kk <= k2; kk++) for (let jj = j; jj <= j2; jj++) for (let ii = i; ii <= i2; ii++) used[at(ii, jj, kk)] = 1;
+                cells.push({ x0: xs[i], x1: xs[i2 + 1], y0: ys[j], y1: ys[j2 + 1], z0: zs[k], z1: zs[k2 + 1] });
+            }
+            return { cells };
+        }
+        const r3 = (v) => Math.round(v * 1000) / 1000;
+        // Builds one union out of the selected parts and replaces them with it.
+        function unionSelected(mode, clickId) {
+            const all = menuTargets(clickId).filter(k => sceneObjects[k] && isShape(sceneObjects[k]) && spaceOf(sceneObjects[k]) === 'world' && !sceneObjects[k].locked);
+            const need = mode === 'intersect' ? 2 : 1;
+            if (all.length < need) { toast(mode === 'intersect' ? 'Select at least two parts in World to intersect them.' : 'Select one or more parts in World to union them.', 'warn'); return; }
+            const parts = all.map(k => ({ shape: sceneObjects[k], op: mode === 'intersect' ? 'intersect' : (sceneObjects[k].negated ? 'subtract' : 'add') }));
+            if (mode !== 'intersect' && !parts.some(p => p.op === 'add')) { toast('Every selected part is negated, so there would be nothing left. Un-negate one part first.', 'warn'); return; }
+            const { cells } = unionSolid(parts, mode);
+            if (!cells.length) { toast(mode === 'intersect' ? 'Those parts do not overlap, so there is nothing to keep.' : 'The result is empty, so nothing was created.', 'warn'); return; }
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+            for (const c of cells) {
+                minX = Math.min(minX, c.x0); maxX = Math.max(maxX, c.x1); minY = Math.min(minY, c.y0);
+                maxY = Math.max(maxY, c.y1); minZ = Math.min(minZ, c.z0); maxZ = Math.max(maxZ, c.z1);
+            }
+            const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
+            const first = parts.find(p => p.op === 'add') || parts[0];
+            const parent = SPACE_KEYS.includes(first.shape.parent) ? 'world' : first.shape.parent;
+            const uid = newId();
+            const n = ++counters.union;
+            const u = makeUnion(dn('union') + (n === 1 ? '' : ' ' + n), parent, {
+                x: r3(cx), y: r3(cy), z: r3(cz),
+                width: r3((maxX - minX) / 2), height: r3((maxY - minY) / 2), length: r3((maxZ - minZ) / 2),
+                color: prismColor(first.shape), anchored: parts.every(p => !!p.shape.anchored),
+                collidable: parts.some(p => p.shape.collidable !== false),
+                cells: cells.map(c => ({
+                    x: r3((c.x0 + c.x1) / 2 - cx), y: r3((c.y0 + c.y1) / 2 - cy), z: r3((c.z0 + c.z1) / 2 - cz),
+                    width: r3((c.x1 - c.x0) / 2), height: r3((c.y1 - c.y0) / 2), length: r3((c.z1 - c.z0) / 2)
+                }))
+            });
+            sceneObjects[uid] = u;
+            all.forEach(k => deleteItem(k));
+            selectItem(uid);
+            toast((mode === 'intersect' ? 'Intersected ' : 'United ') + all.length + ' parts into ' + u.name + '.');
+        }
+
         function getModelPrisms(modelId) {
             const list = [];
             function scan(id) {
@@ -1465,8 +1614,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         };
         sceneObjects['Linen551'] = makeTexture('Texture', 'Cobalt092', [4], 'grid');
         sceneObjects['Amber417'] = { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 };
-        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0 };
-        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human' };
+        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0, wedge: 0, cylinder: 0, union: 0, sound: 0, highlight: 0 };
+        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human', wedge: 'i-wedge', cylinder: 'i-cylinder', union: 'i-union', sound: 'i-sound', highlight: 'i-highlight' };
 
         let isLightMode = false;
         let accentCol = '#f2b134';
@@ -1828,7 +1977,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             if (!m.dead && dt > 0) {
                 const hv = m.human || {};
                 const num = (v, d) => Number.isFinite(v) ? v : d;
-                const walk = num(hv.walkSpeed, 1.3), run = num(hv.runSpeed, 3.5), jumpH = num(hv.jumpHeight, 0.5);
+                const walk = num(hv.walkSpeed, 3.5), run = num(hv.runSpeed, 6), jumpH = num(hv.jumpHeight, 1.5);
                 const maxSt = num(hv.maxStamina, 100), runLoss = num(hv.runStaminaLoss, 3), jumpLoss = num(hv.jumpStaminaLoss, 20), gain = num(hv.staminaGain, 6.5);
                 let st = Math.min(maxSt, num(hv.stamina, maxSt));
                 const g = currentGravity(), rho = airDensityFor(g);
@@ -1836,6 +1985,14 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 const own = new Set(m.parts), cols = [];
                 for (const [id, o] of physicsBodyList()) {
                     if (own.has(id) || o.collidable === false) continue;
+                    // A union blocks the player with its cells, so a hole cut through it is really a hole.
+                    if (o.type === 'union') {
+                        for (const c of o.cells || []) {
+                            const p = unionCellWorld(o, c);
+                            cols.push([p.x - c.width, p.x + c.width, p.y - c.height, p.y + c.height, p.z - c.length, p.z + c.length]);
+                        }
+                        continue;
+                    }
                     const e = shapeHalfExt(o);
                     cols.push([o.x - e[0], o.x + e[0], o.y - e[1], o.y + e[1], o.z - e[2], o.z + e[2]]);
                 }
@@ -1882,7 +2039,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 // The limbs swing while the player walks, faster and wider when sprinting, and settle again when standing still.
                 const striding = len > 0 && pc.onGround;
                 pc.gait += ((striding ? (sprinting ? 1 : 0.65) : 0) - pc.gait) * (1 - Math.exp(-12 * dt));
-                if (striding) pc.phase += (sprinting ? 12 : 8) * dt;
+                if (striding) pc.phase += (sprinting ? 20 : 15) * dt;
                 placePlayerParts(dt);
                 // Falling past the kill layer kills the player, like it deletes anything else.
                 if (pc.pos.y < currentKillY() && m.human) m.human.health = 0;
@@ -1898,6 +2055,110 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             pc.hideId = pc.zoom < FIRST_PERSON_ZOOM ? pc.headId : null;
             camPosX = head.x - fwdX * pc.zoom; camPosY = head.y - fwdY * pc.zoom; camPosZ = head.z - fwdZ * pc.zoom;
             return true;
+        }
+
+        // ───────── Sounds ─────────
+        // Every sound is synthesised, so a world needs no audio files. A sound plays once, or repeats while Looped.
+        const SOUND_PRESETS = {
+            beep:  { name: 'Beep',  seconds: 0.2, gap: 1.0 },
+            chime: { name: 'Chime', seconds: 1.3, gap: 2.0 },
+            click: { name: 'Click', seconds: 0.1, gap: 0.6 },
+            thud:  { name: 'Thud',  seconds: 0.45, gap: 1.4 },
+            siren: { name: 'Siren', seconds: 1.0, gap: 1.0 }
+        };
+        let audioCtxRef = null;
+        const activeSounds = new Map();          // sound id -> { gain, timer }
+        function audioContext() {
+            if (!audioCtxRef) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return null;
+                try { audioCtxRef = new AC(); } catch (err) { return null; }
+            }
+            if (audioCtxRef.state === 'suspended') audioCtxRef.resume();
+            return audioCtxRef;
+        }
+        // One shot of a preset, scheduled at time t on the given destination.
+        function soundVoice(preset, ac, out, t) {
+            const env = (peak, attack, decay) => {
+                const g = ac.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.linearRampToValueAtTime(peak, t + attack);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+                g.connect(out);
+                return g;
+            };
+            const osc = (type, from, to, peak, attack, decay) => {
+                const o = ac.createOscillator();
+                o.type = type;
+                o.frequency.setValueAtTime(from, t);
+                if (to !== from) o.frequency.exponentialRampToValueAtTime(Math.max(1, to), t + attack + decay);
+                o.connect(env(peak, attack, decay));
+                o.start(t); o.stop(t + attack + decay + 0.05);
+            };
+            if (preset === 'chime') { osc('sine', 880, 880, 0.45, 0.005, 1.2); osc('sine', 1320, 1320, 0.2, 0.005, 0.7); }
+            else if (preset === 'click') osc('triangle', 1500, 600, 0.4, 0.001, 0.08);
+            else if (preset === 'thud') osc('sine', 150, 45, 0.9, 0.002, 0.4);
+            else if (preset === 'siren') { osc('sawtooth', 480, 900, 0.22, 0.05, 0.95); osc('sawtooth', 960, 480, 0.1, 0.05, 0.95); }
+            else osc('square', 720, 720, 0.5, 0.005, 0.18);
+        }
+        // Where a sound is heard from: its parent object, when it is inside one.
+        function soundAnchor(h) {
+            let o = sceneObjects[h.parent];
+            let n = 0;
+            while (o && !SPACE_KEYS.includes(o.parent) && !isShape(o) && o.type !== 'model' && n++ < 64) o = sceneObjects[o.parent];
+            if (!o) return null;
+            if (isShape(o)) return o;
+            if (o.type === 'model') { const b = getModelBounds(h.parent); return b ? { x: b.x, y: b.y, z: b.z } : null; }
+            return null;
+        }
+        function soundTargetGain(h) {
+            const vol = Math.max(0, Math.min(1, Number.isFinite(h.volume) ? h.volume : 0.6));
+            const anchor = soundAnchor(h), maxD = Number.isFinite(h.maxDistance) ? h.maxDistance : 0;
+            if (!anchor || maxD <= 0) return vol;
+            const d = Math.hypot(camPosX - anchor.x, camPosY - anchor.y, camPosZ - anchor.z);
+            return vol * Math.max(0, Math.min(1, 1 - d / maxD));
+        }
+        function stopSound(id) {
+            const a = activeSounds.get(id);
+            if (!a) return;
+            activeSounds.delete(id);
+            if (a.timer) clearTimeout(a.timer);
+            try { a.gain.disconnect(); } catch (err) {}
+        }
+        function startSound(id) {
+            const h = sceneObjects[id];
+            stopSound(id);
+            if (!h || h.type !== 'sound') return;
+            const ac = audioContext();
+            if (!ac) return;
+            const preset = SOUND_PRESETS[h.preset] ? h.preset : 'beep';
+            const gain = ac.createGain();
+            gain.gain.value = soundTargetGain(h);
+            gain.connect(ac.destination);
+            const entry = { gain, timer: 0 };
+            activeSounds.set(id, entry);
+            const fire = () => {
+                const now = audioContext();
+                if (!now || activeSounds.get(id) !== entry) return;
+                soundVoice(preset, now, gain, now.currentTime + 0.01);
+                const p = SOUND_PRESETS[preset];
+                if (h.looped) entry.timer = setTimeout(fire, Math.max(0.15, p.gap) * 1000);
+                else entry.timer = setTimeout(() => {
+                    if (activeSounds.get(id) !== entry) return;
+                    h.playing = false; stopSound(id);
+                    const cb = document.getElementById('prop-sound-playing');
+                    if (cb && selectedObjectId === id) cb.checked = false;
+                }, p.seconds * 1000);
+            };
+            fire();
+        }
+        // Distance fades live as the camera moves, so Max distance works while the sound is playing.
+        function updateSounds() {
+            for (const [id, a] of activeSounds) {
+                const h = sceneObjects[id];
+                if (!h || h.type !== 'sound' || !h.playing) { stopSound(id); continue; }
+                a.gain.gain.value = soundTargetGain(h);
+            }
         }
 
         function takeSnapshot() {
@@ -1926,8 +2187,10 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 vlRuntime.sharedGlobals = new Map();
                 simulationRunning = true;
                 startSimulationScripts();
+                for (const [id, o] of Object.entries(sceneObjects)) if (o.type === 'sound' && o.playing) startSound(id);
             } else {
                 simulationRunning = false;
+                for (const id of [...activeSounds.keys()]) stopSound(id);
                 stopScripts();
                 vlRuntime.sharedGlobals = new Map();
                 restoreSnapshot();
@@ -1950,7 +2213,13 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         // Vanillalua is loaded from the shared external interpreter.
         const vlRuntime = VanillaluaShared.createEditorRuntime({
             sceneObjects, physicsVelocity, physicsVelocityFor, spaceOf, preInc, SPACE_KEYS, isShape, isInside,
-            GRAVITY_MAX, makePrism, makeBall, dn, counters, newId, pruneOrphans,
+            GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, dn, counters, newId, pruneOrphans,
+            soundChanged: (id, name) => {
+                const h = sceneObjects[id];
+                if (!h) { stopSound(id); return; }
+                if (name !== 'Playing' && name !== 'Looped' && name !== 'Preset') return;   // volume and distance update live
+                if (h.playing) startSound(id); else stopSound(id);
+            },
             getSelectedObjectId: () => selectedObjectId, setSelectedObjectId: value => { selectedObjectId = value; },
             markUIDirty: () => { uiDirty = true; }, markOutputDirty: () => { outputDirty = true; }
         });
@@ -2228,6 +2497,22 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 const k = n - 1;
                 const offset = (k % 2 === 0 ? 1 : -1) * 2 * (Math.floor(k / 2) + 1);
                 obj = makeBall(dn('ball') + (n === 1 ? '' : ' ' + n), space, { x: offset, y: 0.5, z: 2 });
+            } else if (kind === 'wedge') {
+                const n = ++counters.wedge;
+                const k = n - 1;
+                const offset = (k % 2 === 0 ? 1 : -1) * 2 * (Math.floor(k / 2) + 1);
+                obj = makeWedge(dn('wedge') + (n === 1 ? '' : ' ' + n), space, { x: offset, y: 0.5, z: -2 });
+            } else if (kind === 'cylinder') {
+                const n = ++counters.cylinder;
+                const k = n - 1;
+                const offset = (k % 2 === 0 ? 1 : -1) * 2 * (Math.floor(k / 2) + 1);
+                obj = makeCylinder(dn('cylinder') + (n === 1 ? '' : ' ' + n), space, { x: offset, y: 0.5, z: -4 });
+            } else if (kind === 'sound') {
+                const n = ++counters.sound;
+                obj = makeSound(dn('sound') + (n === 1 ? '' : ' ' + n), space);
+            } else if (kind === 'highlight') {
+                const n = ++counters.highlight;
+                obj = makeHighlight(dn('highlight') + (n === 1 ? '' : ' ' + n), space);
             } else if (kind === 'texture') {
                 const n = ++counters.texture;
                 obj = makeTexture(dn('texture') + (n === 1 ? '' : ' ' + n), space, [4], 'grid');
@@ -2643,7 +2928,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             { let spawnSeen = false; for (const o of Object.values(data.objects)) { if (!o || typeof o !== 'object') continue; if (o.type === 'prism6' && o.spawnpoint === true && !spawnSeen) spawnSeen = true; else if (o.spawnpoint !== undefined) delete o.spawnpoint; } }
             for (const [uid, obj] of Object.entries(data.objects)) {
                 if (!/^[A-Za-z][A-Za-z0-9]*$/.test(uid) || !obj || typeof obj !== 'object' || !(SPACE_IDS.includes(obj.parent) || (data.objects[obj.parent] && obj.parent !== uid))) throw new Error('The file contains an invalid object or UID: ' + uid);
-                if (!['prism6', 'ball', 'model', 'worldsettings', 'script', 'texture', 'human'].includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
+                if (!['prism6', 'ball', 'wedge', 'cylinder', 'union', 'model', 'worldsettings', 'script', 'texture', 'human', 'sound', 'highlight'].includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
             }
             for (const [uid, obj] of Object.entries(data.objects)) { let p = obj, n = 0; while (p && !SPACE_IDS.includes(p.parent) && n++ < 64) p = data.objects[p.parent]; if (!p) throw new Error('Object ' + uid + ' has a circular parent chain.'); }
             return data;
@@ -2670,10 +2955,28 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     obj.faces = Array.isArray(obj.faces) ? [...new Set(obj.faces.filter(i => Number.isInteger(i) && i >= 0 && i < 6))] : [4];
                     if (!TEXTURES[obj.texture]) obj.texture = 'grid';
                 }
+                if (obj.type === 'sound') {
+                    if (!SOUND_PRESETS[obj.preset]) obj.preset = 'beep';
+                    obj.playing = !!obj.playing;
+                    obj.looped = !!obj.looped;
+                    obj.volume = Math.max(0, Math.min(1, Number.isFinite(obj.volume) ? obj.volume : 0.6));
+                    obj.maxDistance = Number.isFinite(obj.maxDistance) && obj.maxDistance >= 0 ? obj.maxDistance : 20;
+                }
+                if (obj.type === 'highlight') {
+                    if (!HEX6.test(obj.color)) obj.color = '#ffd23f';
+                    obj.overObjects = obj.overObjects !== false;
+                }
+                if (obj.type === 'union') {
+                    const okNum = (v) => Number.isFinite(v) && v > 0;
+                    obj.cells = Array.isArray(obj.cells) ? obj.cells.filter(c => c && Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z) && okNum(c.width) && okNum(c.height) && okNum(c.length))
+                        .map(c => ({ x: c.x, y: c.y, z: c.z, width: c.width, height: c.height, length: c.length })) : [];
+                    if (!obj.cells.length) obj.cells = [{ x: 0, y: 0, z: 0, width: Math.max(0.05, obj.width || 0.5), height: Math.max(0.05, obj.height || 0.5), length: Math.max(0.05, obj.length || 0.5) }];
+                }
                 sceneObjects[uid] = obj;
             }
+            for (const sid of [...activeSounds.keys()]) stopSound(sid);
             vlInstCache.clear(); physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear(); selectedObjectId = null; renamingId = null; menuItemId = null;
-            for (const [k, t] of [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball'], ['human', 'human']]) counters[k] = Object.values(sceneObjects).filter(o => o.type === t).length;
+            for (const [k, t] of [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball'], ['human', 'human'], ['wedge', 'wedge'], ['cylinder', 'cylinder'], ['union', 'union'], ['sound', 'sound'], ['highlight', 'highlight']]) counters[k] = Object.values(sceneObjects).filter(o => o.type === t).length;
             uiDirty = true;
             renderTabs(); renderExplorer(); renderProperties();
         }
@@ -2916,6 +3219,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             off('camera', !((isShape(o) || o.type === 'model') && spaceOf(o) === 'world'));
             off('ungroup', o.type !== 'model');
             off('group', !menuTargets(id).length);
+            { const shapes = menuTargets(id).filter(k => isShape(sceneObjects[k]) && spaceOf(sceneObjects[k]) === 'world');
+              off('union', !shapes.length); off('intersect', shapes.length < 2); }
             itemMenu.hidden = false;
             renderExplorer();
             placeMenu(itemMenu, rect, alignLeft);
@@ -3008,6 +3313,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         }
 
         function deleteItem(id) {
+            stopSound(id);
             delete sceneObjects[id];
             physicsVelocity.delete(id);
             pruneOrphans();
@@ -3079,6 +3385,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             else if (act === 'delete') menuTargets(id).filter(k => sceneObjects[k] && !sceneObjects[k].locked).forEach(k => sceneObjects[k] && deleteItem(k));
             else if (act === 'group') groupSelected();
             else if (act === 'ungroup') ungroupSelected();
+            else if (act === 'union') unionSelected('union', id);
+            else if (act === 'intersect') unionSelected('intersect', id);
             else if (act === 'camera') moveCameraTo(id);
         }
 
@@ -3154,7 +3462,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const objHead = (id, o, ic, extra = '') =>
             `<div class="obj-head">${icon(ic)}<div class="obj-meta"><div class="obj-name">${esc(o.name)}</div>
                 <div class="obj-id"><span title="Instance type">${o.type}</span><span class="uid" title="Unique ID">${id}</span></div></div>${extra}</div>`;
-        const defaultNames = { prism6: 'Block', ball: 'Ball', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player' };
+        const defaultNames = { prism6: 'Block', ball: 'Ball', wedge: 'Wedge', cylinder: 'Cylinder', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player', sound: 'Sound', highlight: 'Highlight' };
         const nameField = (o, dis = '') =>
             `<div class="field-label">Name</div><input class="text" type="text" id="prop-name" maxlength="48" value="${esc(o.name)}" aria-label="Name" ${dis}>`;
         function bindName(obj) {
@@ -3387,19 +3695,105 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 return;
             }
 
+            if (obj.type === 'sound') {
+                if (!SOUND_PRESETS[obj.preset]) obj.preset = 'beep';
+                obj.volume = Math.max(0, Math.min(1, Number.isFinite(obj.volume) ? obj.volume : 0.6));
+                if (!Number.isFinite(obj.maxDistance)) obj.maxDistance = 20;
+                const parent = sceneObjects[obj.parent];
+                const isChild = parent && !SPACE_KEYS.includes(obj.parent);
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, 'i-sound')}
+                    ${section('Editor', nameField(obj))}
+                    ${section('Playback', `
+                        <div class="field-label">Sound</div>
+                        <select class="text" id="prop-sound-preset" aria-label="Sound">${Object.entries(SOUND_PRESETS).map(([k, p]) => `<option value="${k}"${obj.preset === k ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+                        <div class="switch-stack">
+                        ${switchRow('prop-sound-playing', 'Playing', !!obj.playing, '')}
+                        ${switchRow('prop-sound-looped', 'Looped', !!obj.looped, '')}
+                        </div>
+                        <div class="field-label">Volume</div>
+                        <div class="tod-row">
+                            <input type="range" class="tod" id="prop-sound-volume" min="0" max="1" step="0.01" value="${obj.volume}" aria-label="Volume">
+                            <span class="field-note" id="prop-sound-volume-note" style="margin:0;min-width:44px;text-align:right">${Math.round(obj.volume * 100)}%</span>
+                        </div>
+                        <div class="field-label">Max distance</div>
+                        <div class="tod-row">
+                            <input type="range" class="tod" id="prop-sound-distance" min="0" max="200" step="1" value="${Math.min(200, obj.maxDistance)}" aria-label="Max distance">
+                            <label class="num" title="Max distance in meters"><input type="number" id="prop-sound-distance-num" min="0" step="1" value="${obj.maxDistance}" aria-label="Max distance in meters"><span class="tag">m</span></label>
+                        </div>
+                        <div class="field-note">${isChild ? 'Heard within this many meters of ' + esc(parent.name) + ', fading with distance from the camera.' : 'Max distance only applies when a Sound is a child of an object. A sound straight in a Space is heard at the same volume everywhere.'}</div>
+                    `)}`;
+                bindName(obj);
+                const id = selectedObjectId;
+                document.getElementById('prop-sound-preset').addEventListener('change', (e) => {
+                    obj.preset = SOUND_PRESETS[e.target.value] ? e.target.value : 'beep';
+                    if (obj.playing) startSound(id);
+                });
+                document.getElementById('prop-sound-playing').addEventListener('change', (e) => {
+                    obj.playing = e.target.checked;
+                    if (obj.playing) startSound(id); else stopSound(id);
+                });
+                document.getElementById('prop-sound-looped').addEventListener('change', (e) => {
+                    obj.looped = e.target.checked;
+                    if (obj.playing) startSound(id);
+                });
+                const volEl = document.getElementById('prop-sound-volume'), volNote = document.getElementById('prop-sound-volume-note');
+                volEl.addEventListener('input', () => {
+                    obj.volume = Math.max(0, Math.min(1, parseFloat(volEl.value) || 0));
+                    volNote.textContent = Math.round(obj.volume * 100) + '%';
+                });
+                const distR = document.getElementById('prop-sound-distance'), distN = document.getElementById('prop-sound-distance-num');
+                const setDist = (v) => {
+                    obj.maxDistance = Math.max(0, Number.isFinite(v) ? v : 0);
+                    if (document.activeElement !== distR) distR.value = Math.min(200, obj.maxDistance);
+                    if (document.activeElement !== distN) distN.value = obj.maxDistance;
+                };
+                distR.addEventListener('input', () => setDist(parseFloat(distR.value)));
+                distN.addEventListener('input', () => setDist(parseFloat(distN.value)));
+                distN.addEventListener('change', () => { setDist(parseFloat(distN.value)); distN.value = obj.maxDistance; });
+                return;
+            }
+
+            if (obj.type === 'highlight') {
+                const parent = sceneObjects[obj.parent];
+                const targets = highlightTargets(obj).length;
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, 'i-highlight')}
+                    ${section('Editor', nameField(obj))}
+                    ${section('Outline', `
+                        <div class="field-label">Color</div>
+                        <div class="accent-ctl"><input type="color" class="color-pick" id="prop-hi-color" value="${prismColor(obj)}" aria-label="Outline color"><input class="text hex-in" id="prop-hi-hex" maxlength="7" spellcheck="false" value="${prismColor(obj)}" aria-label="Outline color hex code"></div>
+                        ${switchRow('prop-hi-over', 'Appears over objects', obj.overObjects !== false, '')}
+                        <div class="field-note">${targets ? 'Outlining ' + targets + ' part' + (targets === 1 ? '' : 's') + ' under ' + esc(parent ? parent.name : '') + '.' : 'Put a Highlight inside a model or a part to outline it.'}</div>
+                    `)}`;
+                bindName(obj);
+                const pick = document.getElementById('prop-hi-color'), hex = document.getElementById('prop-hi-hex');
+                pick.addEventListener('input', () => { obj.color = pick.value.toLowerCase(); hex.value = obj.color; });
+                hex.addEventListener('change', () => {
+                    let v = hex.value.trim().replace(/^#/, '');
+                    if (/^[0-9a-f]{3}$/i.test(v)) v = v.split('').map(c => c + c).join('');
+                    if (/^[0-9a-f]{6}$/i.test(v)) { obj.color = ('#' + v).toLowerCase(); pick.value = obj.color; }
+                    hex.value = prismColor(obj);
+                });
+                document.getElementById('prop-hi-over').addEventListener('change', (e) => { obj.overObjects = e.target.checked; });
+                return;
+            }
+
             const dis = obj.locked ? 'disabled' : '';
+            const sizeDis = obj.type === 'union' ? 'disabled' : dis;
             container.innerHTML = `
-                ${objHead(selectedObjectId, obj, obj.type === 'ball' ? 'i-ball' : 'i-cube', obj.locked ? `<span class="chip">${icon('i-lock')}Locked</span>` : '')}
+                ${objHead(selectedObjectId, obj, obj.type === 'ball' ? 'i-ball' : obj.type === 'wedge' ? 'i-wedge' : obj.type === 'cylinder' ? 'i-cylinder' : obj.type === 'union' ? 'i-union' : 'i-cube', obj.locked ? `<span class="chip">${icon('i-lock')}Locked</span>` : '')}
                 ${section('Position', `<div class="field-row">
                     ${numField('prop-x', 'X', 'x', 'X', obj.x, dis)}
                     ${numField('prop-y', 'Y', 'y', 'Y', obj.y, dis)}
                     ${numField('prop-z', 'Z', 'z', 'Z', obj.z, dis)}
                 </div>`)}
                 ${section('Size', `<div class="field-row">
-                    ${numField('prop-length', 'L', 'z', 'Length (Z)', obj.length, dis)}
-                    ${numField('prop-width', 'W', 'x', 'Width (X)', obj.width, dis)}
-                    ${numField('prop-height', 'H', 'y', 'Height (Y)', obj.height, dis)}
-                </div>`)}
+                    ${numField('prop-length', 'L', 'z', 'Length (Z)', obj.length, sizeDis)}
+                    ${numField('prop-width', 'W', 'x', 'Width (X)', obj.width, sizeDis)}
+                    ${numField('prop-height', 'H', 'y', 'Height (Y)', obj.height, sizeDis)}
+                </div>${obj.type === 'union' ? '<div class="field-note">A union keeps the size of the parts it was built from.</div>' : ''}`)}
+                ${obj.type === 'union' ? section('Union', `<div class="field-note">Built from ${(obj.cells || []).length} merged block${(obj.cells || []).length === 1 ? '' : 's'}. To change it, select parts in World and choose Union Selected or Intersect Selected.</div>`) : ''}
                 ${section('Rotation', `<div class="field-row">
                     ${numField('prop-rx', 'X', 'x', 'Rotation X in degrees', obj.rotX || 0, dis)}
                     ${numField('prop-ry', 'Y', 'y', 'Rotation Y in degrees', obj.rotY || 0, dis)}
@@ -3412,6 +3806,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     ${obj.type === 'prism6' ? switchRow('prop-spawnpoint', 'Spawnpoint', !!obj.spawnpoint, (dis || (!obj.spawnpoint && spawnTaken(selectedObjectId))) ? 'disabled' : '') : ''}
                     ${switchRow('prop-face-coloring', 'Face coloring', obj.faceColoring, dis)}
                     ${switchRow('prop-labels', 'Face labels', obj.showLabels, dis)}
+                    ${obj.type !== 'union' ? switchRow('prop-negated', 'Negated (subtract in a union)', !!obj.negated, dis) : ''}
                     </div>
                 `)}
                 ${section('Render', `
@@ -3446,6 +3841,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     colHex.value = prismColor(obj);
                 });
                 document.getElementById('prop-labels').addEventListener('change', (e) => { obj.showLabels = e.target.checked; });
+                const negEl = document.getElementById('prop-negated');
+                if (negEl) negEl.addEventListener('change', (e) => { obj.negated = e.target.checked; });
                 document.getElementById('prop-wireframe').addEventListener('change', (e) => { obj.wireframe = e.target.checked; });
                 document.getElementById('prop-physics').addEventListener('change', (e) => {
                     obj.reactsToPhysics = e.target.checked;
@@ -4175,6 +4572,25 @@ void main() {
     lit = mix(lit, uEdgeColor, uSel * smoothstep(0.8, 0.94, rim));
     o = vec4(lit, 1.0);
 }`;
+        // Wedges and cylinders reuse the prism's lighting, edges and shadows, but read their own triangles instead of a box.
+        const MESH_VS = `
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
+layout(location = 2) in vec2 aUV;
+layout(location = 3) in float aFace;
+uniform vec3 uCenter, uHalf;
+uniform mat3 uRot;
+out vec2 vUV;
+out vec3 vW;
+flat out vec3 vN;
+flat out float vFace;
+void main() {
+    vec3 w = uCenter + uRot * (aPos * uHalf);
+    vec3 n = uRot * aNormal;
+    vUV = aUV; vFace = aFace; vW = w; vN = n;
+    if (dot(n, w - uCam) >= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }   // back face
+    gl_Position = project(w);
+}`;
         const SHADOW_VS = `#version 300 es
 precision highp float;
 layout(location = 0) in vec3 aPos;
@@ -4283,18 +4699,27 @@ void main() { o = texture(uTex, vT); }`;
         const vDot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
         const vNorm = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
         // Two orthographic shadow windows from the sun: a tight one around where you are looking and a wide one behind it.
-        function renderShadows(gl, prisms, sm, balls) {
+        function renderShadows(gl, prisms, sm, balls, meshes, unions) {
             const L = [sky.lightWorld.x, sky.lightWorld.y, sky.lightWorld.z];
             const f = [-L[0], -L[1], -L[2]];
             const r = vNorm(vCross(f, Math.abs(L[1]) > 0.99 ? [1, 0, 0] : [0, 1, 0])), u = vCross(r, f);
             const cam = [camPosX, camPosY, camPosZ], fw = [fwdX, fwdY, fwdZ];
             let hit = Infinity, minY = Infinity, maxY = -Infinity;
-            const casters = [], ballCasters = [];
-            for (const [, o] of prisms.concat(balls)) {
+            const casters = [], ballCasters = [], meshCasters = [];
+            for (const [, o] of prisms.concat(balls, meshes || [], unions || [])) {
                 const ex = shapeHalfExt(o);
                 minY = Math.min(minY, o.y - ex[1]); maxY = Math.max(maxY, o.y + ex[1]);
                 if (o.wireframe) continue;
-                (o.type === 'ball' ? ballCasters : casters).push(o);
+                if (o.type === 'union') {
+                    // A union casts the shadow of its cells, so a shape cut out of it lets light through.
+                    for (const c of o.cells || []) {
+                        const p = unionCellWorld(o, c);
+                        casters.push({ x: p.x, y: p.y, z: p.z, width: c.width, height: c.height, length: c.length, rotX: o.rotX, rotY: o.rotY, rotZ: o.rotZ });
+                        minY = Math.min(minY, p.y - c.height); maxY = Math.max(maxY, p.y + c.height);
+                    }
+                } else if (o.type === 'ball') ballCasters.push(o);
+                else if (o.type === 'wedge' || o.type === 'cylinder') meshCasters.push(o);
+                else casters.push(o);
                 let t0 = 0, t1 = Infinity;
                 const c = [o.x, o.y, o.z], h = ex;
                 for (let i = 0; i < 3 && t0 <= t1; i++) {
@@ -4351,6 +4776,19 @@ void main() { o = texture(uTex, vT); }`;
                     gl.uniformMatrix3fv(S.u.uRot, false, rotGL(o));
                     gl.drawElements(gl.TRIANGLES, GL.sphere.nTri, gl.UNSIGNED_SHORT, 0);
                 }
+                if (meshCasters.length) {
+                    for (const o of meshCasters) {
+                        const rad = Math.hypot(o.width, o.height, o.length);
+                        const px = o.x - c[0], py = o.y - c[1], pz = o.z - c[2];
+                        if (Math.abs(r[0] * px + r[1] * py + r[2] * pz) - rad > R * 1.42 || Math.abs(u[0] * px + u[1] * py + u[2] * pz) - rad > R * 1.42) continue;
+                        const mesh = o.type === 'wedge' ? GL.mesh.wedge : GL.mesh.cylinder;
+                        gl.bindVertexArray(mesh.vao);
+                        gl.uniform3f(S.u.uCenter, o.x, o.y, o.z);
+                        gl.uniform3f(S.u.uHalf, o.width, o.height, o.length);
+                        gl.uniformMatrix3fv(S.u.uRot, false, rotGL(o));
+                        gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
+                    }
+                }
                 out.vp.push(m); out.info.push(texel, far); out.sizes.push(map.size);
             });
             gl.disable(gl.POLYGON_OFFSET_FILL);
@@ -4375,12 +4813,77 @@ void main() { o = texture(uTex, vT); }`;
             return { sun, sky: skyAmb, gnd, haze: hor, spec: 0.18 * day + 0.05 };
         }
 
+        // Uniforms shared by the prism and mesh programs, which use the same fragment shader.
+        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize'];
+
+        // ── Meshes for the shapes a box cannot describe ──
+        // Vertices are position (3), normal (3), edge UV (2) and face index (1) in the same -1..1 space as a box, so Size
+        // scales them and the prism shader lights, textures and outlines them exactly like a block.
+        const meshFaceIndex = (n) => {
+            const ax = Math.abs(n[0]), ay = Math.abs(n[1]), az = Math.abs(n[2]);
+            if (ay >= ax && ay >= az) return n[1] >= 0 ? 4 : 5;
+            if (ax >= az) return n[0] >= 0 ? 2 : 3;
+            return n[2] >= 0 ? 0 : 1;
+        };
+        function meshBuilder() {
+            const v = [];
+            const put = (p, n, uv) => v.push(p[0], p[1], p[2], n[0], n[1], n[2], uv[0], uv[1], meshFaceIndex(n));
+            const tri = (a, b, c, n, uv) => { put(a, n, uv[0]); put(b, n, uv[1]); put(c, n, uv[2]); };
+            const quad = (a, b, c, d, n) => { tri(a, b, c, n, [[-1, -1], [1, -1], [1, 1]]); tri(a, c, d, n, [[-1, -1], [1, 1], [-1, 1]]); };
+            return { v, tri, quad };
+        }
+        // A wedge is the box with its top-front half cut away: the slope is the plane y = z.
+        function wedgeMesh() {
+            const m = meshBuilder(), S = Math.SQRT1_2;
+            m.quad([-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1], [0, -1, 0]);            // floor
+            m.quad([-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1], [0, 0, 1]);                  // back wall
+            m.quad([-1, -1, -1], [1, -1, -1], [1, 1, 1], [-1, 1, 1], [0, S, -S]);               // slope
+            m.tri([-1, -1, -1], [-1, -1, 1], [-1, 1, 1], [-1, 0, 0], [[-1, -1], [1, -1], [-1, 1]]);
+            m.tri([1, -1, -1], [1, 1, 1], [1, -1, 1], [1, 0, 0], [[-1, -1], [-1, 1], [1, -1]]);
+            return m.v;
+        }
+        // A cylinder stands on its end: a round column around Y with flat caps.
+        function cylinderMesh(segments) {
+            const m = meshBuilder(), n = segments || 24, TAU = Math.PI * 2;
+            for (let i = 0; i < n; i++) {
+                const a0 = i / n * TAU, a1 = (i + 1) / n * TAU, am = (a0 + a1) / 2;
+                const x0 = Math.cos(a0), z0 = Math.sin(a0), x1 = Math.cos(a1), z1 = Math.sin(a1);
+                m.quad([x0, -1, z0], [x0, 1, z0], [x1, 1, z1], [x1, -1, z1], [Math.cos(am), 0, Math.sin(am)]);
+            }
+            // Caps: a fan whose edge UVs land on the uv square's border, so the rim gets an outline like a block's edge.
+            const rimUV = (p) => { const d = Math.max(Math.abs(p[0]), Math.abs(p[2])) || 1; return [p[0] / d, p[2] / d]; };
+            for (const y of [1, -1]) {
+                const nrm = [0, y, 0];
+                for (let i = 0; i < n; i++) {
+                    const a0 = i / n * TAU, a1 = (i + 1) / n * TAU;
+                    const p0 = [Math.cos(a0), y, Math.sin(a0)], p1 = [Math.cos(a1), y, Math.sin(a1)];
+                    const qa = y > 0 ? p1 : p0, qb = y > 0 ? p0 : p1;   // each cap faces outwards
+                    m.tri([0, y, 0], qa, qb, nrm, [[0, 0], rimUV(qa), rimUV(qb)]);
+                }
+            }
+            return m.v;
+        }
+
         function initGL() {
             try {
                 const gl = glCanvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true });
                 if (!gl) return;
-                const prism = glProgram(gl, PRISM_VS, PRISM_FS, ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
+                const prism = glProgram(gl, PRISM_VS, PRISM_FS, SHAPE_UNIFORMS);
                 const shadow = glProgram(gl, SHADOW_VS, SHADOW_FS, ['uCenter', 'uHalf', 'uRot', 'uLVP'], true);
+                const mesh = { prog: glProgram(gl, MESH_VS, PRISM_FS, SHAPE_UNIFORMS) };
+                const meshVao = (data) => {
+                    const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+                    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+                    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 36, 0);
+                    gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 36, 12);
+                    gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 36, 24);
+                    gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.FLOAT, false, 36, 32);
+                    gl.bindVertexArray(null);
+                    return { vao, count: data.length / 9 };
+                };
+                mesh.wedge = meshVao(wedgeMesh());
+                mesh.cylinder = meshVao(cylinderMesh(24));
                 const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
                 // unit sphere (32 x 20), shared by every ball: one triangle list and one wireframe list
                 const SEG = 32, RING = 20, sv = [], tri = [], lin = [];
@@ -4448,7 +4951,7 @@ void main() { o = texture(uTex, vT); }`;
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                     return t;
                 });
-                GL = { gl, prism, axis, label, tex, shadow, ball: ballP, sphere, sm: null, dummy: makeShadowMap(gl, 1) };
+                GL = { gl, prism, axis, label, tex, shadow, ball: ballP, sphere, mesh, sm: null, dummy: makeShadowMap(gl, 1) };
                 resize();
             } catch (err) {
                 console.warn('WebGL 2 unavailable, using the 2D renderer instead:', err);
@@ -4457,7 +4960,30 @@ void main() { o = texture(uTex, vT); }`;
         }
 
         const FACE_COLS_F32 = new Float32Array([].concat(...faces.map(f => [1, 3, 5].map(i => parseInt(f.color.slice(i, i + 2), 16) / 255))));
-        function drawGL(prisms, balls) {
+        // Per-face colors and outline settings, shared by prisms, wedges, cylinders and union cells.
+        function applyShapeLook(P, id, o, faceTex, noTex) {
+            const gl = GL.gl;
+            const colors = new Float32Array(18), albedo = new Float32Array(18), Ro = rotMat(o);
+            faces.forEach((f, fi) => {
+                const nx = Ro[0] * f.normal.x + Ro[1] * f.normal.y + Ro[2] * f.normal.z, ny = Ro[3] * f.normal.x + Ro[4] * f.normal.y + Ro[5] * f.normal.z, nz = Ro[6] * f.normal.x + Ro[7] * f.normal.y + Ro[8] * f.normal.z;
+                const diffuse = Math.max(0, nx * sky.lightWorld.x + ny * sky.lightWorld.y + nz * sky.lightWorld.z);
+                const col = o.faceColoring ? f.color : prismColor(o);
+                const rgb = shadeRGB(col, sky.ambient + (1 - sky.ambient) * diffuse * sky.lightStrength);
+                colors[fi * 3] = rgb[0]; colors[fi * 3 + 1] = rgb[1]; colors[fi * 3 + 2] = rgb[2];
+                albedo[fi * 3] = parseInt(col.slice(1, 3), 16) / 255; albedo[fi * 3 + 1] = parseInt(col.slice(3, 5), 16) / 255; albedo[fi * 3 + 2] = parseInt(col.slice(5, 7), 16) / 255;
+            });
+            gl.uniform3fv(P.u.uColors, colors); gl.uniform3fv(P.u.uAlbedo, albedo);
+            gl.uniform1iv(P.u.uFaceTex, faceTex.get(id) || noTex);
+            const sel = id === selectedObjectId || (selectedObjectId && isInside(id, selectedObjectId));
+            let wire = 0, edge = [0, 0, 0], edgeA = 0.5, w = 0.9;
+            if (sel) { edge = accentRGB; edgeA = 1; w = 1.9; wire = o.wireframe ? 1 : 0; }
+            else if (o.wireframe) { wire = o.faceColoring ? 2 : 1; edge = skyBright ? [0.059, 0.09, 0.165] : [0.22, 0.74, 0.97]; w = 1.0; }
+            gl.uniform1i(P.u.uWire, wire);
+            gl.uniform3f(P.u.uEdgeColor, edge[0], edge[1], edge[2]);
+            gl.uniform1f(P.u.uEdgeAlpha, edgeA);
+            gl.uniform1f(P.u.uEdgeW, w);
+        }
+        function drawGL(prisms, balls, meshes, unions, highlights) {
             const { gl, prism: P, axis: A, label: L, tex } = GL;
             const cam = [camPosX, camPosY, camPosZ];
             const setCam = (p) => {
@@ -4472,7 +4998,7 @@ void main() { o = texture(uTex, vT); }`;
             const shSize = enhanced ? (SHADOW_SIZES[settings.shadows] || 0) : 0;
             const Ldir = sky.lightWorld, shStr = smooth(0.02, 0.16, Ldir.y);
             let shadowSet = null;
-            if (shSize > 0 && shStr > 0.01) { const sm = ensureShadowMaps(gl, shSize); if (sm) shadowSet = renderShadows(gl, prisms, sm, balls); }
+            if (shSize > 0 && shStr > 0.01) { const sm = ensureShadowMaps(gl, shSize); if (sm) shadowSet = renderShadows(gl, prisms, sm, balls, meshes, unions); }
             gl.viewport(0, 0, glCanvas.width, glCanvas.height);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -4546,6 +5072,43 @@ void main() { o = texture(uTex, vT); }`;
             });
             gl.disable(gl.POLYGON_OFFSET_FILL);
 
+            // 1a. wedges and cylinders: their own triangles, lit by the same shader as the blocks
+            if (meshes.length) {
+                const M = GL.mesh;
+                gl.useProgram(M.prog); setCam(M); setLight(M);
+                gl.enable(gl.POLYGON_OFFSET_FILL);
+                meshes.forEach(([id, o], i) => {
+                    gl.polygonOffset(0, -(i + 1));
+                    applyShapeLook(M, id, o, faceTex, noTex);
+                    gl.uniform3f(M.u.uCenter, o.x, o.y, o.z);
+                    gl.uniform3f(M.u.uHalf, o.width, o.height, o.length);
+                    gl.uniformMatrix3fv(M.u.uRot, false, rotGL(o));
+                    const mesh = o.type === 'wedge' ? M.wedge : M.cylinder;
+                    gl.bindVertexArray(mesh.vao);
+                    gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
+                });
+                gl.disable(gl.POLYGON_OFFSET_FILL);
+            }
+
+            // 1c. unions: each cell is a block, so they draw through the prism program
+            if (unions.length) {
+                gl.useProgram(P.prog); setCam(P); setLight(P); gl.bindVertexArray(P.vao);
+                gl.enable(gl.POLYGON_OFFSET_FILL);
+                let cellN = 0;
+                for (const [id, u] of unions) {
+                    applyShapeLook(P, id, u, faceTex, noTex);
+                    gl.uniformMatrix3fv(P.u.uRot, false, rotGL(u));
+                    for (const c of u.cells) {
+                        const p = unionCellWorld(u, c);
+                        gl.polygonOffset(0, -(++cellN));
+                        gl.uniform3f(P.u.uCenter, p.x, p.y, p.z);
+                        gl.uniform3f(P.u.uHalf, c.width, c.height, c.length);
+                        gl.drawArrays(gl.TRIANGLES, 0, 36);
+                    }
+                }
+                gl.disable(gl.POLYGON_OFFSET_FILL);
+            }
+
             // 1b. balls
             if (balls.length) {
                 const B = GL.ball, SP = GL.sphere;
@@ -4575,6 +5138,55 @@ void main() { o = texture(uTex, vT); }`;
                     }
                 }
                 gl.disable(gl.CULL_FACE);
+            }
+
+            // 1d. highlights: the edges of the parts under each Highlight, optionally drawn over everything
+            if (highlights.length) {
+                gl.depthMask(false);
+                for (const [, h] of highlights) {
+                    const targets = highlightTargets(h);
+                    if (!targets.length) continue;
+                    const hc = prismColor(h);
+                    const hr = parseInt(hc.slice(1, 3), 16) / 255, hg = parseInt(hc.slice(3, 5), 16) / 255, hb = parseInt(hc.slice(5, 7), 16) / 255;
+                    if (h.overObjects) gl.disable(gl.DEPTH_TEST);
+                    const boxes = targets.filter(([, o]) => o.type !== 'wedge' && o.type !== 'cylinder');
+                    const meshy = targets.filter(([, o]) => o.type === 'wedge' || o.type === 'cylinder');
+                    if (boxes.length) {
+                        gl.useProgram(P.prog); setCam(P); gl.bindVertexArray(P.vao);
+                        gl.uniform1i(P.u.uWire, 1); gl.uniform1f(P.u.uEdgeAlpha, 1); gl.uniform1f(P.u.uEdgeW, 2.6);
+                        gl.uniform3f(P.u.uEdgeColor, hr, hg, hb);
+                        for (const [, o] of boxes) {
+                            gl.uniformMatrix3fv(P.u.uRot, false, rotGL(o));
+                            if (o.type === 'union') {
+                                for (const c of o.cells) {
+                                    const p = unionCellWorld(o, c);
+                                    gl.uniform3f(P.u.uCenter, p.x, p.y, p.z);
+                                    gl.uniform3f(P.u.uHalf, c.width, c.height, c.length);
+                                    gl.drawArrays(gl.TRIANGLES, 0, 36);
+                                }
+                            } else {
+                                gl.uniform3f(P.u.uCenter, o.x, o.y, o.z);
+                                gl.uniform3f(P.u.uHalf, o.width, o.height, o.length);
+                                gl.drawArrays(gl.TRIANGLES, 0, 36);
+                            }
+                        }
+                    }
+                    if (meshy.length) {
+                        const M = GL.mesh;
+                        gl.useProgram(M.prog); setCam(M);
+                        gl.uniform1i(M.u.uWire, 1); gl.uniform1f(M.u.uEdgeAlpha, 1); gl.uniform1f(M.u.uEdgeW, 2.6);
+                        gl.uniform3f(M.u.uEdgeColor, hr, hg, hb);
+                        for (const [, o] of meshy) {
+                            gl.uniform3f(M.u.uCenter, o.x, o.y, o.z);
+                            gl.uniform3f(M.u.uHalf, o.width, o.height, o.length);
+                            gl.uniformMatrix3fv(M.u.uRot, false, rotGL(o));
+                            const mesh = o.type === 'wedge' ? M.wedge : M.cylinder;
+                            gl.bindVertexArray(mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
+                        }
+                    }
+                    if (h.overObjects) gl.enable(gl.DEPTH_TEST);
+                }
+                gl.depthMask(true);
             }
             gl.depthMask(false);
 
@@ -4814,6 +5426,7 @@ void main() { o = texture(uTex, vT); }`;
                 if (keyState['d']) { camPosX += rightX * moveSpeed; camPosY += rightY * moveSpeed; camPosZ += rightZ * moveSpeed; }
             }
 
+            updateSounds();
             updateSky();
             drawSky();
             renderViewfinder();
@@ -4821,7 +5434,11 @@ void main() { o = texture(uTex, vT); }`;
             ctx.clearRect(0, 0, width, height);
             const prisms = Object.entries(sceneObjects).filter(([id, o]) => o.type === 'prism6' && spaceOf(o) === 'world' && id !== pc.hideId);
             const balls = Object.entries(sceneObjects).filter(([id, o]) => o.type === 'ball' && spaceOf(o) === 'world' && id !== pc.hideId);
-            const visibleCount = GL ? drawGL(prisms, balls) : drawFallback(prisms, balls);
+            const meshes = Object.entries(sceneObjects).filter(([id, o]) => (o.type === 'wedge' || o.type === 'cylinder') && spaceOf(o) === 'world' && id !== pc.hideId);
+            const unions = Object.entries(sceneObjects).filter(([id, o]) => o.type === 'union' && spaceOf(o) === 'world' && id !== pc.hideId);
+            const highlights = Object.entries(sceneObjects).filter(([, o]) => o.type === 'highlight');
+            // Without WebGL 2 the flat renderer draws wedges, cylinders and unions as their boxes.
+            const visibleCount = GL ? drawGL(prisms, balls, meshes, unions, highlights) : drawFallback(prisms.concat(meshes, unions), balls);
 
             // Handles are drawn last so they sit above every shape (only the UI is above them)
             // Model bounding box in 3D

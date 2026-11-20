@@ -442,8 +442,8 @@
         <p>A <b>Ball</b> is a smooth 3D sphere with the same properties as a prism: position, size, color, face coloring, face labels, wireframe, locked, and the physics switches. Its Size is the radius on each axis, so it defaults to 0.5 on every axis. When the simulation runs, a ball rolls: it spins to match its speed as it moves over a surface, bounces a little when it lands hard, and keeps its spin while it is in the air. The panels and seams painted on it make the rolling easy to see. Stopping the simulation puts it back the way it was.</p>
         <p>A <b>Human</b> is a character instance that holds health, movement and stamina values. It is always named <b>Human</b>, and its <b>PlayerName</b> property holds the player's name. A new Human starts with a PlayerName of <b>Player</b> followed by a number (Player1, Player2 and so on), and when its model is given to a player, the model and the PlayerName both become that player's name. It has no body and does not render. These values are used by the player you control, and at 0 Health the player using the model dies. The defaults are Health 100, MaxHealth 100, WalkSpeed 3.5 Vm/s, RunSpeed 6 Vm/s, Stamina 100, MaxStamina 100, RunStaminaLoss 3 per second, JumpHeight 1.5 Vm, JumpStaminaLoss 20 per jump and StaminaGain 6.5 per second.</p>
         <p>A <b>Wedge</b> is a ramp: a block with its top-front half sliced away, so it is solid underneath and rises from its front edge up to the top of its back (+Z) face. It has the same properties as a prism, including Color, rotation and the physics switches, and its Size is a half size on each axis like a prism's.</p>
-        <p>The player walks up a wedge's slope at walking pace, and the slope holds things up along its angle, so a ball rolls down it and a box rests on the slope rather than floating at the top of the shape. Only the tall back face is a wall.</p>
-        <p>A <b>Cylinder</b> is a round column standing on its ends, with a flat top and bottom. Its Size is a half size too: Width and Length are the radius on the X and Z axes and Height is half the column's height. Rotating it tilts the column, and physics then treats it as the box around it. Untilted, it collides as the round column it looks like: the corners of the square around it are empty air, the player stands on its round top and is stopped by its round side, and a ball rests on the top only where the top really is. It also weighs by its round volume rather than the square around it.</p>
+        <p>The player walks up a wedge's slope at walking pace, and the slope holds things up along its angle, so a ball rolls down it and a box rests on the slope rather than floating at the top of the shape. Only the tall back face is a wall, and the air above the slope is empty: nothing is stopped by the box a wedge would fill.</p>
+        <p>A <b>Cylinder</b> is a round column standing on its ends, with a flat top and bottom. Its Size is a half size too: Width and Length are the radius on the X and Z axes and Height is half the column's height. Rotating it tilts the column, and physics then treats it as the box around it. Untilted, it collides as the round column it looks like: the corners of the square around it are empty air, the player stands on its round top and is stopped by its round side, and a ball rests on the top only where the top really is. Blocks are held by its round top and stopped by its round side too, rather than by the square around it. It also weighs by its round volume rather than the square around it.</p>
         <p>A <b>Union</b> is one solid built from other parts. Select the parts in World, then choose <b>Union Selected</b> in the three-dot menu: they are merged into a single instance and the originals are removed. Turn on <b>Negated (subtract in a union)</b> in a part's properties to cut that part away instead of adding it, and use <b>Intersect Selected</b> to keep only the space every selected part shares. That is how you cut a doorway: build the wall, put a block where the doorway belongs, make that block Negated, select both and choose Union Selected.</p>
         <p>The union stores the result as merged blocks, so it draws with the same shader as a prism. A union of plain blocks stays perfectly sharp, while sloping and round parts become stepped blocks, so uniting a wedge gives a staircase along the slope. The union keeps the size of the parts it was built from, its properties say how many blocks it holds, and the player is blocked by those blocks rather than by the space between them, so a cut doorway can be walked through. Building a union again from new parts is how you change one.</p>
         <p>A <b>Sound</b> plays one of the built-in sounds: Beep, Chime, Click, Thud or Siren. They are synthesised, so a world never needs an audio file. <b>Playing</b> starts and stops it, <b>Looped</b> repeats it while it plays, and <b>Volume</b> is a slider from 0 to 1. Sounds play while the simulation runs; Stop silences them and restores the world.</p>
@@ -691,7 +691,7 @@ child.Parent = part</code></pre>
         <p><b>Death.</b> When the Health of a Human inside a player's model reaches 0, the player dies. The model's parts are released so they fall apart, then <code>OnPlayerDeath</code> fires. Giving the player a new model removes the old one.</p>
         <p><b>Spawn position.</b> A model spawns with its feet at 0, 5, 0. If one block has <b>Spawnpoint</b> turned on, the model spawns on top of that block instead. Only one block can be the spawnpoint. The editor will not let you pick a second one, and setting a second one in a script prints a warning and is skipped.</p>
         <p><b>Playing your player.</b> While the simulation runs you control the first player, the one the editor joins as Player1. <b>W A S D</b> move, <b>Space</b> jumps, <b>Shift</b> sprints, and the <b>Up</b> and <b>Down</b> arrow keys zoom the camera. The camera follows the player's head, and you turn the view with the same camera setting as the editor (Right-drag or Drag). Zoomed all the way in you are in first person: the head is hidden and the rest of the body stays. The model swings round to face the way it moves, and its arms and legs swing as it walks, faster when it sprints. In the air its arms trail behind and its legs tuck up. Walking speed comes from the Human's <code>WalkSpeed</code>, sprinting from <code>RunSpeed</code> and jump height from <code>JumpHeight</code>. Sprinting costs <code>RunStaminaLoss</code> every second and each jump costs <code>JumpStaminaLoss</code>. Stamina comes back at <code>StaminaGain</code> per second while you stand on something and are not sprinting. If it runs out you are exhausted: you cannot sprint or jump, and it comes back at 4 per second (or StaminaGain, if that is lower) until it is full. The player is stopped by anything that is Collidable, walks up slopes and steps up to 0.6 Vm high without jumping, and is stopped by anything taller. Falling below the kill layer sets its Health to 0.</p>
-        <p><b>Physics.</b> Everything is made of the same material, so a body's mass comes from its volume: a ball by its sphere, a cylinder by its round column and a wedge by half its box. Falling bodies speed up with gravity, and air slows them more the faster they go, so every body has a terminal velocity (a person falls at about 55 Vm/s). Air is thick where gravity is strong and gone on the Moon and in Space, so there bodies keep speeding up. When two bodies collide momentum is conserved, so a heavy body pushes a light one much more than the other way round. Fast impacts bounce and lose energy, and sliding bodies slow down and stop because of friction. Boxes still do not rotate or tip over. The player is not a body in the simulation: it is moved directly against the world, so nothing it stands on is weighed down by it, and a loose cylinder underfoot simply falls away with the player riding it down.</p>
+        <p><b>Physics.</b> Everything is made of the same material, so a body's mass comes from its volume: a ball by its sphere, a cylinder by its round column and a wedge by half its box. Falling bodies speed up with gravity, and air slows them more the faster they go, so every body has a terminal velocity (a person falls at about 55 Vm/s). Air is thick where gravity is strong and gone on the Moon and in Space, so there bodies keep speeding up. When two bodies collide momentum is conserved, so a heavy body pushes a light one much more than the other way round. Fast impacts bounce and lose energy, and sliding bodies slow down and stop because of friction. A body that comes to rest sits exactly on the surface it landed on, so a stack stays still instead of creeping. Boxes still do not rotate or tip over. The player is not a body in the simulation: it is moved directly against the world, so nothing it stands on is weighed down by it, and a loose cylinder underfoot simply falls away with the player riding it down.</p>
         <p><b>Threads.</b> <code>Scripting.NewThread(fn, threadId, ...)</code> runs <code>fn</code> in a new thread, and any extra arguments are passed to it. <code>threadId</code> is a number, a string, or <code>auto</code>, which uses the next free number. Reusing an id that is still running prints a warning and makes no new thread. A script can have at most the player count times 3 threads made this way. Server scripts share thread ids with other Server scripts, and Local scripts share theirs with other Local scripts.</p>
         <p>New worlds start with the <code>DefaultPlayer</code> model in Storage (with a Human inside it) and a <b>PlayerManagement</b> script in Scripts that spawns every player who joins and respawns them after they die:</p>
         <pre><code># PlayerManagement: gives every player a model when they join, and respawns them after they die.
@@ -778,7 +778,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
   <script src="../vanillalua.js"></script>
   <script>
-        const ENGINE_VERSION = '3.4.1.0';
+        const ENGINE_VERSION = '3.4.2.0';
         const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
@@ -1175,6 +1175,32 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             return o.y + e[1];
         }
 
+        // The point of a body's span nearest to a coordinate, so a pair is measured where the two bodies are closest.
+        const clampToSpan = (v, half, c) => Math.max(v - half, Math.min(v + half, c));
+        // How far a shape reaches sideways at a point. A cylinder is round, so away from its middle it is narrower than
+        // the square around it; a box and a wedge are exactly the full width of their size.
+        function shapeReachX(o, pz, ex) {
+            if (!rotInfo(o) && o.type === 'cylinder') {
+                const dz = (pz - o.z) / (o.length || 1), k = 1 - dz * dz;
+                return k > 0 ? (o.width || 1) * Math.sqrt(k) : 0;
+            }
+            return ex;
+        }
+        function shapeReachZ(o, px, ez) {
+            if (!rotInfo(o) && o.type === 'cylinder') {
+                const dx = (px - o.x) / (o.width || 1), k = 1 - dx * dx;
+                return k > 0 ? (o.length || 1) * Math.sqrt(k) : 0;
+            }
+            return ez;
+        }
+        // A wedge is solid only below its slope, so anything clearing the slope has empty air under it there and must
+        // not be pushed sideways by it.
+        function clearsSlope(o, other, otherEy) {
+            if (rotInfo(o) || o.type !== 'wedge') return false;
+            const top = shapeTopUnder(o, other.x, other.z);
+            return top !== -Infinity && other.y - otherEy > top + 1e-4;
+        }
+
         // The contact between a ball and a box. Worked in the box's own axes, so a tilted box is solid at its true angle.
         // Returns null when they are apart, else the normal (world space, pointing from the box to the ball) and depth.
         function ballAgainstBox(ball, box, r) {
@@ -1245,16 +1271,20 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             if (b.type === 'ball' && bMoves) ballContacts.set(idB, { nx: -n[0], ny: -n[1], nz: -n[2], ovx: av.x, ovy: av.y, ovz: av.z });
         }
 
-        // Boxes resting on boxes: a stack settles from the bottom up so it never jitters.
+        // Bodies resting on bodies: a stack settles from the bottom up so it never jitters.
         const supportContacts = new Map();
         function settleSupports() {
             if (!supportContacts.size) return;
             const pairs = [...supportContacts.values()].sort((p, q) => sceneObjects[p[1]].y - sceneObjects[q[1]].y);
-            for (const [u, l] of pairs) {
+            for (const [u, l, top] of pairs) {
                 const U = sceneObjects[u], L = sceneObjects[l];
                 if (!U || !L || !isMovable(U)) continue;
                 const uv = physicsVelocityFor(u), floor = isMovable(L) ? physicsVelocityFor(l).y : 0;
                 if (uv.y < floor) uv.y = floor;
+                // Rest exactly on the surface it landed on. Without this a body keeps the depth it sank by in the step
+                // that resolved it, which is a fraction of a millimeter and moves with the frame time: that reads as a
+                // constant slight Y shift. A body on its way up, such as after a bounce, is left alone.
+                if (top !== -Infinity && uv.y <= 0) U.y = top + shapeHalfExt(U)[1];
             }
             supportContacts.clear();
         }
@@ -1300,48 +1330,49 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     if (!aMoves && !bMoves) return;
                     if (a.type === 'ball' || b.type === 'ball') { resolveBallPair(idA, a, idB, b); return; }
 
-                    // Bounding box test first: tilted boxes collide as the box around them.
-                    const dx = (EX[i] + EX[j]) - Math.abs(a.x - b.x);
+                    // Overlap is measured against the real surface of each shape, so the corners of the square around a
+                    // round column and the air above a wedge's slope are not solid. A turned shape is the box around it,
+                    // and a round shape is read at its widest point inside the other body's footprint.
+                    const dx = shapeReachX(a, clampToSpan(b.z, EZ[j], a.z), EX[i]) + shapeReachX(b, clampToSpan(a.z, EZ[i], b.z), EX[j]) - Math.abs(a.x - b.x);
                     if (dx <= 0) return;
                     const dy = (EY[i] + EY[j]) - Math.abs(a.y - b.y);
                     if (dy <= 0) return;
-                    const dz = (EZ[i] + EZ[j]) - Math.abs(a.z - b.z);
+                    const dz = shapeReachZ(a, clampToSpan(b.x, EX[j], a.x), EZ[i]) + shapeReachZ(b, clampToSpan(a.x, EX[i], b.x), EZ[j]) - Math.abs(a.z - b.z);
                     if (dz <= 0) return;
+                    if (clearsSlope(a, b, EY[j]) || clearsSlope(b, a, EY[i])) return;
 
-                    const signX = a.x < b.x ? -1 : 1;
-                    const signY = a.y < b.y ? -1 : 1;
-                    const signZ = a.z < b.z ? -1 : 1;
                     const av = physicsVelocityFor(idA);
                     const bv = physicsVelocityFor(idB);
                     const invA = aMoves ? 1 / bodyMass(a) : 0, invB = bMoves ? 1 / bodyMass(b) : 0;
                     const shareA = invA / (invA + invB), shareB = invB / (invA + invB);   // the lighter body gives way more
+                    // The higher body is the one resting on the other. How deep it sits is measured against the surface
+                    // of the shape below, so a wedge holds it along its slope and a cylinder only on its round top.
+                    const upper = (a.y - EY[i]) > (b.y - EY[j]) ? a : b, lower = upper === a ? b : a;
+                    const surface = shapeTopUnder(lower, upper.x, upper.z);
+                    const penY = surface === -Infinity ? -1 : surface + (upper === a ? EY[i] : EY[j]) - upper.y;
                     let n;
-                    if (dy <= dx && dy <= dz) {
-                        // A wedge holds things up along its slope and a cylinder only on its round top, so measure the rise
-                        // against the real shape rather than the square around it.
-                        let penY = dy;
-                        const lower = signY > 0 ? b : a;
-                        if (lower.type === 'cylinder' || lower.type === 'wedge') {
-                            const upper = signY > 0 ? a : b;
-                            const top = shapeTopUnder(lower, upper.x, upper.z);
-                            if (top === -Infinity) return;              // the corner of the square around it is empty air
-                            penY = top + (upper === a ? EY[i] : EY[j]) - upper.y;
-                            if (penY <= 0) return;
-                        }
-                        a.y += signY * penY * shareA;
-                        b.y -= signY * penY * shareB;
-                        n = [0, signY, 0];
+                    if (penY > 0 && penY <= Math.min(dx, dz) + 1e-6) {
+                        a.y += (a === upper ? 1 : -1) * penY * shareA;
+                        b.y += (b === upper ? 1 : -1) * penY * shareB;
+                        n = [0, a === upper ? 1 : -1, 0];
                     } else if (dx <= dz) {
+                        const signX = a.x < b.x ? -1 : 1;
                         a.x += signX * dx * shareA;
                         b.x -= signX * dx * shareB;
                         n = [signX, 0, 0];
                     } else {
+                        const signZ = a.z < b.z ? -1 : 1;
                         a.z += signZ * dz * shareA;
                         b.z -= signZ * dz * shareB;
                         n = [0, 0, signZ];
                     }
                     applyContactImpulse(av, bv, n, invA, invB, BOX_RESTITUTION, true);
-                    if (n[1] !== 0) supportContacts.set(n[1] > 0 ? idA + '|' + idB : idB + '|' + idA, n[1] > 0 ? [idA, idB] : [idB, idA]);
+                    if (n[1] !== 0) {
+                        // Read the resting height again: the shape below may have given way a little in this pass.
+                        const rest = shapeTopUnder(lower, upper.x, upper.z);
+                        supportContacts.set(upper === a ? idA + '|' + idB : idB + '|' + idA,
+                            upper === a ? [idA, idB, rest] : [idB, idA, rest]);
+                    }
             };
             for (let i = 0; i < n; i++) {
                 if (movable[i]) {
@@ -1474,13 +1505,23 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             return Math.abs(dx) <= c.w && Math.abs(dz) <= c.l ? c.y1 : -Infinity;
         }
         // The highest part of a collider under the player's box. A slope is read under its middle, so a ramp is climbed
-        // at walking pace instead of being jumped up to its top corner.
+        // at walking pace instead of being jumped up to its top corner. A round top is flat, so it is one height.
         function colTopUnder(c, b) {
             if (c.k === 2) return colTopAt(c, (b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2);
+            if (c.k === 1) return pcOverFoot(b, c) ? c.y1 : -Infinity;
             const mx = (b.minX + b.maxX) / 2, mz = (b.minZ + b.maxZ) / 2;
             return Math.max(colTopAt(c, b.minX, b.minZ), colTopAt(c, b.maxX, b.minZ), colTopAt(c, b.minX, b.maxZ), colTopAt(c, b.maxX, b.maxZ), colTopAt(c, mx, mz));
         }
-        const pcOverFoot = (b, c) => b.maxX > c.x - c.w + PC_EPS && b.minX < c.x + c.w - PC_EPS && b.maxZ > c.z - c.l + PC_EPS && b.minZ < c.z + c.l - PC_EPS;
+        // Whether the player's square stands over a collider. A cylinder is round, so the corners of its box are empty
+        // air: the nearest point of the player's square to the column's axis is what has to be over the disc.
+        const pcOverFoot = (b, c) => {
+            if (c.k === 1) {
+                const nx = Math.max(b.minX, Math.min(b.maxX, c.x)), nz = Math.max(b.minZ, Math.min(b.maxZ, c.z));
+                const dx = (nx - c.x) / (c.w || 1), dz = (nz - c.z) / (c.l || 1);
+                return dx * dx + dz * dz <= 1;
+            }
+            return b.maxX > c.x - c.w + PC_EPS && b.minX < c.x + c.w - PC_EPS && b.maxZ > c.z - c.l + PC_EPS && b.minZ < c.z + c.l - PC_EPS;
+        };
         // The highest surface the player could stand on with its feet between two heights.
         function pcSupport(b, cols, lo, hi) {
             let best = -Infinity;
@@ -1789,10 +1830,15 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 outputLog.length = 0;
                 vlRuntime.sharedGlobals = new Map();
                 simulationRunning = true;
+                // Keep the driven player's parts out of the physics from the very first step, so they never shove what
+                // the player is standing on before the controller takes them over.
+                const driven = controlledModel();
+                playerPartIds = driven && !driven.dead ? new Set(driven.parts) : null;
                 startSimulationScripts();
                 for (const [id, o] of Object.entries(sceneObjects)) if (o.type === 'sound' && o.playing) startSound(id);
             } else {
                 simulationRunning = false;
+                playerPartIds = null;
                 for (const id of [...activeSounds.keys()]) stopSound(id);
                 stopScripts();
                 vlRuntime.sharedGlobals = new Map();

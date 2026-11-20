@@ -443,7 +443,7 @@
         <p>A <b>Human</b> is a character instance that holds health, movement and stamina values. It is always named <b>Human</b>, and its <b>PlayerName</b> property holds the player's name. A new Human starts with a PlayerName of <b>Player</b> followed by a number (Player1, Player2 and so on), and when its model is given to a player, the model and the PlayerName both become that player's name. It has no body and does not render. These values are used by the player you control, and at 0 Health the player using the model dies. The defaults are Health 100, MaxHealth 100, WalkSpeed 3.5 Vm/s, RunSpeed 6 Vm/s, Stamina 100, MaxStamina 100, RunStaminaLoss 3 per second, JumpHeight 1.5 Vm, JumpStaminaLoss 20 per jump and StaminaGain 6.5 per second.</p>
         <p>A <b>Wedge</b> is a ramp: a block with its top-front half sliced away, so it is solid underneath and rises from its front edge up to the top of its back (+Z) face. It has the same properties as a prism, including Color, rotation and the physics switches, and its Size is a half size on each axis like a prism's.</p>
         <p>The player walks up a wedge's slope at walking pace, and the slope holds things up along its angle, so a ball rolls down it and a box rests on the slope rather than floating at the top of the shape. Only the tall back face is a wall, and the air above the slope is empty: nothing is stopped by the box a wedge would fill.</p>
-        <p>A <b>Cylinder</b> is a round column standing on its ends, with a flat top and bottom. Its Size is a half size too: Width and Length are the radius on the X and Z axes and Height is half the column's height. Rotating it tilts the column, and physics then treats it as the box around it. Untilted, it collides as the round column it looks like: the corners of the square around it are empty air, the player stands on its round top and is stopped by its round side, and a ball rests on the top only where the top really is. Blocks are held by its round top and stopped by its round side too, rather than by the square around it. It also weighs by its round volume rather than the square around it.</p>
+        <p>A <b>Cylinder</b> is a round column standing on its ends, with a flat top and bottom. Its Size is a half size too: Width and Length are the radius on the X and Z axes and Height is half the column's height. Rotating it tilts the column, and physics then treats it as the box around it. Untilted, it collides as the round column it looks like: the corners of the square around it are empty air, the player stands on its round top and is stopped by its round side, and a ball rests on the top only where the top really is. Blocks are held by its round top and stopped by its round side too, rather than by the square around it, and a block pushed into the round side slides around the curve instead of stopping square on it as it would on a rectangle. A body dropped squarely onto the round top stays there rather than being shoved off the side. It also weighs by its round volume rather than the square around it.</p>
         <p>A <b>Union</b> is one solid built from other parts. Select the parts in World, then choose <b>Union Selected</b> in the three-dot menu: they are merged into a single instance and the originals are removed. Turn on <b>Negated (subtract in a union)</b> in a part's properties to cut that part away instead of adding it, and use <b>Intersect Selected</b> to keep only the space every selected part shares. That is how you cut a doorway: build the wall, put a block where the doorway belongs, make that block Negated, select both and choose Union Selected.</p>
         <p>The union stores the result as merged blocks, so it draws with the same shader as a prism. A union of plain blocks stays perfectly sharp, while sloping and round parts become stepped blocks, so uniting a wedge gives a staircase along the slope. The union keeps the size of the parts it was built from, its properties say how many blocks it holds, and the player is blocked by those blocks rather than by the space between them, so a cut doorway can be walked through. Building a union again from new parts is how you change one.</p>
         <p>A <b>Sound</b> plays one of the built-in sounds: Beep, Chime, Click, Thud or Siren. They are synthesised, so a world never needs an audio file. <b>Playing</b> starts and stops it, <b>Looped</b> repeats it while it plays, and <b>Volume</b> is a slider from 0 to 1. Sounds play while the simulation runs; Stop silences them and restores the world.</p>
@@ -778,7 +778,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
   <script src="../vanillalua.js"></script>
   <script>
-        const ENGINE_VERSION = '3.4.2.0';
+        const ENGINE_VERSION = '3.4.2.1';
         const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
@@ -1175,23 +1175,31 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             return o.y + e[1];
         }
 
-        // The point of a body's span nearest to a coordinate, so a pair is measured where the two bodies are closest.
-        const clampToSpan = (v, half, c) => Math.max(v - half, Math.min(v + half, c));
-        // How far a shape reaches sideways at a point. A cylinder is round, so away from its middle it is narrower than
-        // the square around it; a box and a wedge are exactly the full width of their size.
-        function shapeReachX(o, pz, ex) {
-            if (!rotInfo(o) && o.type === 'cylinder') {
-                const dz = (pz - o.z) / (o.length || 1), k = 1 - dz * dz;
-                return k > 0 ? (o.width || 1) * Math.sqrt(k) : 0;
+        // The overlap between an untilted round column and another body's footprint. The column is an ellipse of radii
+        // (width, length), so this measures to the real surface instead of the square around it: the empty corners of
+        // that square are not solid, and a body is pushed along the round normal rather than along a world axis, so it
+        // slides around the column instead of stopping square on it the way a rectangle would.
+        // Returns null when the two footprints are apart, else the normal (from the column toward the other body) and
+        // the depth, both in world space.
+        function columnAgainstFoot(cyl, other, ex, ez) {
+            const w = cyl.width || 1, l = cyl.length || 1;
+            const ox = (other.x - cyl.x) / w, oz = (other.z - cyl.z) / l;      // its centre, in the column's own scale
+            const ax = ex / w, az = ez / l;
+            // The nearest point of its footprint to the column's axis. A box and a wedge are square, so this is their
+            // own corner or face; a body whose axis falls inside them leaves by the nearer face.
+            const qx = Math.max(ox - ax, Math.min(ox + ax, 0)), qz = Math.max(oz - az, Math.min(oz + az, 0));
+            const d = Math.hypot(qx, qz);
+            if (d >= 1) return null;
+            let nx, nz, pen;
+            if (d > 1e-6) { nx = qx / d; nz = qz / d; pen = 1 - d; }           // the column's surface out to that point
+            else {
+                const px = ax - Math.abs(ox), pz = az - Math.abs(oz);
+                if (px <= pz) { nx = ox >= 0 ? 1 : -1; nz = 0; pen = px + 1; }
+                else { nx = 0; nz = oz >= 0 ? 1 : -1; pen = pz + 1; }
             }
-            return ex;
-        }
-        function shapeReachZ(o, px, ez) {
-            if (!rotInfo(o) && o.type === 'cylinder') {
-                const dx = (px - o.x) / (o.width || 1), k = 1 - dx * dx;
-                return k > 0 ? (o.length || 1) * Math.sqrt(k) : 0;
-            }
-            return ez;
+            // Back to world: an ellipse's normal is its gradient, and its depth stretches the same way.
+            const gx = nx / w, gz = nz / l, gl = Math.hypot(gx, gz) || 1;
+            return { nx: gx / gl, nz: gz / gl, pen: pen / gl };
         }
         // A wedge is solid only below its slope, so anything clearing the slope has empty air under it there and must
         // not be pushed sideways by it.
@@ -1331,14 +1339,22 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     if (a.type === 'ball' || b.type === 'ball') { resolveBallPair(idA, a, idB, b); return; }
 
                     // Overlap is measured against the real surface of each shape, so the corners of the square around a
-                    // round column and the air above a wedge's slope are not solid. A turned shape is the box around it,
-                    // and a round shape is read at its widest point inside the other body's footprint.
-                    const dx = shapeReachX(a, clampToSpan(b.z, EZ[j], a.z), EX[i]) + shapeReachX(b, clampToSpan(a.z, EZ[i], b.z), EX[j]) - Math.abs(a.x - b.x);
-                    if (dx <= 0) return;
+                    // round column and the air above a wedge's slope are not solid. A turned shape is the box around it.
                     const dy = (EY[i] + EY[j]) - Math.abs(a.y - b.y);
                     if (dy <= 0) return;
-                    const dz = shapeReachZ(a, clampToSpan(b.x, EX[j], a.x), EZ[i]) + shapeReachZ(b, clampToSpan(a.x, EX[i], b.x), EZ[j]) - Math.abs(a.z - b.z);
-                    if (dz <= 0) return;
+                    const roundA = !rotInfo(a) && a.type === 'cylinder', roundB = !rotInfo(b) && b.type === 'cylinder';
+                    let disc = null, dx = 0, dz = 0, depth;
+                    if (roundA || roundB) {
+                        disc = roundA ? columnAgainstFoot(a, b, EX[j], EZ[j]) : columnAgainstFoot(b, a, EX[i], EZ[i]);
+                        if (!disc) return;
+                        depth = disc.pen;
+                    } else {
+                        dx = (EX[i] + EX[j]) - Math.abs(a.x - b.x);
+                        if (dx <= 0) return;
+                        dz = (EZ[i] + EZ[j]) - Math.abs(a.z - b.z);
+                        if (dz <= 0) return;
+                        depth = Math.min(dx, dz);
+                    }
                     if (clearsSlope(a, b, EY[j]) || clearsSlope(b, a, EY[i])) return;
 
                     const av = physicsVelocityFor(idA);
@@ -1350,11 +1366,21 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                     const upper = (a.y - EY[i]) > (b.y - EY[j]) ? a : b, lower = upper === a ? b : a;
                     const surface = shapeTopUnder(lower, upper.x, upper.z);
                     const penY = surface === -Infinity ? -1 : surface + (upper === a ? EY[i] : EY[j]) - upper.y;
+                    // On a round top, but still above it: there is nothing to push. Without this a body dropped squarely
+                    // onto a column is shoved off to the side by the first step that overlaps the square around it.
+                    if (lower.type === 'cylinder' && surface !== -Infinity && penY <= 0) return;
                     let n;
-                    if (penY > 0 && penY <= Math.min(dx, dz) + 1e-6) {
+                    if (penY > 0 && penY <= depth + 1e-6) {
                         a.y += (a === upper ? 1 : -1) * penY * shareA;
                         b.y += (b === upper ? 1 : -1) * penY * shareB;
                         n = [0, a === upper ? 1 : -1, 0];
+                    } else if (disc) {
+                        // Push along the column's round surface, which is slanted whenever the other body is off to a
+                        // side, so the two slide apart around the circle instead of along a world axis.
+                        const nx = roundA ? -disc.nx : disc.nx, nz = roundA ? -disc.nz : disc.nz;   // from b to a
+                        a.x += nx * disc.pen * shareA; a.z += nz * disc.pen * shareA;
+                        b.x -= nx * disc.pen * shareB; b.z -= nz * disc.pen * shareB;
+                        n = [nx, 0, nz];
                     } else if (dx <= dz) {
                         const signX = a.x < b.x ? -1 : 1;
                         a.x += signX * dx * shareA;

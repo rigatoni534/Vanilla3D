@@ -230,6 +230,10 @@
                     if (!UI_ALIGNS.includes(obj.align)) obj.align = 'Center';
                     if (!Number.isFinite(obj.textSize)) obj.textSize = 18;
                     if (!Number.isFinite(obj.borderWidth)) obj.borderWidth = 0;
+                    if (obj.type === 'frame') {
+                        obj.backgroundBlur = uiClamp(obj.backgroundBlur, 0, 20);
+                        obj.borderBlur = uiClamp(obj.borderBlur, 0, 20);
+                    }
                     obj.visible = obj.visible !== false;
                 }
                 if (obj.type === 'union') {

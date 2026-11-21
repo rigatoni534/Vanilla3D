@@ -504,8 +504,26 @@
             st.display = o.visible === false ? 'none' : 'flex';
             st.backgroundColor = uiRGBA(o.color, o.transparency);
             if (node.type === 'frame') {
-                st.boxShadow = o.borderWidth > 0 ? 'inset 0 0 0 ' + uiClamp(o.borderWidth, 0, 20) + 'px ' + uiRGBA(o.borderColor, 0) : 'none';
+                const bw = uiClamp(o.borderWidth, 0, 20);
+                const bgBlur = uiClamp(o.backgroundBlur, 0, 20);
+                const strokeBlur = uiClamp(o.borderBlur, 0, 20);
+                const softStroke = bw > 0 && strokeBlur > 0;
+                if (bgBlur > 0) {
+                    const blur = 'blur(' + bgBlur + 'px)';
+                    st.setProperty('backdrop-filter', blur);
+                    st.setProperty('-webkit-backdrop-filter', blur);
+                } else {
+                    st.removeProperty('backdrop-filter');
+                    st.removeProperty('-webkit-backdrop-filter');
+                }
+                st.boxShadow = bw > 0 && !softStroke ? 'inset 0 0 0 ' + bw + 'px ' + uiRGBA(o.borderColor, 0) : 'none';
                 st.overflow = o.clipChildren ? 'hidden' : 'visible';
+                node.el.classList.toggle('vui-soft-stroke', softStroke);
+                if (softStroke) {
+                    st.setProperty('--vui-stroke-width', bw + 'px');
+                    st.setProperty('--vui-stroke-color', uiRGBA(o.borderColor, 0));
+                    st.setProperty('--vui-stroke-blur', strokeBlur + 'px');
+                }
             } else if (node.type === 'text') {
                 node.label.textContent = String(o.text == null ? '' : o.text);
                 st.color = HEX6.test(o.textColor) ? o.textColor : '#ffffff';

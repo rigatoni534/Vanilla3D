@@ -126,6 +126,9 @@
                     ${transparencyRow}
                     ${number('borderWidth', 'Border width', 'px', 0, 20, 1)}
                     ${colorRow('borderColor', 'Border color')}
+                    ${number('backgroundBlur', 'Background blur', 'px', 0, 20, 1)}
+                    ${number('borderBlur', 'Border blur', 'px', 0, 20, 1)}
+                    <div class="field-note">Background blur frosts what is behind the frame; border blur softens its stroke.</div>
                     ${switchRow('prop-ui-clip', 'Clip children', !!obj.clipChildren, '')}`
                     : obj.type === 'image' ? `
                     ${textRow('image', 'Image URL', obj.image || '', 400)}
@@ -162,7 +165,7 @@
                     `)}
                     ${section('Appearance', look)}`;
                 bindName(obj);
-                for (const [key, lo, hi] of [['posX', 0, 100], ['posY', 0, 100], ['sizeX', UI_MIN_SIZE, 100], ['sizeY', UI_MIN_SIZE, 100], ['textSize', 4, 200], ['borderWidth', 0, 20]]) {
+                for (const [key, lo, hi] of [['posX', 0, 100], ['posY', 0, 100], ['sizeX', UI_MIN_SIZE, 100], ['sizeY', UI_MIN_SIZE, 100], ['textSize', 4, 200], ['borderWidth', 0, 20], ['backgroundBlur', 0, 20], ['borderBlur', 0, 20]]) {
                     const el = document.getElementById('prop-ui-' + key);
                     if (!el) continue;
                     el.addEventListener('input', () => { const v = parseFloat(el.value); if (Number.isFinite(v)) obj[key] = uiClamp(v, lo, hi); });

@@ -675,3 +675,11 @@
   .wn-lede { margin: 10px 0 10px; color: var(--text-2); font-size: 13px; }
   #whats-new-list { max-height: min(52vh, 430px); }
   #modal-whats-new .cf-actions { margin-top: 14px; }
+
+  /* A frame stroke with blur: a border layer under the frame's children. */
+  .vui-frame.vui-soft-stroke::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    border: var(--vui-stroke-width, 0px) solid var(--vui-stroke-color, transparent);
+    filter: blur(var(--vui-stroke-blur, 0px));
+    pointer-events: none;
+  }

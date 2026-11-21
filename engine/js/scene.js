@@ -65,7 +65,7 @@
         }
         // A frame groups other elements, or fills up as a progress bar.
         function makeFrame(name, parent, props) {
-            return Object.assign(uiBase(name, parent), { type: 'frame', sizeX: 40, sizeY: 20, color: '#1c2230', transparency: 0.35, borderWidth: 0, borderColor: '#000000', clipChildren: false }, props);
+            return Object.assign(uiBase(name, parent), { type: 'frame', sizeX: 40, sizeY: 20, color: '#1c2230', transparency: 0.35, borderWidth: 0, borderColor: '#000000', backgroundBlur: 0, borderBlur: 0, clipChildren: false }, props);
         }
         function makeText(name, parent, props) {
             return Object.assign(uiBase(name, parent), { type: 'text', sizeX: 30, sizeY: 6, transparency: 1, text: 'Text', textColor: '#ffffff', textSize: 18, bold: false, align: 'Center' }, props);

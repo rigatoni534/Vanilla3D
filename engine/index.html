@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=3.8.0.0">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.9.0.0">
   
 </head>
 <body>
@@ -406,7 +406,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.8.0.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.9.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -445,6 +445,7 @@
         <p><b>Editing.</b> With <b>Move</b> active, press on an element in the viewport and drag it; it snaps to a 1% grid and a guide line appears only for the position it is snapping to. With <b>Scale</b> active, each corner has a handle: drag a corner diagonally to scale evenly, or mostly sideways or up and down to change only the width or only the height. The opposite corner stays where it is. Every number is also in Properties.</p>
         <p><b>Run.</b> The UI is the server end of the interface. When a player joins in the simulation, that player takes it: the elements move inside the <b>Player</b> instance in Players, keeping their UIDs, and are drawn for the player. Buttons and inputs work there. Scripts reach them through the player, for example <code>player.UI.Score.Text = "10"</code>, or through a reference they took before the join. <b>Stop</b> puts everything back in the UI space.</p>
         <p><b>Scripts on the interface.</b> A Script can be a child of a UI element: create one with <b>Add Child…</b> on the element, or drag one into it. A script created that way starts as <b>Local</b>, because interface code belongs to the player's side, and it runs when the simulation starts. <code>script.Parent</code> is the element it sits in. A script cannot sit at the top of the UI space on its own; it must be inside an element, and it moves with that element when a player takes the interface.</p>
+        <p><b>Frame blur.</b> A Frame can frost what is behind it with <b>Background blur</b> and soften its stroke with <b>Border blur</b>. Both are 0 to 20 pixels; border blur needs a border width. They are saved with the world and exposed to scripts as <code>BackgroundBlur</code> and <code>BorderBlur</code>.</p>
         <h3 data-group="Editor guide">Run and Stop</h3>
         <p><b>Run</b> works like Roblox Studio: the world is snapshotted, physics and scripts run live, and <b>Stop</b> restores the snapshot exactly as it was. Anything scripts create or change during a run is discarded on Stop, and global variables are cleared.</p>
         <div class="callout"><b>Heads up:</b> saving, opening a world and starting a new one are blocked while a simulation runs. Stop first.</div>
@@ -830,21 +831,21 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=3.8.0.0"></script>
-  <script>const ENGINE_VERSION = '3.8.0.0';</script>
+  <script src="../vanillalua.js?v=3.9.0.0"></script>
+  <script>const ENGINE_VERSION = '3.9.0.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/scene.js?v=3.8.0.0"></script>
-  <script defer src="js/version-history.js?v=3.8.0.0"></script>
-  <script defer src="js/player.js?v=3.8.0.0"></script>
-  <script defer src="js/sounds.js?v=3.8.0.0"></script>
-  <script defer src="js/scripting.js?v=3.8.0.0"></script>
-  <script defer src="js/shell.js?v=3.8.0.0"></script>
-  <script defer src="js/files.js?v=3.8.0.0"></script>
-  <script defer src="js/offline.js?v=3.8.0.0"></script>
-  <script defer src="js/explorer.js?v=3.8.0.0"></script>
-  <script defer src="js/properties.js?v=3.8.0.0"></script>
-  <script defer src="js/render.js?v=3.8.0.0"></script>
-  <script defer src="js/gl.js?v=3.8.0.0"></script>
-  <script defer src="js/main.js?v=3.8.0.0"></script>
+  <script defer src="js/scene.js?v=3.9.0.0"></script>
+  <script defer src="js/version-history.js?v=3.9.0.0"></script>
+  <script defer src="js/player.js?v=3.9.0.0"></script>
+  <script defer src="js/sounds.js?v=3.9.0.0"></script>
+  <script defer src="js/scripting.js?v=3.9.0.0"></script>
+  <script defer src="js/shell.js?v=3.9.0.0"></script>
+  <script defer src="js/files.js?v=3.9.0.0"></script>
+  <script defer src="js/offline.js?v=3.9.0.0"></script>
+  <script defer src="js/explorer.js?v=3.9.0.0"></script>
+  <script defer src="js/properties.js?v=3.9.0.0"></script>
+  <script defer src="js/render.js?v=3.9.0.0"></script>
+  <script defer src="js/gl.js?v=3.9.0.0"></script>
+  <script defer src="js/main.js?v=3.9.0.0"></script>
 </body>
 </html>

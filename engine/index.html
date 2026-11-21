@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=3.5.0.1">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.5.1.0">
   
 </head>
 <body>
@@ -59,6 +59,7 @@
     <symbol id="i-ui-button" viewBox="0 0 16 16"><rect x="2" y="5" width="12" height="6" rx="3"/><path d="M6 8h4"/></symbol>
     <symbol id="i-ui-image" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><circle cx="6" cy="6.5" r="1"/><path d="m3.5 11.5 3-3 2.5 2.5L11 8.5l2 3"/></symbol>
     <symbol id="i-ui-input" viewBox="0 0 16 16"><rect x="2" y="4.5" width="12" height="7" rx="1.5"/><path d="M5 6.5v3M4.25 6.5h1.5M4.25 9.5h1.5"/></symbol>
+    <symbol id="i-comms" viewBox="0 0 16 16"><path d="M2.75 5.5h7.5M8 3.25 10.25 5.5 8 7.75"/><path d="M13.25 10.5h-7.5M8 8.25 5.75 10.5 8 12.75"/></symbol>
   </svg>
 
   <!-- Toolbar -->
@@ -299,6 +300,7 @@
             <label class="setting" for="sv-storage"><div><div class="setting-title">Storage</div><div class="setting-desc">Templates kept in Storage, such as DefaultPlayer.</div></div><input type="checkbox" id="sv-storage" class="switch"></label>
             <label class="setting" for="sv-scripts"><div><div class="setting-title">Scripts</div><div class="setting-desc">The Scripts space, including every script's source.</div></div><input type="checkbox" id="sv-scripts" class="switch"></label>
             <label class="setting" for="sv-ui"><div><div class="setting-title">UI</div><div class="setting-desc">Frames, text, buttons, images and inputs handed to the player on spawn.</div></div><input type="checkbox" id="sv-ui" class="switch"></label>
+            <label class="setting" for="sv-communications"><div><div class="setting-title">Communications</div><div class="setting-desc">Reserved for messages between server and client.</div></div><input type="checkbox" id="sv-communications" class="switch"></label>
             <div class="set-sub">Instance types</div>
             <div class="name-grid">
               <label for="sv-prism6">Blocks</label><input type="checkbox" id="sv-prism6" class="switch">
@@ -385,15 +387,16 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.5.0.1</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.5.1.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
-        <p>The editor is built from a few panels. Everything you build lives in one of four <b>spaces</b> in the Explorer.</p>
+        <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
-          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b>, <b>Scripts</b> and <b>UI</b> spaces. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Wedge, a Cylinder, a Ball, a Sound, a Highlight, a Human, a World Settings or a Script. Storage holds objects kept for scripts and never renders; only World renders. UI holds the screen interface.</td></tr>
+          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b>, <b>Scripts</b>, <b>UI</b> and <b>Communications</b> spaces, plus <b>Players</b> and <b>Engine</b>. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Wedge, a Cylinder, a Ball, a Sound, a Highlight, a Human, a World Settings or a Script. Storage holds objects kept for scripts and never renders; only World renders. UI holds the screen interface.</td></tr>
           <tr><td>Viewport</td><td>The 3D view. Select, Move and Scale modes work here.</td></tr>
           <tr><td>Properties</td><td>Edits the selected instance: name, position, size, physics flags, script options.</td></tr>
           <tr><td>Tab bar</td><td>World is always open. Scripts open as tabs over the viewport.</td></tr>
         </tbody></table>
+        <p><b>Communications</b> is a reserved space for passing messages between the server and the client. It is empty for now: nothing can be added to it yet, and the <b>+</b> button is intentionally absent.</p>
         <p><b>Multi-select:</b> hold <kbd>Shift</kbd> and click to add or remove single objects. Hold <kbd>Ctrl</kbd> (<kbd>Cmd</kbd> on Mac) and click to select every object between your last click and the one you click. Copy, cut, paste, delete and dragging then apply to all selected objects.</p>
         <p>Hover an instance in the Explorer and press the three-dot button for <b>Rename, Copy, Paste, Cut, Delete</b> and <b>Move Camera To</b>.</p>
         <p>A Rectangular Prism also has a <b>Color</b> in its Render section: pick one with the color box or type a hex code such as <code>#ff8800</code>. Turning on <b>Face coloring</b> overrides it, because each face then shows its own debug color.</p>
@@ -422,6 +425,7 @@
         <p><b>Previewing.</b> Select any UI instance, or the <b>UI</b> space itself, and the whole interface appears in the viewport so you can lay it out against the scene. Selecting something else hides the preview again.</p>
         <p><b>Editing.</b> With <b>Move</b> active, press on an element in the viewport and drag it; it snaps to a 1% grid and a guide line appears only for the position it is snapping to. With <b>Scale</b> active, each corner has a handle: drag a corner diagonally to scale evenly, or mostly sideways or up and down to change only the width or only the height. The opposite corner stays where it is. Every number is also in Properties.</p>
         <p><b>Run.</b> The UI is the server end of the interface. When a player joins in the simulation, that player takes it: the elements move inside the <b>Player</b> instance in Players, keeping their UIDs, and are drawn for the player. Buttons and inputs work there. Scripts reach them through the player, for example <code>player.UI.Score.Text = "10"</code>, or through a reference they took before the join. <b>Stop</b> puts everything back in the UI space.</p>
+        <p><b>Scripts on the interface.</b> A Script can be a child of a UI element: create one from the element's <b>+</b> menu, or drag one into it. A script created that way starts as <b>Local</b>, because interface code belongs to the player's side, and it runs when the simulation starts. <code>script.Parent</code> is the element it sits in. A script cannot sit at the top of the UI space on its own; it must be inside an element, and it moves with that element when a player takes the interface.</p>
         <h3 data-group="Editor guide">Run and Stop</h3>
         <p><b>Run</b> works like Roblox Studio: the world is snapshotted, physics and scripts run live, and <b>Stop</b> restores the snapshot exactly as it was. Anything scripts create or change during a run is discarded on Stop, and global variables are cleared.</p>
         <div class="callout"><b>Heads up:</b> saving, opening a world and starting a new one are blocked while a simulation runs. Stop first.</div>
@@ -434,7 +438,7 @@
         </tbody></table>
         <p>There is no invisible ground at <code>y = 0</code>. Objects fall until they land on something solid or pass the kill layer.</p>
         <h3 data-group="Editor guide">File menu and .vnw files</h3>
-        <p>The <b>File</b> menu in the top bar saves and opens whole worlds. This browser keeps three saves: <b>Autosave</b>, <b>Browser Slot 1</b> and <b>Browser Slot 2</b>. Any other save is a <code>.vnw</code> file on your computer. A world file is plain JSON holding everything in World, Storage and Scripts, including script source. Engine-owned objects such as the Viewfinder are not saved.</p>
+        <p>The <b>File</b> menu in the top bar saves and opens whole worlds. This browser keeps three saves: <b>Autosave</b>, <b>Browser Slot 1</b> and <b>Browser Slot 2</b>. Any other save is a <code>.vnw</code> file on your computer. A world file is plain JSON holding everything in World, Storage, Scripts, UI and Communications, including script source. Engine-owned objects such as the Viewfinder are not saved.</p>
         <p>The page checks every 30 seconds whether a newer version of the engine or of Vanillalua has been published. If one has, a prompt offers to save and reload; your world is saved to Autosave first and opened again in the new version.</p>
         <table class="docs-table"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
           <tr><td>Save to Autosave, Browser Slot 1 or 2 <span class="kbd">Ctrl S</span></td><td>Writes that slot in this browser's local storage. Saving again overwrites only that slot. Ctrl S writes Autosave.</td></tr>
@@ -468,7 +472,7 @@
           <li>Deleting a parent deletes all of its children. Copy, cut and paste carry children along.</li>
           <li><b>Reorder</b> by dropping on the top or bottom edge of a row (a line shows where it will land). Dropping on the middle of a row makes a child.</li>
         </ul>
-        <p>Children live in the same space as their parent and keep their own position; they do not move with the parent. A script placed under an object, anywhere inside World or Scripts, runs like any other script and can reach that object with <code>script.Parent</code>.</p>
+        <p>Children live in the same space as their parent and keep their own position; they do not move with the parent. A script placed under an object, anywhere inside World, Scripts or a UI element, runs like any other script and can reach that object with <code>script.Parent</code>.</p>
         <p>A <b>Ball</b> is a smooth 3D sphere with the same properties as a prism: position, size, color, face coloring, face labels, wireframe, locked, and the physics switches. Its Size is the radius on each axis, so it defaults to 0.5 on every axis. When the simulation runs, a ball rolls: it spins to match its speed as it moves over a surface, bounces a little when it lands hard, and keeps its spin while it is in the air. The panels and seams painted on it make the rolling easy to see. Stopping the simulation puts it back the way it was.</p>
         <p>A <b>Human</b> is a character instance that holds health, movement and stamina values. It is always named <b>Human</b>, and its <b>PlayerName</b> property holds the player's name. A new Human starts with a PlayerName of <b>Player</b> followed by a number (Player1, Player2 and so on), and when its model is given to a player, the model and the PlayerName both become that player's name. It has no body and does not render. These values are used by the player you control, and at 0 Health the player using the model dies. The defaults are Health 100, MaxHealth 100, WalkSpeed 3.5 Vm/s, RunSpeed 6 Vm/s, Stamina 100, MaxStamina 100, RunStaminaLoss 3 per second, JumpHeight 1.5 Vm, JumpStaminaLoss 20 per jump and StaminaGain 6.5 per second.</p>
         <p>A <b>Wedge</b> is a ramp: a block with its top-front half sliced away, so it is solid underneath and rises from its front edge up to the top of its back (+Z) face. It has the same properties as a prism, including Color, rotation and the physics switches, and its Size is a half size on each axis like a prism's.</p>
@@ -517,7 +521,7 @@
         </tbody></table>
         <p>Settings are stored in this browser and are not part of a <code>.vnw</code> file.</p>
         <h3 data-group="Editor guide">The script editor</h3>
-        <p>Create a Script from a space's <b>+</b> button and double-click it to open it as a tab. The editor shows line numbers on the left, your code in the middle, and warning and error markers on the right. The Output panel below shows <code>print</code> results and runtime errors. <code>Tab</code> indents.</p>
+        <p>Create a Script from a space's <b>+</b> button, or from a UI element's <b>+</b> menu, and double-click it to open it as a tab. The editor shows line numbers on the left, your code in the middle, and warning and error markers on the right. The Output panel below shows <code>print</code> results and runtime errors. <code>Tab</code> indents.</p>
         <p>Script properties split into <b>Execution</b> and <b>Miscellaneous</b>:</p>
         <ul>
           <li><b>Script type:</b> Local or Server (see Script types and running).</li>
@@ -806,9 +810,9 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js"></script>
+  <script src="../vanillalua.js?v=3.5.1.0"></script>
   <script>
-        const ENGINE_VERSION = '3.5.0.1';
+        const ENGINE_VERSION = '3.5.1.0';
         const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
@@ -817,11 +821,12 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             storage: { name: 'Storage', icon: 'i-folder', addable: true },
             scripts: { name: 'Scripts', icon: 'i-script', addable: true },
             ui:      { name: 'UI',      icon: 'i-ui-frame', addable: true },
+            communications: { name: 'Communications', icon: 'i-comms', addable: false },
             players: { name: 'Players', icon: 'i-players', addable: false },
             engine:  { name: 'Engine',  icon: 'i-engine', addable: false }
         };
         // ── Childing: an instance's parent is a space id or another instance's UID ──
-        const SPACE_KEYS = ['world', 'storage', 'scripts', 'ui', 'players'];
+        const SPACE_KEYS = ['world', 'storage', 'scripts', 'ui', 'communications', 'players'];
         function spaceOf(o) { let n = 0; while (o && !SPACE_KEYS.includes(o.parent) && n++ < 64) o = sceneObjects[o.parent]; return o ? o.parent : null; }
         function isInside(id, ancestorId) { let o = sceneObjects[id], n = 0; while (o && n++ < 64) { if (o.parent === ancestorId) return true; o = sceneObjects[o.parent]; } return false; }
         function pruneOrphans() {
@@ -2301,7 +2306,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 obj = { type: 'worldsettings', name: dn('worldsettings') + ' ' + n, parent: space, timeOfDay: 14, gravity: 9.8, killY: -5000 };
             } else {
                 const n = ++counters.script;
-                obj = newScriptData(n === 1 ? dn('script') : dn('script') + ' ' + n, space);
+                // A script on a UI element belongs to the player's side, so it starts Local.
+                obj = newScriptData(n === 1 ? dn('script') : dn('script') + ' ' + n, space, isUI(sceneObjects[space]) ? 'Local' : 'Server');
             }
             sceneObjects[id] = obj;
             collapsed.delete(space);
@@ -2617,7 +2623,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const slotOf = (id) => SAVE_SLOTS.find(s => s.id === id) || null;
         const VN_RELOAD_RESTORE_KEY = 'vanilla-engine-reload-restore';
         // What a save can include. Settings > What gets saved switches these off one by one.
-        const SAVED_SPACES = [['world', 'World'], ['storage', 'Storage'], ['scripts', 'Scripts'], ['ui', 'UI']];
+        const SAVED_SPACES = [['world', 'World'], ['storage', 'Storage'], ['scripts', 'Scripts'], ['ui', 'UI'], ['communications', 'Communications']];
         const SAVED_TYPES = [['prism6', 'Blocks'], ['ball', 'Balls'], ['wedge', 'Wedges'], ['cylinder', 'Cylinders'], ['union', 'Unions'], ['model', 'Models'], ['human', 'Humans'], ['script', 'Script instances'], ['worldsettings', 'World Settings'], ['texture', 'Textures'], ['sound', 'Sounds'], ['highlight', 'Highlights'], ['frame', 'UI frames'], ['text', 'UI text'], ['button', 'UI buttons'], ['image', 'UI images'], ['input', 'UI inputs']];
         for (const [id] of SAVED_SPACES) document.getElementById('sv-' + id).addEventListener('change', (e) => { settings.saveWhat[id] = e.target.checked; saveSettings(); });
         for (const [t] of SAVED_TYPES) document.getElementById('sv-' + t).addEventListener('change', (e) => { settings.saveWhat.types[t] = e.target.checked; saveSettings(); });
@@ -2628,7 +2634,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const fileStatus = document.getElementById('file-status');
         const vnwInput = document.getElementById('vnw-file-input');
         const vanillaInput = document.getElementById('vanilla-file-input');
-        const SPACE_IDS = ['world', 'storage', 'scripts', 'ui'];
+        const SPACE_IDS = ['world', 'storage', 'scripts', 'ui', 'communications'];
         function toast(msg, kind) {
             const el = document.createElement('div');
             el.className = 'toast ' + (kind || '');
@@ -2794,7 +2800,10 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             for (const [uid, obj] of Object.entries(sceneObjects)) if (SPACE_IDS.includes(spaceOf(obj))) delete sceneObjects[uid];
             for (const [uid, obj] of Object.entries(data.objects)) {
                 if (obj.type === 'script') {
-                    if (obj.scriptType !== 'Local' && obj.scriptType !== 'Server') obj.scriptType = 'Server';
+                    if (obj.scriptType !== 'Local' && obj.scriptType !== 'Server') {
+                        const parent = data.objects[obj.parent];
+                        obj.scriptType = parent && UI_TYPES.includes(parent.type) ? 'Local' : 'Server';
+                    }
                     if (!['simulation', 'join', 'manual'].includes(obj.runWhen)) obj.runWhen = 'simulation';
                     if (obj.language !== 'vanillalua' && obj.language !== 'json') obj.language = 'vanillalua';
                     if (typeof obj.source !== 'string') obj.source = '';
@@ -3062,7 +3071,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 const kids = Object.entries(sceneObjects).filter(([, o]) => o.parent === sid);
                 const open = !collapsed.has(sid);
                 const rows = kids.length ? kids.map(([id, o]) => rowHtml(id, o, 0)).join('')
-                    : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : sid === 'ui' ? 'No interface yet' : sid === 'players' ? 'Players join when the simulation runs' : 'Empty'}</div>`;
+                    : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : sid === 'ui' ? 'No interface yet' : sid === 'players' ? 'Players join when the simulation runs' : sid === 'communications' ? 'Reserved for server and client communication' : 'Empty'}</div>`;
                 return `
                     <div class="tree-space">
                         <div class="tree-row">
@@ -3168,7 +3177,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
               const uiTarget = btn.dataset.add === 'ui' || isUI(tgt);
               for (const it of addMenu.querySelectorAll('.menu-item')) {
                   const uiKind = UI_TYPES.includes(it.dataset.kind);
-                  let show = uiTarget ? uiKind : !uiKind;
+                  // Scripts are the one non-UI instance that may be added inside a UI element.
+                  let show = uiTarget ? (uiKind || (it.dataset.kind === 'script' && !!tgt && isUI(tgt))) : !uiKind;
                   if (!uiTarget && it.dataset.kind === 'texture') show = !!tgt && tgt.type === 'prism6';
                   it.style.display = show ? '' : 'none';
               } }
@@ -3351,6 +3361,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             const c = clipboard;
             if (!c) return;
             if (c.multi) { const list = c.multi, cut = c.cut; for (const sub of list) { clipboard = sub; pasteInto(space); } clipboard = cut ? null : { multi: list, cut: false }; return; }
+            // Only UI elements sit at the top of the UI space; scripts belong inside one of them.
+            if (space === 'ui' && !isUI(c.data)) { toast('Only UI elements can sit at the top of the UI space. Paste inside a UI element.', 'warn'); return; }
             const data = cloneData(c.data);
             data.parent = isUI(data) && (space === 'ui' || isUI(sceneObjects[space])) ? space : (isUI(data) ? 'ui' : space);
             if (isUI(data)) { data.posX = uiClamp((+data.posX || 50) + c.pastes * 4, 0, 100); data.posY = uiClamp((+data.posY || 50) + c.pastes * 4, 0, 100); }
@@ -3427,16 +3439,24 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const clearDrop = () => explorerEl.querySelectorAll('.drop-target, .drop-before, .drop-after').forEach(x => x.classList.remove('drop-target', 'drop-before', 'drop-after'));
         function dropInfo(e) {
             const t = e.target.closest('.tree-item, .tree-group'); if (!t || !dragIds.length) return null;
-            if (t.classList.contains('tree-group')) { const sp = t.dataset.space; return sp === 'engine' ? null : { el: t, where: 'child', target: sp }; }
+            if (t.classList.contains('tree-group')) {
+                const sp = t.dataset.space;
+                if (sp === 'engine' || sp === 'communications') return null;
+                // The interface stays in the UI space; a script enters it through a UI element, never at the top.
+                if (dragIds.some(id => isUI(sceneObjects[id])) ? sp !== 'ui' : sp === 'ui') return null;
+                return { el: t, where: 'child', target: sp };
+            }
             const o = sceneObjects[t.dataset.id]; if (!o || o.readOnly) return null;
             const r = t.getBoundingClientRect(), f = (e.clientY - r.top) / r.height;
             const where = f < 0.28 ? 'before' : f > 0.72 ? 'after' : 'child';
             const target = where === 'child' ? t.dataset.id : o.parent;
             if (dragIds.some(id => id === t.dataset.id || id === target || isInside(target, id))) return null;
-            // UI instances stay in the interface and world objects stay out of it.
+            // UI instances stay in the interface and world objects stay out of it, except that a script may be a
+            // child of a UI element (never of the UI space itself).
             const draggingUI = dragIds.some(id => isUI(sceneObjects[id]));
             const targetIsUI = SPACE_KEYS.includes(target) ? target === 'ui' : isUI(sceneObjects[target]);
-            if (draggingUI !== targetIsUI) return null;
+            const scriptIntoUI = targetIsUI && target !== 'ui' && dragIds.every(id => (sceneObjects[id] || {}).type === 'script');
+            if (draggingUI !== targetIsUI && !scriptIntoUI) return null;
             return { el: t, where, target, ref: t.dataset.id };
         }
         function moveInOrder(ids, info) {
@@ -4008,7 +4028,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         // The same tools act on the interface when it is being previewed, so the hint follows what will happen.
         function applyModeHint() {
             const o = sceneObjects[selectedObjectId];
-            const ui = !simulationRunning && (selectedSpaceId === 'ui' || isUI(o));
+            const ui = !simulationRunning && (selectedSpaceId === 'ui' || isUI(o) || uiContainers().length > 0);
             document.getElementById('hint-mode').textContent = !ui ? hintText[mode] : mode === 'move'
                 ? 'Drag a UI element to move it'
                 : mode === 'scale' ? 'Drag a UI corner to resize it'
@@ -4473,7 +4493,14 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             }
             if (selectedSpaceId === 'ui') return ['ui'];
             const o = sceneObjects[selectedObjectId];
-            if (!isUI(o)) return [];
+            if (!isUI(o)) {
+                // A script that is a child of a UI element previews the same interface as the element.
+                let id = o && o.parent, n = 0;
+                while (id && sceneObjects[id] && !isUI(sceneObjects[id]) && n++ < 64) id = sceneObjects[id].parent;
+                if (!id || !isUI(sceneObjects[id])) return [];
+                const c = uiContainerOf(id);
+                return c && (c === 'ui' || sceneObjects[c]) ? [c] : [];
+            }
             const c = uiContainerOf(selectedObjectId);
             return c && (c === 'ui' || sceneObjects[c]) ? [c] : [];
         }

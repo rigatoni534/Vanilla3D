@@ -1,6 +1,6 @@
 /* Vanillalua shared interpreter core. Canonical source used by Vanilla3D and the playground. */
 // Bumped whenever this file changes: the editor polls for a newer version and offers to reload.
-const VL_VERSION = '1.1.0';
+const VL_VERSION = '1.2.0';
 (function (global) {
   const shared = {
     version: VL_VERSION,
@@ -393,11 +393,14 @@ const SCRIPT_TEMPLATE = 'call Scripts\nget Instance\n\n# Write your Vanillalua h
 // A Human only stores its stats for now. It has no body, does not render and nothing reads these values yet.
 const HUMAN_DEFAULTS = { health: 100, maxHealth: 100, walkSpeed: 3.5, runSpeed: 6, stamina: 100, maxStamina: 100, runStaminaLoss: 3, jumpHeight: 1.5, jumpStaminaLoss: 20, staminaGain: 6.5 };
 function makeHuman(playerName, parent) { return Object.assign({ type: 'human', name: 'Human', parent, playerName }, HUMAN_DEFAULTS); }
-function newScriptData(name, parent) {
-    return { type: 'script', name, parent, scriptType: 'Server', runWhen: 'simulation', language: 'vanillalua', source: SCRIPT_TEMPLATE };
+function newScriptData(name, parent, scriptType = 'Server') {
+    return { type: 'script', name, parent, scriptType, runWhen: 'simulation', language: 'vanillalua', source: SCRIPT_TEMPLATE };
 }
 function ensureScript(o) {
-    if (o.scriptType !== 'Local' && o.scriptType !== 'Server') o.scriptType = 'Server';
+    if (o.scriptType !== 'Local' && o.scriptType !== 'Server') {
+        const p = sceneObjects[o.parent];
+        o.scriptType = p && VL_UI_TYPES.includes(p.type) ? 'Local' : 'Server';
+    }
     if (!['simulation', 'join', 'manual'].includes(o.runWhen)) o.runWhen = 'simulation';
     if (o.language !== 'vanillalua' && o.language !== 'json') o.language = 'vanillalua';
     if (typeof o.source !== 'string') o.source = SCRIPT_TEMPLATE;
@@ -1171,7 +1174,7 @@ function startSimulationScripts() {
     vlPlayersJoinPending = true; // the editor player joins after the scripts have had a chance to connect their handlers
     let n = 0;
     const startupScripts = Object.entries(sceneObjects)
-        .filter(([, o]) => o.type === 'script' && (spaceOf(o) === 'scripts' || spaceOf(o) === 'world'))
+        .filter(([, o]) => o.type === 'script' && (spaceOf(o) === 'scripts' || spaceOf(o) === 'world' || spaceOf(o) === 'ui'))
         .sort((a, b) => (b[1].scriptType === 'Server' ? 1 : 0) - (a[1].scriptType === 'Server' ? 1 : 0));
     for (const [id, o] of startupScripts) {
         ensureScript(o);
@@ -1219,7 +1222,7 @@ function stopScripts() {
   shared.runPlayground = function (source) {
     const sceneObjects = Object.create(null), physicsVelocity = new Map(), counters = { prism: 0, ball: 0, model: 0, worldsettings: 0, script: 0, human: 0, wedge: 0, cylinder: 0, sound: 0, highlight: 0, frame: 0, text: 0, button: 0, image: 0, input: 0 };
     let idCounter = 0, selectedObjectId = null;
-    const SPACE_KEYS = ['world', 'storage', 'scripts', 'ui'];
+    const SPACE_KEYS = ['world', 'storage', 'scripts', 'ui', 'communications'];
     const isShape = o => !!o && (o.type === 'prism6' || o.type === 'ball' || o.type === 'wedge' || o.type === 'cylinder' || o.type === 'union');
     const spaceOf = o => { let n = 0; while (o && !SPACE_KEYS.includes(o.parent) && n++ < 64) o = sceneObjects[o.parent]; return o ? o.parent : null; };
     const physicsVelocityFor = id => { if (!physicsVelocity.has(id)) physicsVelocity.set(id, { x: 0, y: 0, z: 0 }); return physicsVelocity.get(id); };

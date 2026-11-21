@@ -782,8 +782,8 @@ function setup(character)
     # Connect HealthChanged and StaminaChanged here.
 end
 
-if player.Character then setup(player.Character) end
-player.ModelAdded:Connect(setup)</code></pre>
+player.ModelAdded:Connect(setup)
+if player.Character then setup(player.Character) end</code></pre>
         <p>Listen to an event with <code>:Connect</code> and a function. <code>object:Method(args)</code> is the same call as <code>object.Method(args)</code>. <code>Connect</code> returns a connection, and <code>connection:Disconnect()</code> stops listening. Each time an event fires its function runs as its own task, so it can use <code>wait()</code>. A function can be written without a name right where it is used: <code>function(player) ... end</code>. A script that connects late can read <code>Players.Players</code> to find players who already joined.</p>
         <p><b>Death.</b> When the Health of a Human inside a player's model reaches 0, the player dies. The model's parts are released so they fall apart, then <code>OnPlayerDeath</code> fires. Giving the player a new model removes the old one.</p>
         <p><b>Spawn position.</b> A model spawns with its feet at 0, 5, 0. If one block has <b>Spawnpoint</b> turned on, the model spawns on top of that block instead. Only one block can be the spawnpoint. The editor will not let you pick a second one, and setting a second one in a script prints a warning and is skipped.</p>

@@ -19,7 +19,7 @@
             let changed = true;
             while (changed) { changed = false; for (const [id, o] of Object.entries(sceneObjects)) if (o.parent !== 'engine' && !SPACE_KEYS.includes(o.parent) && !sceneObjects[o.parent]) { delete sceneObjects[id]; physicsVelocity.delete(id); vlInstCache.delete(id); if (selectedObjectId === id) selectedObjectId = null; changed = true; } }
         }
-        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player', wedge: 'Wedge', cylinder: 'Cylinder', sound: 'Sound', highlight: 'Highlight', union: 'Union', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input' })[type] || 'Instance'; }
+        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player', wedge: 'Wedge', cylinder: 'Cylinder', sound: 'Sound', highlight: 'Highlight', union: 'Union', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input', progressbar: 'ProgressBar' })[type] || 'Instance'; }
         function preInc(n) { return typeof settings !== 'undefined' && !!(settings.preinclude && settings.preinclude[n]); }
         // Textures: a child of a prism6 that paints chosen faces. Faces use the engine's face order.
         const FACE_LABELS = ['Front', 'Back', 'Right', 'Left', 'Top', 'Bottom'];
@@ -56,7 +56,7 @@
         // A UI instance is laid out in percentages of what it sits in: the UI space is the whole screen, and a Frame
         // inside it is that Frame's box. Position is the centre of the element, so 50, 50 is the middle of its parent,
         // and Size is the part of the parent it covers. None of this is in the 3D world.
-        const UI_TYPES = ['frame', 'text', 'button', 'image', 'input'];
+        const UI_TYPES = ['frame', 'text', 'button', 'image', 'input', 'progressbar'];
         const UI_ALIGNS = ['Left', 'Center', 'Right'];
         const isUI = (o) => !!o && UI_TYPES.includes(o.type);
         const uiClamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Number.isFinite(+v) ? +v : lo));
@@ -79,11 +79,18 @@
         function makeInput(name, parent, props) {
             return Object.assign(uiBase(name, parent), { type: 'input', sizeX: 30, sizeY: 7, color: '#12161f', transparency: 0, text: '', placeholder: 'Type here', textColor: '#ffffff', textSize: 16, align: 'Left' }, props);
         }
+        function makeProgressBar(name, parent, props) {
+            return Object.assign(uiBase(name, parent), {
+                type: 'progressbar', sizeX: 30, sizeY: 4, color: '#1c2230', transparency: 0.35, backgroundBlur: 0,
+                shape: 'Straight', length: 50, fillColor: '#f2b134', fillTransparency: 0, fillBlur: 0
+            }, props);
+        }
         function makeUI(type, name, parent) {
             if (type === 'frame') return makeFrame(name, parent);
             if (type === 'text') return makeText(name, parent);
             if (type === 'button') return makeButton(name, parent);
             if (type === 'image') return makeImage(name, parent);
+            if (type === 'progressbar') return makeProgressBar(name, parent);
             return makeInput(name, parent);
         }
         // Frame, Frame 2, Frame 3, ...
@@ -314,8 +321,8 @@
         };
         sceneObjects['Linen551'] = makeTexture('Texture', 'Cobalt092', [4], 'grid');
         sceneObjects['Amber417'] = { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 };
-        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0, wedge: 0, cylinder: 0, union: 0, sound: 0, highlight: 0, frame: 0, text: 0, button: 0, image: 0, input: 0 };
-        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human', wedge: 'i-wedge', cylinder: 'i-cylinder', union: 'i-union', sound: 'i-sound', highlight: 'i-highlight', frame: 'i-ui-frame', text: 'i-ui-text', button: 'i-ui-button', image: 'i-ui-image', input: 'i-ui-input' };
+        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0, wedge: 0, cylinder: 0, union: 0, sound: 0, highlight: 0, frame: 0, text: 0, button: 0, image: 0, input: 0, progressbar: 0 };
+        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human', wedge: 'i-wedge', cylinder: 'i-cylinder', union: 'i-union', sound: 'i-sound', highlight: 'i-highlight', frame: 'i-ui-frame', text: 'i-ui-text', button: 'i-ui-button', image: 'i-ui-image', input: 'i-ui-input', progressbar: 'i-ui-progress' };
 
         let isLightMode = false;
         let accentCol = '#f2b134';

@@ -237,6 +237,7 @@
   #stat-fps::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; background: var(--good); }
   #stat-fps[data-state="warn"]::before { background: var(--warn); }
   #stat-fps[data-state="bad"]::before { background: var(--bad); }
+  #stat-sim[data-state="good"] { color: var(--good); }
   #status-version { color: var(--muted); }
 
   /* ───── Modals ───── */
@@ -643,6 +644,15 @@
   #ui-layer.live .vui-button:active { filter: brightness(.9); }
   .vui-image { background-repeat: no-repeat; background-position: center; background-size: 100% 100%; color: rgba(255, 255, 255, .55); font-size: 11px; }
   .vui-input { padding: 0 7px; }
+  /* A progress bar is a track with a fill layer and a content layer for child UI. Circular bars are masked into a ring. */
+  .vui-progressbar { overflow: visible; }
+  .vui-progress-track { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+  .vui-progress-fill { position: absolute; z-index: 0; pointer-events: none; }
+  .vui-progress-content { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; }
+  .vui-progress-track.vui-progress-circular {
+    -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 8px), #000 calc(100% - 8px));
+    mask: radial-gradient(closest-side, transparent calc(100% - 8px), #000 calc(100% - 8px));
+  }
   .vui-field { width: 100%; height: 100%; margin: 0; padding: 0; border: 0; outline: none; background: transparent; font: inherit; }
   .vui-field::placeholder { color: rgba(255, 255, 255, .45); }
   .vui-select { position: absolute; display: none; border: 1.5px dashed var(--accent); border-radius: 2px; pointer-events: none; z-index: 10000; }

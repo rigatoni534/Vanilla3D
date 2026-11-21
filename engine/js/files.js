@@ -11,7 +11,7 @@
         const VN_RELOAD_RESTORE_KEY = 'vanilla-engine-reload-restore';
         // What a save can include. Settings > What gets saved switches these off one by one.
         const SAVED_SPACES = [['world', 'World'], ['storage', 'Storage'], ['scripts', 'Scripts'], ['ui', 'UI'], ['communications', 'Communications']];
-        const SAVED_TYPES = [['prism6', 'Blocks'], ['ball', 'Balls'], ['wedge', 'Wedges'], ['cylinder', 'Cylinders'], ['union', 'Unions'], ['model', 'Models'], ['human', 'Humans'], ['script', 'Script instances'], ['worldsettings', 'World Settings'], ['texture', 'Textures'], ['sound', 'Sounds'], ['highlight', 'Highlights'], ['frame', 'UI frames'], ['text', 'UI text'], ['button', 'UI buttons'], ['image', 'UI images'], ['input', 'UI inputs']];
+        const SAVED_TYPES = [['prism6', 'Blocks'], ['ball', 'Balls'], ['wedge', 'Wedges'], ['cylinder', 'Cylinders'], ['union', 'Unions'], ['model', 'Models'], ['human', 'Humans'], ['script', 'Script instances'], ['worldsettings', 'World Settings'], ['texture', 'Textures'], ['sound', 'Sounds'], ['highlight', 'Highlights'], ['frame', 'UI frames'], ['text', 'UI text'], ['button', 'UI buttons'], ['image', 'UI images'], ['input', 'UI inputs'], ['progressbar', 'UI progress bars']];
         for (const [id] of SAVED_SPACES) document.getElementById('sv-' + id).addEventListener('change', (e) => { settings.saveWhat[id] = e.target.checked; saveSettings(); });
         for (const [t] of SAVED_TYPES) document.getElementById('sv-' + t).addEventListener('change', (e) => { settings.saveWhat.types[t] = e.target.checked; saveSettings(); });
         // The single browser save older versions wrote becomes Browser Slot 1, so nothing is lost.
@@ -176,7 +176,7 @@
             return data;
         }
         // The type counters decide the default names (Block, Block2, ...), so they are rebuilt whenever objects change.
-        const COUNTER_TYPES = [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball'], ['human', 'human'], ['wedge', 'wedge'], ['cylinder', 'cylinder'], ['union', 'union'], ['sound', 'sound'], ['highlight', 'highlight'], ['frame', 'frame'], ['text', 'text'], ['button', 'button'], ['image', 'image'], ['input', 'input']];
+        const COUNTER_TYPES = [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball'], ['human', 'human'], ['wedge', 'wedge'], ['cylinder', 'cylinder'], ['union', 'union'], ['sound', 'sound'], ['highlight', 'highlight'], ['frame', 'frame'], ['text', 'text'], ['button', 'button'], ['image', 'image'], ['input', 'input'], ['progressbar', 'progressbar']];
         function recountTypes() {
             for (const [k] of COUNTER_TYPES) counters[k] = 0;
             for (const o of Object.values(sceneObjects)) { const hit = COUNTER_TYPES.find(c => c[1] === o.type); if (hit) counters[hit[0]]++; }
@@ -233,6 +233,14 @@
                     if (obj.type === 'frame') {
                         obj.backgroundBlur = uiClamp(obj.backgroundBlur, 0, 20);
                         obj.borderBlur = uiClamp(obj.borderBlur, 0, 20);
+                    }
+                    if (obj.type === 'progressbar') {
+                        obj.shape = obj.shape === 'Circular' ? 'Circular' : 'Straight';
+                        obj.length = uiClamp(Number.isFinite(obj.length) ? obj.length : 50, 0, 100);
+                        if (!HEX6.test(obj.fillColor)) obj.fillColor = '#f2b134';
+                        obj.fillTransparency = uiClamp(Number.isFinite(obj.fillTransparency) ? obj.fillTransparency : 0, 0, 1);
+                        obj.fillBlur = uiClamp(Number.isFinite(obj.fillBlur) ? obj.fillBlur : 0, 0, 20);
+                        obj.backgroundBlur = uiClamp(Number.isFinite(obj.backgroundBlur) ? obj.backgroundBlur : 0, 0, 20);
                     }
                     obj.visible = obj.visible !== false;
                 }

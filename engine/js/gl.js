@@ -3,6 +3,7 @@
         // Prisms are drawn with a hardware depth buffer, so overlapping and intersecting boxes look like real solids.
         // (If WebGL 2 is unavailable the old 2D painter's-algorithm renderer is used instead.)
         let GL = null;
+        let glDrawCalls = 0;   // WebGL draw calls in the current frame, for the status bar
         const NEAR = 0.1, FAR = 2000;
         const GLSL_HEAD = `#version 300 es
 precision highp float;
@@ -502,6 +503,10 @@ void main() { o = texture(uTex, vT); }`;
             try {
                 const gl = glCanvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true });
                 if (!gl) return;
+                // Count draw calls without changing what the renderer does.
+                const drawArrays = gl.drawArrays.bind(gl), drawElements = gl.drawElements.bind(gl);
+                gl.drawArrays = (...args) => { glDrawCalls++; return drawArrays(...args); };
+                gl.drawElements = (...args) => { glDrawCalls++; return drawElements(...args); };
                 const prism = glProgram(gl, PRISM_VS, PRISM_FS, SHAPE_UNIFORMS);
                 const shadow = glProgram(gl, SHADOW_VS, SHADOW_FS, ['uCenter', 'uHalf', 'uRot', 'uLVP'], true);
                 const mesh = glProgram(gl, MESH_VS, PRISM_FS, SHAPE_UNIFORMS);   // returns { prog, u }, so cells below hang off it
@@ -1126,6 +1131,7 @@ void main() { o = texture(uTex, vT); }`;
                 else if (o.type === 'union') unions.push([id, o]);
             }
             // Without WebGL 2 the flat renderer draws wedges, cylinders and unions as their boxes.
+            glDrawCalls = 0;
             const visibleCount = GL ? drawGL(prisms, balls, meshes, unions, highlights) : drawFallback(prisms.concat(meshes, unions), balls);
 
             // Handles are drawn last so they sit above every shape (only the UI is above them)
@@ -1163,7 +1169,26 @@ void main() { o = texture(uTex, vT); }`;
             statFps.textContent = currentFps;
             statFps.dataset.state = currentFps >= 55 ? 'good' : currentFps >= 30 ? 'warn' : 'bad';
             statCpu.textContent = (frameEnd - frameStart).toFixed(2) + " ms";
-            statMem.textContent = (window.performance && window.performance.memory) ? (performance.memory.usedJSHeapSize / 1048576).toFixed(1) + " MB" : "N/A";
+            if (window.performance && performance.memory) {
+                statMem.textContent = (performance.memory.usedJSHeapSize / 1048576).toFixed(1) + " MB";
+                statMem.title = 'JavaScript heap in use (performance.memory, Chromium).';
+            } else {
+                statMem.textContent = "N/A";
+                statMem.title = /Firefox/i.test(navigator.userAgent || '')
+                    ? 'Firefox does not expose page memory to websites. Open about:memory or the Memory tool in Firefox Developer Tools.'
+                    : 'This browser does not expose page memory to websites.';
+            }
+            const objectCount = Object.values(sceneObjects).filter(o => o && o.type !== 'viewfinder').length;
+            const uiCount = Object.values(sceneObjects).filter(o => isUI(o)).length;
+            const scriptTotal = Object.values(sceneObjects).filter(o => o && o.type === 'script').length;
+            const scriptActive = (typeof scriptTasks !== 'undefined' && Array.isArray(scriptTasks)) ? scriptTasks.length : 0;
+            statObjects.textContent = String(objectCount);
+            statUI.textContent = String(uiCount);
+            statScripts.textContent = scriptActive + ' / ' + scriptTotal;
+            statScripts.title = 'Running script instances / script instances in the project';
+            statDraws.textContent = GL ? String(glDrawCalls) : 'N/A';
+            statSim.textContent = simulationRunning ? 'Live' : 'Edit';
+            statSim.dataset.state = simulationRunning ? 'good' : '';
             statVerts.textContent = prisms.length * 8;
             statFaces.textContent = `${visibleCount} / ${prisms.length * 6}`;
 

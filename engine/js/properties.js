@@ -21,7 +21,7 @@
         const objHead = (id, o, ic, extra = '') =>
             `<div class="obj-head">${icon(ic)}<div class="obj-meta"><div class="obj-name">${esc(o.name)}</div>
                 <div class="obj-id"><span title="Instance type">${o.type}</span><span class="uid" title="Unique ID">${id}</span></div></div>${extra}</div>`;
-        const defaultNames = { prism6: 'Block', ball: 'Ball', wedge: 'Wedge', cylinder: 'Cylinder', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player', sound: 'Sound', highlight: 'Highlight', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input' };
+        const defaultNames = { prism6: 'Block', ball: 'Ball', wedge: 'Wedge', cylinder: 'Cylinder', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player', sound: 'Sound', highlight: 'Highlight', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input', progressbar: 'ProgressBar' };
         const nameField = (o, dis = '') =>
             `<div class="field-label">Name</div><input class="text" type="text" id="prop-name" maxlength="48" value="${esc(o.name)}" aria-label="Name" ${dis}>`;
         function bindName(obj) {
@@ -110,20 +110,38 @@
                 const textRow = (key, label, value, max) => `
                     <div class="field-label">${label}</div>
                     <input class="text" type="text" id="prop-ui-${key}" maxlength="${max}" value="${esc(value)}" aria-label="${label}">`;
-                const transparencyRow = `
-                    <div class="field-label">Transparency</div>
+                const transparencyRow = (label = 'Transparency') => `
+                    <div class="field-label">${label}</div>
                     <div class="tod-row">
-                        <input type="range" class="tod" id="prop-ui-transparency" min="0" max="1" step="0.01" value="${uiClamp(obj.transparency, 0, 1)}" aria-label="Transparency">
+                        <input type="range" class="tod" id="prop-ui-transparency" min="0" max="1" step="0.01" value="${uiClamp(obj.transparency, 0, 1)}" aria-label="${label}">
                         <span class="field-note" id="prop-ui-transparency-note" style="margin:0;min-width:44px;text-align:right">${Math.round(uiClamp(obj.transparency, 0, 1) * 100)}%</span>
+                    </div>`;
+                const fillTransparencyRow = `
+                    <div class="field-label">Fill transparency</div>
+                    <div class="tod-row">
+                        <input type="range" class="tod" id="prop-ui-fillTransparency" min="0" max="1" step="0.01" value="${uiClamp(obj.fillTransparency, 0, 1)}" aria-label="Fill transparency">
+                        <span class="field-note" id="prop-ui-fillTransparency-note" style="margin:0;min-width:44px;text-align:right">${Math.round(uiClamp(obj.fillTransparency, 0, 1) * 100)}%</span>
                     </div>`;
                 const typeLook = obj.type === 'text' || obj.type === 'button' || obj.type === 'input' ? `
                     ${colorRow('textColor', 'Text color')}
                     ${number('textSize', 'Text size', 'px', 4, 200, 1)}
                     <div class="field-label">Align</div>
                     <div class="pill-row">${UI_ALIGNS.map(a => `<button class="pill" data-align="${a}" aria-pressed="${obj.align === a}">${a}</button>`).join('')}</div>` : '';
-                const look = obj.type === 'frame' ? `
+                const look = obj.type === 'progressbar' ? `
+                    <div class="field-label">Shape</div>
+                    <div class="pill-row">${['Straight', 'Circular'].map(s => `<button class="pill" data-shape="${s}" aria-pressed="${(obj.shape === 'Circular' ? 'Circular' : 'Straight') === s}">${s}</button>`).join('')}</div>
                     ${colorRow('color', 'Background color')}
-                    ${transparencyRow}
+                    ${transparencyRow('Background transparency')}
+                    ${number('backgroundBlur', 'Background blur', 'px', 0, 20, 1)}
+                    <div class="set-sub">Progress</div>
+                    ${colorRow('fillColor', 'Fill color')}
+                    ${fillTransparencyRow}
+                    ${number('fillBlur', 'Fill blur', 'px', 0, 20, 1)}
+                    ${number('length', 'Length', '%', 0, 100, 1)}
+                    <div class="field-note">Straight fills from the left. Circular wraps clockwise from the top; use equal Width and Height for a true circle. Background blur frosts what is behind the bar.</div>`
+                    : obj.type === 'frame' ? `
+                    ${colorRow('color', 'Background color')}
+                    ${transparencyRow()}
                     ${number('borderWidth', 'Border width', 'px', 0, 20, 1)}
                     ${colorRow('borderColor', 'Border color')}
                     ${number('backgroundBlur', 'Background blur', 'px', 0, 20, 1)}
@@ -132,7 +150,7 @@
                     ${switchRow('prop-ui-clip', 'Clip children', !!obj.clipChildren, '')}`
                     : obj.type === 'image' ? `
                     ${textRow('image', 'Image URL', obj.image || '', 400)}
-                    ${transparencyRow}
+                    ${transparencyRow()}
                     <div class="field-note">A full URL to a PNG, JPEG, GIF or WebP image. It fills the element.</div>`
                     : obj.type === 'text' ? `
                     ${textRow('text', 'Text', obj.text || '', 200)}
@@ -143,14 +161,14 @@
                     ${typeLook}
                     ${switchRow('prop-ui-bold', 'Bold', !!obj.bold, '')}
                     ${colorRow('color', 'Background color')}
-                    ${transparencyRow}
+                    ${transparencyRow()}
                     <div class="field-note">While the simulation runs, pressing the button fires its <code>Clicked</code> event.</div>`
                     : `
                     ${textRow('placeholder', 'Placeholder', obj.placeholder || '', 120)}
                     ${textRow('text', 'Starting text', obj.text || '', 200)}
                     ${typeLook}
                     ${colorRow('color', 'Background color')}
-                    ${transparencyRow}
+                    ${transparencyRow()}
                     <div class="field-note">While the simulation runs, the player can type here. Pressing Enter fires <code>Submitted</code> with the text.</div>`;
                 container.innerHTML = `
                     ${objHead(selectedObjectId, obj, typeIcon[obj.type])}
@@ -165,13 +183,13 @@
                     `)}
                     ${section('Appearance', look)}`;
                 bindName(obj);
-                for (const [key, lo, hi] of [['posX', 0, 100], ['posY', 0, 100], ['sizeX', UI_MIN_SIZE, 100], ['sizeY', UI_MIN_SIZE, 100], ['textSize', 4, 200], ['borderWidth', 0, 20], ['backgroundBlur', 0, 20], ['borderBlur', 0, 20]]) {
+                for (const [key, lo, hi] of [['posX', 0, 100], ['posY', 0, 100], ['sizeX', UI_MIN_SIZE, 100], ['sizeY', UI_MIN_SIZE, 100], ['textSize', 4, 200], ['borderWidth', 0, 20], ['backgroundBlur', 0, 20], ['borderBlur', 0, 20], ['fillBlur', 0, 20], ['length', 0, 100]]) {
                     const el = document.getElementById('prop-ui-' + key);
                     if (!el) continue;
                     el.addEventListener('input', () => { const v = parseFloat(el.value); if (Number.isFinite(v)) obj[key] = uiClamp(v, lo, hi); });
                     el.addEventListener('change', () => { el.value = r3(obj[key]); });
                 }
-                for (const key of ['color', 'textColor', 'borderColor']) {
+                for (const key of ['color', 'textColor', 'borderColor', 'fillColor']) {
                     const pick = document.getElementById('prop-ui-' + key + '-pick'), hex = document.getElementById('prop-ui-' + key + '-hex');
                     if (!pick || !hex) continue;
                     pick.addEventListener('input', () => { obj[key] = pick.value.toLowerCase(); hex.value = obj[key]; });
@@ -191,6 +209,15 @@
                     obj.transparency = uiClamp(parseFloat(trans.value), 0, 1);
                     document.getElementById('prop-ui-transparency-note').textContent = Math.round(obj.transparency * 100) + '%';
                 });
+                const fillTrans = document.getElementById('prop-ui-fillTransparency');
+                if (fillTrans) fillTrans.addEventListener('input', () => {
+                    obj.fillTransparency = uiClamp(parseFloat(fillTrans.value), 0, 1);
+                    document.getElementById('prop-ui-fillTransparency-note').textContent = Math.round(obj.fillTransparency * 100) + '%';
+                });
+                container.querySelectorAll('[data-shape]').forEach(b => b.addEventListener('click', () => {
+                    obj.shape = b.dataset.shape;
+                    container.querySelectorAll('[data-shape]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.shape === obj.shape)));
+                }));
                 container.querySelectorAll('[data-align]').forEach(b => b.addEventListener('click', () => {
                     obj.align = b.dataset.align;
                     container.querySelectorAll('[data-align]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.align === obj.align)));
@@ -544,7 +571,7 @@
         // The same tools act on the interface when it is being previewed, so the hint follows what will happen.
         function applyModeHint() {
             const o = sceneObjects[selectedObjectId];
-            const ui = !simulationRunning && (selectedSpaceId === 'ui' || isUI(o) || uiContainers().length > 0);
+            const ui = !simulationRunning && (selectedSpaceId === 'ui' || isUI(o) || (!settings.alwaysShowUI && uiContainers().length > 0));
             document.getElementById('hint-mode').textContent = !ui ? hintText[mode] : mode === 'move'
                 ? 'Drag a UI element to move it'
                 : mode === 'scale' ? 'Drag a UI corner to resize it'

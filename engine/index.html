@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=3.9.0.1">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.10.0.1">
   
 </head>
 <body>
@@ -59,6 +59,7 @@
     <symbol id="i-ui-button" viewBox="0 0 16 16"><rect x="2" y="5" width="12" height="6" rx="3"/><path d="M6 8h4"/></symbol>
     <symbol id="i-ui-image" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><circle cx="6" cy="6.5" r="1"/><path d="m3.5 11.5 3-3 2.5 2.5L11 8.5l2 3"/></symbol>
     <symbol id="i-ui-input" viewBox="0 0 16 16"><rect x="2" y="4.5" width="12" height="7" rx="1.5"/><path d="M5 6.5v3M4.25 6.5h1.5M4.25 9.5h1.5"/></symbol>
+    <symbol id="i-ui-progress" viewBox="0 0 16 16"><rect x="2" y="6" width="12" height="4" rx="2"/><path d="M4 8h5"/></symbol>
     <symbol id="i-comms" viewBox="0 0 16 16"><path d="M2.75 5.5h7.5M8 3.25 10.25 5.5 8 7.75"/><path d="M13.25 10.5h-7.5M8 8.25 5.75 10.5 8 12.75"/></symbol>
   </svg>
 
@@ -177,7 +178,12 @@
     <div class="stats">
       <span class="stat"><span class="stat-label">FPS</span><span id="stat-fps" class="stat-value" data-state="good">60</span></span>
       <span class="stat"><span class="stat-label">CPU</span><span id="stat-cpu" class="stat-value">0.00 ms</span></span>
-      <span class="stat"><span class="stat-label">Memory</span><span id="stat-mem" class="stat-value">N/A</span></span>
+      <span class="stat" title="Instances in the editor, not counting the Viewfinder"><span class="stat-label">Objects</span><span id="stat-objects" class="stat-value">0</span></span>
+      <span class="stat" title="UI instances, including those handed to players"><span class="stat-label">UI</span><span id="stat-ui" class="stat-value">0</span></span>
+      <span class="stat" title="Running script instances / script instances in the project"><span class="stat-label">Scripts</span><span id="stat-scripts" class="stat-value">0 / 0</span></span>
+      <span class="stat" title="WebGL draw calls in the last frame"><span class="stat-label">Draws</span><span id="stat-draws" class="stat-value">0</span></span>
+      <span class="stat" title="Edit mode or a running simulation"><span class="stat-label">Mode</span><span id="stat-sim" class="stat-value">Edit</span></span>
+      <span class="stat" title="JavaScript heap, available in Chromium"><span class="stat-label">Memory</span><span id="stat-mem" class="stat-value">N/A</span></span>
       <span class="stat"><span class="stat-label">Vertices</span><span id="stat-verts" class="stat-value">8</span></span>
       <span class="stat"><span class="stat-label">Faces</span><span id="stat-faces" class="stat-value">0 / 6</span></span>
     </div>
@@ -198,6 +204,7 @@
     <button class="menu-item" role="menuitem" data-kind="button"><svg class="ic"><use href="#i-ui-button"/></svg>Button<span class="menu-meta">button</span></button>
     <button class="menu-item" role="menuitem" data-kind="image"><svg class="ic"><use href="#i-ui-image"/></svg>Image<span class="menu-meta">image</span></button>
     <button class="menu-item" role="menuitem" data-kind="input"><svg class="ic"><use href="#i-ui-input"/></svg>Input<span class="menu-meta">input</span></button>
+    <button class="menu-item" role="menuitem" data-kind="progressbar"><svg class="ic"><use href="#i-ui-progress"/></svg>ProgressBar<span class="menu-meta">progressbar</span></button>
     <button class="menu-item" role="menuitem" data-kind="texture"><svg class="ic"><use href="#i-grid"/></svg>Texture<span class="menu-meta">texture</span></button>
     <button class="menu-item" role="menuitem" data-kind="model"><svg class="ic"><use href="#i-model"/></svg>Model<span class="menu-meta">model</span></button>
     <button class="menu-item" role="menuitem" data-kind="human"><svg class="ic"><use href="#i-human"/></svg>Human<span class="menu-meta">human</span></button>
@@ -288,6 +295,7 @@
         <nav class="set-nav" role="tablist" aria-label="Settings sections">
           <button class="set-tab" role="tab" data-pane="basics" aria-selected="true"><svg class="ic"><use href="#i-sliders"/></svg>Basics</button>
           <button class="set-tab" role="tab" data-pane="viewport" aria-selected="false"><svg class="ic"><use href="#i-target"/></svg>Viewport</button>
+          <button class="set-tab" role="tab" data-pane="interface" aria-selected="false"><svg class="ic"><use href="#i-ui-frame"/></svg>Interface</button>
           <button class="set-tab" role="tab" data-pane="scripting" aria-selected="false"><svg class="ic"><use href="#i-script"/></svg>Scripting</button>
           <button class="set-tab" role="tab" data-pane="appearance" aria-selected="false"><svg class="ic"><use href="#i-sun"/></svg>Appearance</button>
         </nav>
@@ -298,6 +306,11 @@
               <select id="set-cam" class="sel" aria-label="Camera move method"><option value="drag">Drag (left button)</option><option value="right">Right click</option></select></div>
             <div class="setting"><div><div class="setting-title">Camera speed</div><div class="setting-desc">How fast W, A, S and D fly the camera.</div></div>
               <select id="set-camspeed" class="sel" aria-label="Camera speed"><option value="0.05">Slow</option><option value="0.1">Normal</option><option value="0.2">Fast</option><option value="0.4">Very fast</option><option value="0.8">Turbo</option></select></div>
+            <div class="set-sub">Gizmo steps</div>
+            <div class="setting"><div><div class="setting-title">Move and scale step</div><div class="setting-desc">The step the Move and Scale gizmos snap to, in Vanillameters. 0 moves freely.</div></div>
+              <label class="num grav"><input type="number" id="set-gizmooffset" min="0" step="0.1" aria-label="Move and scale gizmo step"><span class="tag">Vm</span></label></div>
+            <div class="setting"><div><div class="setting-title">Rotation step</div><div class="setting-desc">The step the Rotate gizmo snaps to, in degrees. 0 rotates freely.</div></div>
+              <label class="num grav"><input type="number" id="set-rotstep" min="0" step="5" aria-label="Rotation gizmo step"><span class="tag">°</span></label></div>
             <label class="setting" for="opt-uid"><div><div class="setting-title">Show UID instead of name</div><div class="setting-desc">The Explorer lists each instance by its unique ID.</div></div><input type="checkbox" id="opt-uid" class="switch"></label>
             <div class="set-sub">Default object names</div>
             <div class="setting-desc set-note">The name given to new instances. Leave a field empty to restore its default.</div>
@@ -318,7 +331,7 @@
             <label class="setting" for="sv-world"><div><div class="setting-title">World</div><div class="setting-desc">Blocks, models and everything placed in World.</div></div><input type="checkbox" id="sv-world" class="switch"></label>
             <label class="setting" for="sv-storage"><div><div class="setting-title">Storage</div><div class="setting-desc">Templates kept in Storage, such as DefaultPlayer.</div></div><input type="checkbox" id="sv-storage" class="switch"></label>
             <label class="setting" for="sv-scripts"><div><div class="setting-title">Scripts</div><div class="setting-desc">The Scripts space, including every script's source.</div></div><input type="checkbox" id="sv-scripts" class="switch"></label>
-            <label class="setting" for="sv-ui"><div><div class="setting-title">UI</div><div class="setting-desc">Frames, text, buttons, images and inputs handed to the player on spawn.</div></div><input type="checkbox" id="sv-ui" class="switch"></label>
+            <label class="setting" for="sv-ui"><div><div class="setting-title">UI</div><div class="setting-desc">Frames, text, buttons, images, inputs and progress bars handed to the player on spawn.</div></div><input type="checkbox" id="sv-ui" class="switch"></label>
             <label class="setting" for="sv-communications"><div><div class="setting-title">Communications</div><div class="setting-desc">Reserved for messages between server and client.</div></div><input type="checkbox" id="sv-communications" class="switch"></label>
             <div class="set-sub">Instance types</div>
             <div class="name-grid">
@@ -339,6 +352,7 @@
               <label for="sv-button">UI buttons</label><input type="checkbox" id="sv-button" class="switch">
               <label for="sv-image">UI images</label><input type="checkbox" id="sv-image" class="switch">
               <label for="sv-input">UI inputs</label><input type="checkbox" id="sv-input" class="switch">
+              <label for="sv-progressbar">UI progress bars</label><input type="checkbox" id="sv-progressbar" class="switch">
             </div>
             <div class="set-sub">Reset</div>
             <div class="setting"><div><div class="setting-title">Reset all settings</div><div class="setting-desc">Puts every setting back to its default. Your world is not changed.</div></div><button class="btn btn-outline" id="reset-settings" type="button">Reset settings</button></div>
@@ -365,7 +379,14 @@
             <label class="setting" for="opt-viewcube"><div><div class="setting-title">Show view cube</div><div class="setting-desc">The small orientation cube in the top right.</div></div><input type="checkbox" id="opt-viewcube" class="switch"></label>
             <div class="setting"><div><div class="setting-title">Controls hint</div><div class="setting-desc">The bar in the bottom left that lists the controls.</div></div>
               <select id="set-hint" class="sel" aria-label="Controls hint"><option value="auto">Hide after 10 seconds</option><option value="always">Always show</option><option value="never">Never show</option></select></div>
-            <label class="setting" for="opt-status"><div><div class="setting-title">Show status bar</div><div class="setting-desc">FPS, CPU, memory and mesh counts along the bottom.</div></div><input type="checkbox" id="opt-status" class="switch"></label>
+            <label class="setting" for="opt-status"><div><div class="setting-title">Show status bar</div><div class="setting-desc">FPS, CPU, object counts, draw calls, memory and mesh counts along the bottom.</div></div><input type="checkbox" id="opt-status" class="switch"></label>
+          </section>
+          <section class="set-pane" id="set-interface" hidden>
+            <h3 class="set-h">Interface</h3>
+            <label class="setting" for="opt-ui-always"><div><div class="setting-title">Always show UI</div><div class="setting-desc">Draws the UI space over the viewport even while a world object is selected. Editing the 3D world is not affected.</div></div><input type="checkbox" id="opt-ui-always" class="switch"></label>
+            <div class="setting"><div><div class="setting-title">UI snap grid</div><div class="setting-desc">The percentage step that moving and resizing UI elements snaps to.</div></div>
+              <select id="set-uigrid" class="sel" aria-label="UI snap grid"><option value="0.5">0.5%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option></select></div>
+            <div class="setting-desc set-note">The UI is laid out in percentages of the screen or its parent element. A finer grid allows smaller adjustments; a coarser grid is quicker to align by hand.</div>
           </section>
           <section class="set-pane" id="set-scripting" hidden>
             <h3 class="set-h">Scripting</h3>
@@ -406,7 +427,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.9.0.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.10.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -432,20 +453,22 @@
         <p>Handles are always drawn on top of the scene at about a third of the block's size. The <b>Offset</b> box next to Run sets the step for both tools in Vanillameters. It starts at <code>0.5</code>; set it to <code>0</code> for free, unstepped movement.</p>
         <p>The <b>Rotate</b> tool (key <span class="kbd">4</span>) turns a prism or ball. Each axis has a double-headed curved arrow; drag it to turn the shape about that axis. The <b>Rotation</b> box beside Offset sets how many degrees the arrows snap to (45 by default, 0 for free turning). Rotation is also in the Properties panel as three numbers. The turn about Y is applied first, then the tilt about X, then the roll about Z, and each arrow edits exactly its own number. Physics treats a tilted prism as the box around it, and a tilted prism still blocks balls at its real angle. Models cannot be rotated yet.</p>
         <h3 data-group="Editor guide">User interface</h3>
-        <p>The <b>UI</b> space is the player's screen. It is drawn over the viewport rather than in the 3D world, and it is made of five instances:</p>
+        <p>The <b>UI</b> space is the player's screen. It is drawn over the viewport rather than in the 3D world, and it is made of six instances:</p>
         <table class="docs-table"><thead><tr><th>Instance</th><th>What it is for</th></tr></thead><tbody>
-          <tr><td><code>frame</code></td><td>A box to group other elements in, or a fill for a progress bar. It can clip whatever sits outside it.</td></tr>
+          <tr><td><code>frame</code></td><td>A box to group other elements in. It can clip whatever sits outside it.</td></tr>
           <tr><td><code>text</code></td><td>Text on the screen: a score, a label, a message.</td></tr>
           <tr><td><code>button</code></td><td>A pressable element. While the simulation runs it fires its <code>Clicked</code> event for scripts.</td></tr>
           <tr><td><code>image</code></td><td>A picture from a URL, stretched to its box.</td></tr>
           <tr><td><code>input</code></td><td>A text field the player types into. Pressing Enter fires <code>Submitted</code> with the text.</td></tr>
+          <tr><td><code>progressbar</code></td><td>A bar that fills from 0 to 100%. It can be <b>Straight</b> or <b>Circular</b>, with its own fill color, transparency and blur, and it can hold other UI elements as children.</td></tr>
         </tbody></table>
-        <p><b>Size and position are percentages.</b> Position is the <b>centre</b> of the element, so <code>50, 50</code> is the middle of the screen, and Size is the part of what it sits in that the element covers. A strip across the top is a position of <code>50, 2.5</code> with a size of <code>100, 5</code>. An element inside a Frame is placed in percentages of that Frame, which is how a fill inside a bar works.</p>
-        <p><b>Previewing.</b> Select any UI instance, or the <b>UI</b> space itself, and the whole interface appears in the viewport so you can lay it out against the scene. Selecting something else hides the preview again.</p>
-        <p><b>Editing.</b> With <b>Move</b> active, press on an element in the viewport and drag it; it snaps to a 1% grid and a guide line appears only for the position it is snapping to. With <b>Scale</b> active, each corner has a handle: drag a corner diagonally to scale evenly, or mostly sideways or up and down to change only the width or only the height. The opposite corner stays where it is. Every number is also in Properties.</p>
+        <p><b>Size and position are percentages.</b> Position is the <b>centre</b> of the element, so <code>50, 50</code> is the middle of the screen, and Size is the part of what it sits in that the element covers. A strip across the top is a position of <code>50, 2.5</code> with a size of <code>100, 5</code>. An element inside a Frame or a ProgressBar is placed in percentages of that element.</p>
+        <p><b>Previewing.</b> Select any UI instance, or the <b>UI</b> space itself, and the whole interface appears in the viewport so you can lay it out against the scene. Selecting something else hides the preview again unless <b>Settings > Interface > Always show UI</b> is on.</p>
+        <p><b>Editing.</b> With <b>Move</b> active, press on an element in the viewport and drag it; it snaps to a 1% grid and a guide line appears only for the position it is snapping to. With <b>Scale</b> active, each corner has a handle: drag a corner diagonally to scale evenly, or mostly sideways or up and down to change only the width or only the height. The opposite corner stays where it is. Every number is also in Properties. The snap grid is 1% by default; Settings > Interface can set it to 0.5%, 2% or 5%.</p>
         <p><b>Run.</b> The UI is the server end of the interface. When a player joins in the simulation, that player takes it: the elements move inside the <b>Player</b> instance in Players, keeping their UIDs, and are drawn for the player. Buttons and inputs work there. Scripts reach them through the player, for example <code>player.UI.Score.Text = "10"</code>, or through a reference they took before the join. <b>Stop</b> puts everything back in the UI space.</p>
         <p><b>Scripts on the interface.</b> A Script can be a child of a UI element: create one with <b>Add Child…</b> on the element, or drag one into it. A script created that way starts as <b>Local</b>, because interface code belongs to the player's side, and it runs when the simulation starts. <code>script.Parent</code> is the element it sits in. A script cannot sit at the top of the UI space on its own; it must be inside an element, and it moves with that element when a player takes the interface.</p>
         <p><b>Frame blur.</b> A Frame can frost what is behind it with <b>Background blur</b> and soften its stroke with <b>Border blur</b>. Both are 0 to 20 pixels; border blur needs a border width. They are saved with the world and exposed to scripts as <code>BackgroundBlur</code> and <code>BorderBlur</code>.</p>
+        <p><b>ProgressBar.</b> A ProgressBar has a background, a shape (<b>Straight</b> or <b>Circular</b>), and a fill with its own <b>Length</b> (0 to 100%), <b>Fill color</b>, <b>Fill transparency</b> and <b>Fill blur</b>. The background can also blur what is behind it. Straight fills from the left; Circular is a ring that fills clockwise from the top. For a true circle, set its Width and Height equal. Child UI elements sit on top of the fill, so text can be placed inside a bar.</p>
         <h3 data-group="Editor guide">Run and Stop</h3>
         <p><b>Run</b> works like Roblox Studio: the world is snapshotted, physics and scripts run live, and <b>Stop</b> restores the snapshot exactly as it was. Anything scripts create or change during a run is discarded on Stop, and global variables are cleared.</p>
         <div class="callout"><b>Heads up:</b> saving, opening a world and starting a new one are blocked while a simulation runs. Stop first.</div>
@@ -516,6 +539,8 @@
         <table class="docs-table"><thead><tr><th>Setting</th><th>What it does</th></tr></thead><tbody>
           <tr><td>Camera move method</td><td>Choose whether dragging with the left button or the right button turns the camera.</td></tr>
           <tr><td>Camera speed</td><td>How fast W, A, S and D move the camera: Slow, Normal, Fast, Very fast or Turbo. Normal is the default.</td></tr>
+          <tr><td>Move and scale step</td><td>The snapping step for the Move and Scale gizmos, in Vanillameters. 0 moves freely. The same value can be changed in the Offset box beside Run.</td></tr>
+          <tr><td>Rotation step</td><td>The snapping step for the Rotate gizmo, in degrees. 0 rotates freely.</td></tr>
           <tr><td>Autosave to this browser</td><td>Off, or every 1, 2, 3, 5 or 10 minutes; every 3 minutes by default. It also saves when the tab closes. It only updates the Autosave slot when your world has changed, and it waits while a simulation runs.</td></tr>
           <tr><td>What gets saved</td><td>Choose whether World, Storage and Scripts are saved, and whether each instance type is saved. Everything is included by default.</td></tr>
           <tr><td>Look sensitivity</td><td>How far the view turns for each mouse movement, from Very slow to Very fast.</td></tr>
@@ -529,7 +554,9 @@
           <tr><td>Origin marker length</td><td>How far the origin lines reach each way, from 0.1 to 100 Vm (Vanillameters). Ticks spread out to match.</td></tr>
           <tr><td>Show view cube</td><td>Shows or hides the orientation cube in the top right of the viewport.</td></tr>
           <tr><td>Controls hint</td><td>Hide after 10 seconds, always show, or never show the controls bar in the bottom left.</td></tr>
-          <tr><td>Show status bar</td><td>Shows or hides the FPS, CPU, memory and mesh counts along the bottom.</td></tr>
+          <tr><td>Show status bar</td><td>Shows or hides the stats along the bottom: FPS, CPU, Objects, UI, Scripts, Draws, Mode, Memory, Vertices and Faces.</td></tr>
+          <tr><td>Always show UI</td><td>Draws the UI space over the viewport even while a world object is selected. It is off by default, so selecting the world hides the interface preview.</td></tr>
+          <tr><td>UI snap grid</td><td>The percentage step used when moving and resizing UI elements: 0.5%, 1%, 2% or 5%. 1% is the default.</td></tr>
           <tr><td>Script editor text size</td><td>Small, Normal, Large or Extra large code text.</td></tr>
           <tr><td>Light mode</td><td>Switches to the light palette. The editor remembers your choice.</td></tr>
           <tr><td>Accent color</td><td>Pick a preset or any custom color. It changes buttons, selections and highlights everywhere. Vanilla yellow is the default.</td></tr>
@@ -541,6 +568,7 @@
           <tr><td>Light mode</td><td>Switches the editor and viewport palette.</td></tr>
         </tbody></table>
         <p>Settings are stored in this browser and are not part of a <code>.vnw</code> file.</p>
+        <p><b>Memory on Firefox.</b> The Memory stat uses <code>performance.memory</code>, which Firefox does not expose to web pages; there is no page-readable memory API in Firefox. It shows <b>N/A</b> there. Use <b>about:memory</b> or the <b>Memory</b> tool in Firefox Developer Tools instead. Chromium browsers show the JavaScript heap in the status bar.</p>
         <h3 data-group="Editor guide">The script editor</h3>
         <p>Create a Script from a space's <b>+</b> button, or with <b>Add Child…</b> on a UI element, and double-click it to open it as a tab. The editor shows line numbers on the left, your code in the middle, and warning and error markers on the right. The Output panel below shows <code>print</code> results and runtime errors. <code>Tab</code> indents.</p>
         <p>Script properties split into <b>Execution</b> and <b>Miscellaneous</b>:</p>
@@ -831,21 +859,21 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=3.9.0.0"></script>
-  <script>const ENGINE_VERSION = '3.9.0.0';</script>
+  <script src="../vanillalua.js?v=3.10.0.0"></script>
+  <script>const ENGINE_VERSION = '3.10.0.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/scene.js?v=3.9.0.0"></script>
-  <script defer src="js/version-history.js?v=3.9.0.0"></script>
-  <script defer src="js/player.js?v=3.9.0.0"></script>
-  <script defer src="js/sounds.js?v=3.9.0.0"></script>
-  <script defer src="js/scripting.js?v=3.9.0.0"></script>
-  <script defer src="js/shell.js?v=3.9.0.0"></script>
-  <script defer src="js/files.js?v=3.9.0.0"></script>
-  <script defer src="js/offline.js?v=3.9.0.0"></script>
-  <script defer src="js/explorer.js?v=3.9.0.0"></script>
-  <script defer src="js/properties.js?v=3.9.0.0"></script>
-  <script defer src="js/render.js?v=3.9.0.0"></script>
-  <script defer src="js/gl.js?v=3.9.0.0"></script>
-  <script defer src="js/main.js?v=3.9.0.0"></script>
+  <script defer src="js/scene.js?v=3.10.0.0"></script>
+  <script defer src="js/version-history.js?v=3.10.0.0"></script>
+  <script defer src="js/player.js?v=3.10.0.0"></script>
+  <script defer src="js/sounds.js?v=3.10.0.0"></script>
+  <script defer src="js/scripting.js?v=3.10.0.0"></script>
+  <script defer src="js/shell.js?v=3.10.0.0"></script>
+  <script defer src="js/files.js?v=3.10.0.0"></script>
+  <script defer src="js/offline.js?v=3.10.0.0"></script>
+  <script defer src="js/explorer.js?v=3.10.0.0"></script>
+  <script defer src="js/properties.js?v=3.10.0.0"></script>
+  <script defer src="js/render.js?v=3.10.0.0"></script>
+  <script defer src="js/gl.js?v=3.10.0.0"></script>
+  <script defer src="js/main.js?v=3.10.0.0"></script>
 </body>
 </html>

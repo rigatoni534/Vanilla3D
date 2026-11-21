@@ -398,7 +398,8 @@
         // editor the layer ignores the mouse and the canvas hit test below drives selecting, moving and scaling;
         // while the simulation runs, buttons and inputs take their own clicks.
         const uiLayerEl = document.getElementById('ui-layer');
-        const UI_GRID = 1;                 // percent the editor snaps UI to
+        // The snap grid follows Settings > Interface, and is read whenever a drag happens so a change applies at once.
+        function uiGrid() { const v = Number(settings && settings.uiGrid); return [0.5, 1, 2, 5].includes(v) ? v : 1; }
         const UI_MIN_SIZE = 1;             // smallest size a UI element can be dragged to, in percent
         const uiNodes = new Map();         // instance id -> { el, type, label, field, kids }
         const uiCornerList = [{ x: -1, y: -1 }, { x: 1, y: -1 }, { x: 1, y: 1 }, { x: -1, y: 1 }];
@@ -411,6 +412,18 @@
             const h = HEX6.test(hex || '') ? hex : '#000000';
             return `rgba(${parseInt(h.slice(1, 3), 16)}, ${parseInt(h.slice(3, 5), 16)}, ${parseInt(h.slice(5, 7), 16)}, ${Math.round((1 - uiClamp(t, 0, 1)) * 1000) / 1000})`;
         };
+        // Background blur is the backdrop filter behind an element, shared by frames and progress bars.
+        function uiSetBackdrop(st, n) {
+            const blur = uiClamp(n, 0, 20);
+            if (blur > 0) {
+                const css = 'blur(' + blur + 'px)';
+                st.setProperty('backdrop-filter', css);
+                st.setProperty('-webkit-backdrop-filter', css);
+            } else {
+                st.removeProperty('backdrop-filter');
+                st.removeProperty('-webkit-backdrop-filter');
+            }
+        }
         function uiParentBox(o) {
             const p = sceneObjects[o.parent];
             return isUI(p) ? uiLayout(p) : { x: 0, y: 0, w: width, h: height };
@@ -442,6 +455,12 @@
             }
             const c = uiContainerOf(selectedObjectId);
             return c && (c === 'ui' || sceneObjects[c]) ? [c] : [];
+        }
+        // When Settings > Interface keeps the interface visible, the viewport draws the UI space even while a world
+        // object is selected. Selection and hit testing still use uiContainers(), so world editing is untouched.
+        function uiRenderContainers() {
+            if (!simulationRunning && settings.alwaysShowUI) return ['ui'];
+            return uiContainers();
         }
         function uiHidden(o) {
             let p = o, n = 0;
@@ -479,6 +498,19 @@
                     if (simulationRunning) vlRuntime.fireUIEvent(id, 'Clicked', []);
                 });
             }
+            if (o.type === 'progressbar') {
+                const track = document.createElement('div');
+                track.className = 'vui-progress-track';
+                const fill = document.createElement('div');
+                fill.className = 'vui-progress-fill';
+                const content = document.createElement('div');
+                content.className = 'vui-progress-content';
+                track.appendChild(fill);
+                el.append(track, content);
+                node.track = track;
+                node.fill = fill;
+                node.kids = content;
+            }
             if (o.type === 'input') {
                 const inp = document.createElement('input');
                 inp.type = 'text';
@@ -503,19 +535,37 @@
             st.zIndex = String(z);
             st.display = o.visible === false ? 'none' : 'flex';
             st.backgroundColor = uiRGBA(o.color, o.transparency);
-            if (node.type === 'frame') {
+            if (node.type === 'progressbar') {
+                const shape = o.shape === 'Circular' ? 'Circular' : 'Straight';
+                const length = uiClamp(o.length, 0, 100);
+                const track = node.track, fill = node.fill;
+                // The track holds the background and fill so a Circular bar can mask its ring without clipping child UI.
+                st.backgroundColor = 'transparent';
+                st.overflow = 'visible';
+                track.style.backgroundColor = uiRGBA(o.color, o.transparency);
+                uiSetBackdrop(track.style, o.backgroundBlur);
+                track.style.borderRadius = shape === 'Circular' ? '50%' : '0';
+                track.classList.toggle('vui-progress-circular', shape === 'Circular');
+                track.classList.toggle('vui-progress-straight', shape !== 'Circular');
+                node.el.classList.toggle('vui-progress-circular', shape === 'Circular');
+                node.el.classList.toggle('vui-progress-straight', shape !== 'Circular');
+                const fillBlur = uiClamp(o.fillBlur, 0, 20);
+                fill.style.filter = fillBlur > 0 ? 'blur(' + fillBlur + 'px)' : 'none';
+                if (shape === 'Circular') {
+                    fill.style.left = '0'; fill.style.top = '0'; fill.style.width = '100%'; fill.style.height = '100%';
+                    fill.style.borderRadius = '50%';
+                    fill.style.background = 'conic-gradient(from -90deg, ' + uiRGBA(o.fillColor, o.fillTransparency) + ' 0 ' + length + '%, rgba(0,0,0,0) ' + length + '% 100%)';
+                } else {
+                    fill.style.left = '0'; fill.style.top = '0'; fill.style.width = length + '%'; fill.style.height = '100%';
+                    fill.style.borderRadius = '0';
+                    fill.style.background = uiRGBA(o.fillColor, o.fillTransparency);
+                }
+            } else if (node.type === 'frame') {
                 const bw = uiClamp(o.borderWidth, 0, 20);
                 const bgBlur = uiClamp(o.backgroundBlur, 0, 20);
                 const strokeBlur = uiClamp(o.borderBlur, 0, 20);
                 const softStroke = bw > 0 && strokeBlur > 0;
-                if (bgBlur > 0) {
-                    const blur = 'blur(' + bgBlur + 'px)';
-                    st.setProperty('backdrop-filter', blur);
-                    st.setProperty('-webkit-backdrop-filter', blur);
-                } else {
-                    st.removeProperty('backdrop-filter');
-                    st.removeProperty('-webkit-backdrop-filter');
-                }
+                uiSetBackdrop(st, bgBlur);
                 st.boxShadow = bw > 0 && !softStroke ? 'inset 0 0 0 ' + bw + 'px ' + uiRGBA(o.borderColor, 0) : 'none';
                 st.overflow = o.clipChildren ? 'hidden' : 'visible';
                 node.el.classList.toggle('vui-soft-stroke', softStroke);
@@ -552,7 +602,7 @@
         }
         function uiSyncLayer() {
             if (!uiLayerEl) return;
-            const containers = uiContainers();
+            const containers = uiRenderContainers();
             uiLayerEl.classList.toggle('live', simulationRunning && containers.length > 0);
             const wanted = new Set();
             let z = 0;
@@ -619,12 +669,13 @@
             // How far the corner has moved on screen decides uniform against one-axis scaling, so the feel does not
             // depend on the shape of the element's parent.
             const rx = Math.abs(mx - (cx0 + c.x * hw0)), ry = Math.abs(my - (cy0 + c.y * hh0));
-            let sizeX = Math.round(uiClamp(Math.abs(mx - fx) / Math.max(1, box.w) * 100, UI_MIN_SIZE, 100) / UI_GRID) * UI_GRID;
-            let sizeY = Math.round(uiClamp(Math.abs(my - fy) / Math.max(1, box.h) * 100, UI_MIN_SIZE, 100) / UI_GRID) * UI_GRID;
+            const grid = uiGrid();
+            let sizeX = Math.round(uiClamp(Math.abs(mx - fx) / Math.max(1, box.w) * 100, UI_MIN_SIZE, 100) / grid) * grid;
+            let sizeY = Math.round(uiClamp(Math.abs(my - fy) / Math.max(1, box.h) * 100, UI_MIN_SIZE, 100) / grid) * grid;
             if (!(rx > 2 * ry || ry > 2 * rx)) {
                 const grow = Math.max(sizeX / s.sizeX, sizeY / s.sizeY);
-                sizeX = uiClamp(Math.round(s.sizeX * grow / UI_GRID) * UI_GRID, UI_MIN_SIZE, 100);
-                sizeY = uiClamp(Math.round(s.sizeY * grow / UI_GRID) * UI_GRID, UI_MIN_SIZE, 100);
+                sizeX = uiClamp(Math.round(s.sizeX * grow / grid) * grid, UI_MIN_SIZE, 100);
+                sizeY = uiClamp(Math.round(s.sizeY * grow / grid) * grid, UI_MIN_SIZE, 100);
             } else if (rx > ry) sizeY = s.sizeY;
             else sizeX = s.sizeX;
             const nw = box.w * sizeX / 100, nh = box.h * sizeY / 100;
@@ -651,7 +702,8 @@
             if (!d || !d.o || d.o !== sceneObjects[selectedObjectId]) return;
             const o = d.o, box = d.box;
             if (d.kind === 'move') {
-                const snap = (v) => Math.round(v / UI_GRID) * UI_GRID;
+                const grid = uiGrid();
+                const snap = (v) => Math.round(v / grid) * grid;
                 o.posX = uiClamp(snap(d.start.posX + (m.x - d.sx) / Math.max(1, box.w) * 100), 0, 100);
                 o.posY = uiClamp(snap(d.start.posY + (m.y - d.sy) / Math.max(1, box.h) * 100), 0, 100);
                 uiGuides = [{ axis: 'x', px: box.x + box.w * o.posX / 100 }, { axis: 'y', px: box.y + box.h * o.posY / 100 }];

@@ -13,10 +13,15 @@
         const statMem = document.getElementById('stat-mem');
         const statVerts = document.getElementById('stat-verts');
         const statFaces = document.getElementById('stat-faces');
+        const statObjects = document.getElementById('stat-objects');
+        const statUI = document.getElementById('stat-ui');
+        const statScripts = document.getElementById('stat-scripts');
+        const statDraws = document.getElementById('stat-draws');
+        const statSim = document.getElementById('stat-sim');
 
         // Camera control settings (saved in this browser)
         let FOV = 450;
-        const defaultSettings = () => ({ leftDrag: true, rightClick: false, gizmoOffset: 0.5, rotOffset: 45, camSpeed: 0.1, axisLength: 8, lookSens: 1, invertY: false, fov: 75, lighting: 'enhanced', shadows: 'medium', haze: true, renderDistance: 0, showAxes: true, showViewfinder: true, hintMode: 'auto', showStatus: true, seFont: 13, autosave: 3, saveWhat: {}, accent: 'vanilla', light: false, showUid: false, syntax: true, defaultNames: {}, preinclude: {} });
+        const defaultSettings = () => ({ leftDrag: true, rightClick: false, gizmoOffset: 0.5, rotOffset: 45, camSpeed: 0.1, axisLength: 8, lookSens: 1, invertY: false, fov: 75, lighting: 'enhanced', shadows: 'medium', haze: true, renderDistance: 0, showAxes: true, showViewfinder: true, hintMode: 'auto', showStatus: true, alwaysShowUI: false, uiGrid: 1, seFont: 13, autosave: 3, saveWhat: {}, accent: 'vanilla', light: false, showUid: false, syntax: true, defaultNames: {}, preinclude: {} });
         const settings = defaultSettings();
         let autosaveTimer = null, autosaveMins = -1, autosaveBase = '';
         // Accent colors: each preset has a dark-theme and a light-theme shade.
@@ -65,6 +70,7 @@
             settings.lookSens = pick(settings.lookSens, [0.5, 0.75, 1, 1.5, 2], 1);
             settings.seFont = pick(settings.seFont, [12, 13, 15, 17], 13);
             settings.autosave = pick(settings.autosave, [0, 1, 2, 3, 5, 10], 3);
+            settings.uiGrid = pick(settings.uiGrid, [0.5, 1, 2, 5], 1);
             settings.fov = Math.round(Math.min(110, Math.max(40, Number.isFinite(parseFloat(settings.fov)) ? parseFloat(settings.fov) : 75)));
             if (!['auto', 'always', 'never'].includes(settings.hintMode)) settings.hintMode = 'auto';
             if (!['enhanced', 'classic'].includes(settings.lighting)) settings.lighting = 'enhanced';
@@ -92,6 +98,10 @@
             { const h = document.getElementById('hint'); h.classList.toggle('dismissed', settings.hintMode === 'never' || (settings.hintMode === 'auto' && h.dataset.elapsed === '1')); }
             document.getElementById('opt-status').checked = settings.showStatus !== false;
             document.getElementById('statusbar').style.display = settings.showStatus === false ? 'none' : '';
+            document.getElementById('opt-ui-always').checked = !!settings.alwaysShowUI;
+            document.getElementById('set-uigrid').value = String(settings.uiGrid);
+            { const g = document.getElementById('set-gizmooffset'); if (g && g !== document.activeElement) g.value = settings.gizmoOffset; }
+            { const r = document.getElementById('set-rotstep'); if (r && r !== document.activeElement) r.value = settings.rotOffset; }
             document.getElementById('set-sefont').value = String(settings.seFont);
             document.documentElement.style.setProperty('--se-fs', settings.seFont + 'px');
             document.getElementById('set-autosave').value = String(settings.autosave);
@@ -137,8 +147,9 @@
         const bindChk = (id, key) => document.getElementById(id).addEventListener('change', (e) => { settings[key] = e.target.checked; saveSettings(); });
         bindSel('set-looksens', 'lookSens', parseFloat); bindSel('set-hint', 'hintMode', v => v); bindSel('set-sefont', 'seFont', Number); bindSel('set-autosave', 'autosave', Number);
         bindSel('set-lighting', 'lighting', v => v); bindSel('set-shadows', 'shadows', v => v); bindChk('opt-haze', 'haze');
-        bindSel('set-renderdist', 'renderDistance', Number);
+        bindSel('set-renderdist', 'renderDistance', Number); bindSel('set-uigrid', 'uiGrid', Number);
         bindChk('opt-inverty', 'invertY'); bindChk('opt-axes', 'showAxes'); bindChk('opt-viewcube', 'showViewfinder'); bindChk('opt-status', 'showStatus');
+        bindChk('opt-ui-always', 'alwaysShowUI');
         document.getElementById('set-fov').addEventListener('input', (e) => { settings.fov = parseInt(e.target.value, 10); saveSettings(); });
         // Accent color: preset swatches, a custom picker, a hex box and a reset button
         ACCENT_PRESETS.forEach(p => {
@@ -197,16 +208,40 @@
         if (parseOffset(settings.gizmoOffset) === null) settings.gizmoOffset = 0.5;
         offsetEl.value = settings.gizmoOffset;
         const persistOffset = () => { try { localStorage.setItem('vanilla-editor-settings', JSON.stringify(settings)); } catch (e) {} };
-        offsetEl.addEventListener('input', () => { const n = parseOffset(offsetEl.value); if (n !== null) { settings.gizmoOffset = n; persistOffset(); } });
+        offsetEl.addEventListener('input', () => {
+            const n = parseOffset(offsetEl.value);
+            if (n !== null) {
+                settings.gizmoOffset = n; persistOffset();
+                const g = document.getElementById('set-gizmooffset'); if (g && g !== document.activeElement) g.value = settings.gizmoOffset;
+            }
+        });
         offsetEl.addEventListener('change', () => { offsetEl.value = settings.gizmoOffset; });
         offsetEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') offsetEl.blur(); });
         // Rotation: the step in degrees the Rotate gizmo snaps to (0 means free)
         const rotEl = document.getElementById('rot-offset-input');
         if (parseOffset(settings.rotOffset) === null) settings.rotOffset = 45;
         rotEl.value = settings.rotOffset;
-        rotEl.addEventListener('input', () => { const n = parseOffset(rotEl.value); if (n !== null) { settings.rotOffset = n; persistOffset(); } });
+        rotEl.addEventListener('input', () => {
+            const n = parseOffset(rotEl.value);
+            if (n !== null) {
+                settings.rotOffset = n; persistOffset();
+                const r = document.getElementById('set-rotstep'); if (r && r !== document.activeElement) r.value = settings.rotOffset;
+            }
+        });
         rotEl.addEventListener('change', () => { rotEl.value = settings.rotOffset; });
         rotEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') rotEl.blur(); });
+        const gizmoStepEl = document.getElementById('set-gizmooffset');
+        if (gizmoStepEl) gizmoStepEl.addEventListener('change', () => {
+            const n = parseOffset(gizmoStepEl.value);
+            if (n !== null) settings.gizmoOffset = n;
+            gizmoStepEl.value = settings.gizmoOffset; offsetEl.value = settings.gizmoOffset; saveSettings();
+        });
+        const rotStepEl = document.getElementById('set-rotstep');
+        if (rotStepEl) rotStepEl.addEventListener('change', () => {
+            const n = parseOffset(rotStepEl.value);
+            if (n !== null) settings.rotOffset = n;
+            rotStepEl.value = settings.rotOffset; rotEl.value = settings.rotOffset; saveSettings();
+        });
 
         // Theme toggle
         document.getElementById('theme-toggle').addEventListener('change', (e) => {

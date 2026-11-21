@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=3.10.0.1">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.10.1.1">
   
 </head>
 <body>
@@ -427,7 +427,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.10.0.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.10.1.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -728,7 +728,7 @@ print(block)</code></pre>
           <tr><td>Sounds</td><td><code>Playing</code> and <code>Looped</code> (True or False), <code>Volume</code> (0 to 1), <code>MaxDistance</code> (meters, 0 or more, used only when the Sound is inside an object) and <code>Preset</code> (one of <code>beep</code>, <code>chime</code>, <code>click</code>, <code>thud</code>, <code>siren</code>)</td></tr>
           <tr><td>Highlights</td><td><code>Color</code> (a hex string) and <code>OverObjects</code> (True or False)</td></tr>
           <tr><td>Blocks</td><td><code>Spawnpoint</code> (true or false). Only one block can be the spawnpoint.</td></tr>
-          <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr>
+          <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr><tr><td>Players</td><td><code>Character</code> (the player's current model, read-only). Use <code>Players.AssignModelToPlayer</code> to give a player a model.</td></tr>
         </tbody></table>
         <p><code>vanilla3D.Position(x, y, z)</code> and <code>vanilla3D.Size(x, y, z)</code> create three-component vectors. Vector axes are uppercase <code>X</code>, <code>Y</code>, and <code>Z</code>. For a prism, Position maps to its world coordinates; Size maps to width, height, and length respectively.</p>
         <pre><code>call World
@@ -761,7 +761,7 @@ child.Parent = part</code></pre>
         </ul>
         <p>When the simulation starts, Server scripts begin before Local scripts. A <b>JSON</b> script cannot be run. Stopping the simulation stops active script tasks and restores the scene snapshot from before Run. Runtime globals are cleared as part of ending the simulation.</p>
         <h3 data-group="Vanillalua language">12b. Players, events and threads</h3>
-        <p>The <b>Players</b> space lists every player in the game as a read-only Player instance with a <code>Name</code> and a <code>CurrentModel</code>. It is empty while you edit. When you press Run, the editor joins one player, <b>Player1</b>, and when you stop, that player leaves. Scripts cannot create, edit or delete players: <code>Players.AssignModelToPlayer</code> is the only way to change a player's model.</p>
+        <p>The <b>Players</b> space lists every player in the game as a read-only Player instance with a <code>Name</code> and a <code>Character</code>; use <code>player.Character</code> (for example <code>Players.LocalPlayer.Character</code>) to read the player's current model. It is empty while you edit. When you press Run, the editor joins one player, <b>Player1</b>, and when you stop, that player leaves. Scripts cannot create, edit or delete players: <code>Players.AssignModelToPlayer</code> is the only way to change a player's model.</p>
         <p>Use <code>get Players</code> to load the functions and events, and <code>call Players</code> to load the space.</p>
         <ul>
           <li><code>Players.Count</code> — the number of players, as a number.</li>
@@ -805,7 +805,7 @@ end)
 
 Players.OnPlayerDeath:Connect(function(player)
   wait(3) # The ragdoll lies there for a moment.
-  Instance.delete(player.CurrentModel)
+  Instance.delete(player.Character)
   spawn(player)
 end)</code></pre>
 
@@ -859,21 +859,21 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=3.10.0.0"></script>
-  <script>const ENGINE_VERSION = '3.10.0.0';</script>
+  <script src="../vanillalua.js?v=3.10.1.0"></script>
+  <script>const ENGINE_VERSION = '3.10.1.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/scene.js?v=3.10.0.0"></script>
-  <script defer src="js/version-history.js?v=3.10.0.0"></script>
-  <script defer src="js/player.js?v=3.10.0.0"></script>
-  <script defer src="js/sounds.js?v=3.10.0.0"></script>
-  <script defer src="js/scripting.js?v=3.10.0.0"></script>
-  <script defer src="js/shell.js?v=3.10.0.0"></script>
-  <script defer src="js/files.js?v=3.10.0.0"></script>
-  <script defer src="js/offline.js?v=3.10.0.0"></script>
-  <script defer src="js/explorer.js?v=3.10.0.0"></script>
-  <script defer src="js/properties.js?v=3.10.0.0"></script>
-  <script defer src="js/render.js?v=3.10.0.0"></script>
-  <script defer src="js/gl.js?v=3.10.0.0"></script>
-  <script defer src="js/main.js?v=3.10.0.0"></script>
+  <script defer src="js/scene.js?v=3.10.1.0"></script>
+  <script defer src="js/version-history.js?v=3.10.1.0"></script>
+  <script defer src="js/player.js?v=3.10.1.0"></script>
+  <script defer src="js/sounds.js?v=3.10.1.0"></script>
+  <script defer src="js/scripting.js?v=3.10.1.0"></script>
+  <script defer src="js/shell.js?v=3.10.1.0"></script>
+  <script defer src="js/files.js?v=3.10.1.0"></script>
+  <script defer src="js/offline.js?v=3.10.1.0"></script>
+  <script defer src="js/explorer.js?v=3.10.1.0"></script>
+  <script defer src="js/properties.js?v=3.10.1.0"></script>
+  <script defer src="js/render.js?v=3.10.1.0"></script>
+  <script defer src="js/gl.js?v=3.10.1.0"></script>
+  <script defer src="js/main.js?v=3.10.1.0"></script>
 </body>
 </html>

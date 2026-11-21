@@ -90,9 +90,9 @@
                     ${section('Player', `
                         <div class="field-label">Name</div>
                         <input class="text" value="${esc(obj.name)}" aria-label="Name" disabled>
-                        <div class="field-label">Current model</div>
-                        <input class="text" value="${pm ? esc(pm.name) : 'None'}" aria-label="Current model" disabled>
-                        <div class="field-note">${obj.dead ? 'This player is dead and waiting for a new model. ' : ''}Players are read-only in the editor. Scripts give them a model with Players.AssignModelToPlayer.</div>`)}`;
+                        <div class="field-label">Character</div>
+                        <input class="text" value="${pm ? esc(pm.name) : 'None'}" aria-label="Character" disabled>
+                        <div class="field-note">${obj.dead ? 'This player is dead and waiting for a new model. ' : ''}Players are read-only in the editor. Read the model in scripts with <code>player.Character</code>; give the player a model with Players.AssignModelToPlayer.</div>`)}`;
                 return;
             }
             if (obj.readOnly) {

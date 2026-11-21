@@ -1,6 +1,7 @@
 // Vanilla Engine — release history, What's new, and the version this browser last opened.
 // Add an entry here whenever ENGINE_VERSION changes. The About dialog and What's new both warn if the running version is missing.
 const VERSION_HISTORY = [
+  { version: '3.10.1.0', date: '2026-11-21', notes: ['Renamed the Player property CurrentModel to Character; Players.LocalPlayer.Character and Players.x.Character return the player\'s current model.', 'New PlayerManagement scripts use player.Character, and the Players property reference documents it.'] },
   { version: '3.10.0.0', date: '2026-11-21', notes: ['Added the ProgressBar UI instance with Straight and Circular modes, fill color, transparency, blur and length.', 'Added Always show UI, a UI snap grid and gizmo step settings.', 'Added Objects, UI, Scripts, Draws and Mode stats to the status bar, with a clear Firefox memory explanation.'] },
   { version: '3.9.0.0', date: '2026-11-21', notes: ['Added background and border blur to Frames, in Properties and as BackgroundBlur and BorderBlur.', 'Added Players.LocalPlayer for Local scripts after call Players.'] },
   { version: '3.8.0.0', date: '2026-11-21', notes: ['Added What\'s new after an update: the editor shows the releases you missed, once per version.', 'Added File > Offline mode: it builds and downloads a ZIP of the editor in the tab.', 'The offline copy skips the online update check.'] },

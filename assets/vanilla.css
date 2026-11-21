@@ -678,7 +678,7 @@
 
   /* A frame stroke with blur: a border layer under the frame's children. */
   .vui-frame.vui-soft-stroke::before {
-    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    content: ""; position: absolute; inset: 0; border-radius: inherit; box-sizing: border-box;
     border: var(--vui-stroke-width, 0px) solid var(--vui-stroke-color, transparent);
     filter: blur(var(--vui-stroke-blur, 0px));
     pointer-events: none;

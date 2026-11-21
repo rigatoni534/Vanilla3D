@@ -231,6 +231,7 @@
         try { autosaveBase = JSON.stringify(buildWorldFile()); } catch (e) { autosaveBase = ''; }
         refreshTheme();
         renderVersionHistory();
+        maybeShowWhatsNew();
         renderExplorer();
         renderProperties();
         setMode('select');

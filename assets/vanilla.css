@@ -669,3 +669,9 @@
   .version-notes { margin: 6px 0 0; padding-left: 16px; color: var(--text-2); font-size: 12px; line-height: 1.5; }
   .version-notes li + li { margin-top: 3px; }
   .version-missing { margin: 0 0 8px; padding: 7px 9px; border-radius: 7px; background: var(--accent-soft); color: var(--text); font-size: 12px; }
+
+  /* ───── What's new ───── */
+  .whats-new-card { width: min(540px, 94vw); }
+  .wn-lede { margin: 10px 0 10px; color: var(--text-2); font-size: 13px; }
+  #whats-new-list { max-height: min(52vh, 430px); }
+  #modal-whats-new .cf-actions { margin-top: 14px; }

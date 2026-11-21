@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=3.7.0.0">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.8.0.0">
   
 </head>
 <body>
@@ -98,6 +98,7 @@
           <button class="menu-item" role="menuitem" data-file-act="open-slot2"><svg class="ic"><use href="#i-folder"/></svg>Browser Slot 2<span class="menu-meta" data-slot="slot2">empty</span></button>
           <button class="menu-item" role="menuitem" data-file-act="open-file"><svg class="ic"><use href="#i-upload"/></svg>Open .vnw file…</button>
           <button class="menu-item" role="menuitem" data-file-act="add-vanilla"><svg class="ic"><use href="#i-plus"/></svg>Add .vanilla instance…</button>
+          <button class="menu-item" role="menuitem" data-file-act="offline"><svg class="ic"><use href="#i-download"/></svg>Offline mode<span class="menu-meta">Download ZIP</span></button>
           <div class="menu-separator"></div>
           <button class="menu-item danger" role="menuitem" data-file-act="new-world"><svg class="ic"><use href="#i-plus"/></svg>New empty world</button>
           <button class="menu-item" role="menuitem" data-file-act="docs"><svg class="ic"><use href="#i-book"/></svg>Documentation</button>
@@ -249,6 +250,20 @@
     </div>
   </div>
 
+  <div id="modal-whats-new" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="wn-title">
+    <div class="modal-card whats-new-card">
+      <div class="modal-head">
+        <h2 class="modal-title" id="wn-title">What's new</h2>
+        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <p class="wn-lede" id="wn-lede"></p>
+        <div id="whats-new-list" class="version-list"></div>
+        <div class="cf-actions"><button class="btn btn-primary cf-btn" data-close type="button">Got it</button></div>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-update" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mu-title">
     <div class="modal-card">
       <div class="modal-head">
@@ -391,7 +406,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.7.0.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.8.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -443,6 +458,7 @@
         <p>There is no invisible ground at <code>y = 0</code>. Objects fall until they land on something solid or pass the kill layer.</p>
         <h3 data-group="Editor guide">File menu and .vnw files</h3>
         <p>The <b>File</b> menu in the top bar saves and opens whole worlds. This browser keeps three saves: <b>Autosave</b>, <b>Browser Slot 1</b> and <b>Browser Slot 2</b>. Any other save is a <code>.vnw</code> file on your computer. A world file is plain JSON holding everything in World, Storage, Scripts, UI and Communications, including script source. Engine-owned objects such as the Viewfinder are not saved.</p>
+        <p><b>Offline mode</b> in the File menu builds a ZIP of this editor in the tab and downloads it. Unzip it and open <code>engine/index.html</code> to use the editor without a connection; that copy skips the online update check. Browser saves belong to the address you opened, so download your world as a <code>.vnw</code> before switching and open it in the offline copy.</p>
         <p>The page checks every 30 seconds whether a newer version of the engine or of Vanillalua has been published. If one has, a prompt offers to save and reload; your world is saved to Autosave first and opened again in the new version.</p>
         <table class="docs-table"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
           <tr><td>Save to Autosave, Browser Slot 1 or 2 <span class="kbd">Ctrl S</span></td><td>Writes that slot in this browser's local storage. Saving again overwrites only that slot. Ctrl S writes Autosave.</td></tr>
@@ -814,20 +830,21 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=3.7.0.0"></script>
-  <script>const ENGINE_VERSION = '3.7.0.0';</script>
+  <script src="../vanillalua.js?v=3.8.0.0"></script>
+  <script>const ENGINE_VERSION = '3.8.0.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/scene.js?v=3.7.0.0"></script>
-  <script defer src="js/version-history.js?v=3.7.0.0"></script>
-  <script defer src="js/player.js?v=3.7.0.0"></script>
-  <script defer src="js/sounds.js?v=3.7.0.0"></script>
-  <script defer src="js/scripting.js?v=3.7.0.0"></script>
-  <script defer src="js/shell.js?v=3.7.0.0"></script>
-  <script defer src="js/files.js?v=3.7.0.0"></script>
-  <script defer src="js/explorer.js?v=3.7.0.0"></script>
-  <script defer src="js/properties.js?v=3.7.0.0"></script>
-  <script defer src="js/render.js?v=3.7.0.0"></script>
-  <script defer src="js/gl.js?v=3.7.0.0"></script>
-  <script defer src="js/main.js?v=3.7.0.0"></script>
+  <script defer src="js/scene.js?v=3.8.0.0"></script>
+  <script defer src="js/version-history.js?v=3.8.0.0"></script>
+  <script defer src="js/player.js?v=3.8.0.0"></script>
+  <script defer src="js/sounds.js?v=3.8.0.0"></script>
+  <script defer src="js/scripting.js?v=3.8.0.0"></script>
+  <script defer src="js/shell.js?v=3.8.0.0"></script>
+  <script defer src="js/files.js?v=3.8.0.0"></script>
+  <script defer src="js/offline.js?v=3.8.0.0"></script>
+  <script defer src="js/explorer.js?v=3.8.0.0"></script>
+  <script defer src="js/properties.js?v=3.8.0.0"></script>
+  <script defer src="js/render.js?v=3.8.0.0"></script>
+  <script defer src="js/gl.js?v=3.8.0.0"></script>
+  <script defer src="js/main.js?v=3.8.0.0"></script>
 </body>
 </html>

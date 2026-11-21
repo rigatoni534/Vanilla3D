@@ -274,6 +274,7 @@
         }
         async function runFileAction(action) {
             if (action === 'docs') { openDocs('file'); return; }
+            if (action === 'offline') { downloadOfflineCopy(); return; }   // read-only, so it works during a simulation too
             if (simulationRunning) { toast('Stop the simulation first. Stop restores your world.', 'warn'); return; }
             if (action === 'save-autosave') saveToSlot('autosave');
             else if (action === 'save-slot1') saveToSlot('slot1');

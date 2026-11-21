@@ -1,6 +1,7 @@
-// Vanilla Engine — release history, newest first.
-// Add an entry here whenever ENGINE_VERSION changes. The About dialog warns if the running version is missing.
+// Vanilla Engine — release history, What's new, and the version this browser last opened.
+// Add an entry here whenever ENGINE_VERSION changes. The About dialog and What's new both warn if the running version is missing.
 const VERSION_HISTORY = [
+  { version: '3.8.0.0', date: '2026-11-21', notes: ['Added What\'s new after an update: the editor shows the releases you missed, once per version.', 'Added File > Offline mode: it builds and downloads a ZIP of the editor in the tab.', 'The offline copy skips the online update check.'] },
   { version: '3.7.0.0', date: '2026-11-21', notes: ['Added this version history to the About dialog.'] },
   { version: '3.6.0.0', date: '2026-11-21', notes: ['Split the editor into eleven JavaScript files under engine/js for easier editing.'] },
   { version: '3.5.3.0', date: '2026-11-21', notes: ['Added WaitForChild(name, timeout) to wait for a child to appear.'] },
@@ -16,20 +17,60 @@ const VERSION_HISTORY = [
   { version: '3.1.0.0', date: '2026-11-18', notes: ['Added save slots, autosave on close and an update check.'] }
 ];
 
+const LAST_SEEN_VERSION_KEY = 'vanilla-engine-last-seen-version';
+
+function versionEntryHTML(entry, current) {
+    return '<article class="version-entry' + (current ? ' current' : '') + '">' +
+        '<div class="version-head"><span class="version-tag">' + esc(entry.version) + '</span>' +
+        '<span class="version-date">' + esc(entry.date) + '</span>' +
+        (current ? '<span class="version-current">current</span>' : '') + '</div>' +
+        '<ul class="version-notes">' + entry.notes.map(note => '<li>' + esc(note) + '</li>').join('') + '</ul>' +
+        '</article>';
+}
+
 function renderVersionHistory() {
     const box = document.getElementById('version-history');
     if (!box) return;
-    box.innerHTML = VERSION_HISTORY.map(entry => {
-        const current = entry.version === ENGINE_VERSION;
-        return '<article class="version-entry' + (current ? ' current' : '') + '">' +
-            '<div class="version-head"><span class="version-tag">' + esc(entry.version) + '</span>' +
-            '<span class="version-date">' + esc(entry.date) + '</span>' +
-            (current ? '<span class="version-current">current</span>' : '') + '</div>' +
-            '<ul class="version-notes">' + entry.notes.map(note => '<li>' + esc(note) + '</li>').join('') + '</ul>' +
-            '</article>';
-    }).join('');
+    box.innerHTML = VERSION_HISTORY.map(entry => versionEntryHTML(entry, entry.version === ENGINE_VERSION)).join('');
     if (!VERSION_HISTORY.some(entry => entry.version === ENGINE_VERSION)) {
         box.insertAdjacentHTML('afterbegin', '<p class="version-missing">Version ' + esc(ENGINE_VERSION) + ' has no history entry yet. Add one in engine/js/version-history.js.</p>');
         console.warn('Version ' + ENGINE_VERSION + ' is missing from VERSION_HISTORY. Add it in engine/js/version-history.js.');
     }
+}
+
+// True when this browser has used the editor before but has no version recorded yet (the first release with this feature).
+function editorHasHistory() {
+    try {
+        return !!(localStorage.getItem('vanilla-editor-settings') ||
+            localStorage.getItem('vanilla-engine-slot-autosave-v1') ||
+            localStorage.getItem('vanilla-engine-world-save-v1'));
+    } catch (e) { return false; }
+}
+
+// Shows the releases added since the last visit. A first visit only records the version; returning users get the
+// current notes once even though no earlier version was stored.
+function maybeShowWhatsNew() {
+    let previous = '';
+    try { previous = localStorage.getItem(LAST_SEEN_VERSION_KEY) || ''; } catch (e) {}
+    if (!previous) {
+        try { localStorage.setItem(LAST_SEEN_VERSION_KEY, ENGINE_VERSION); } catch (e) {}
+        if (!editorHasHistory()) return;
+        const current = VERSION_HISTORY.filter(entry => entry.version === ENGINE_VERSION);
+        if (current.length) showWhatsNew(current, '');
+        return;
+    }
+    if (versionCompare(ENGINE_VERSION, previous) <= 0) return;   // same version, or a cached older copy
+    const entries = VERSION_HISTORY.filter(entry => versionCompare(entry.version, previous) > 0 && versionCompare(entry.version, ENGINE_VERSION) <= 0);
+    try { localStorage.setItem(LAST_SEEN_VERSION_KEY, ENGINE_VERSION); } catch (e) {}
+    showWhatsNew(entries, previous);
+}
+
+function showWhatsNew(entries, previous) {
+    if (!entries.length) return;
+    document.getElementById('wn-title').textContent = "What's new in " + ENGINE_VERSION;
+    document.getElementById('wn-lede').textContent = previous
+        ? (entries.length === 1 ? 'Updated from version ' + previous + '.' : entries.length + ' releases since version ' + previous + '.')
+        : 'This copy is new to you; here is what the latest release changed.';
+    document.getElementById('whats-new-list').innerHTML = entries.map(entry => versionEntryHTML(entry, entry.version === ENGINE_VERSION)).join('');
+    openModal('modal-whats-new', '[data-close]');
 }

@@ -1,6 +1,7 @@
 // Vanilla Engine — release history, What's new, and the version this browser last opened.
 // Add an entry here whenever ENGINE_VERSION changes. The About dialog and What's new both warn if the running version is missing.
 const VERSION_HISTORY = [
+  { version: '3.10.3.0', date: '2026-11-21', notes: ['Added the Player Stats HUD to the toolbox: a player name label, Health and Stamina bars, and a Local script that waits for player.ModelAdded.', 'The bars scale to MaxHealth and MaxStamina, and the HUD can be added without replacing the rest of a world.'] },
   { version: '3.10.2.0', date: '2026-11-21', notes: ['Added the player.ModelAdded event, which fires when Players.AssignModelToPlayer gives that player a new model and passes the model.', 'Documented how a Local script can wait for the player Character instead of reading it before the model is assigned.'] },
   { version: '3.10.1.0', date: '2026-11-21', notes: ['Renamed the Player property CurrentModel to Character; Players.LocalPlayer.Character and Players.x.Character return the player\'s current model.', 'New PlayerManagement scripts use player.Character, and the Players property reference documents it.'] },
   { version: '3.10.0.0', date: '2026-11-21', notes: ['Added the ProgressBar UI instance with Straight and Circular modes, fill color, transparency, blur and length.', 'Added Always show UI, a UI snap grid and gizmo step settings.', 'Added Objects, UI, Scripts, Draws and Mode stats to the status bar, with a clear Firefox memory explanation.'] },

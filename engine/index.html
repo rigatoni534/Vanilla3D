@@ -427,7 +427,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.10.2.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.10.3.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -493,8 +493,8 @@
           <tr><td>New empty world</td><td>Clears World, Storage and Scripts, leaving one World Settings.</td></tr>
         </tbody></table>
         <p>Opening and creating ask for confirmation first because they replace everything. There is no undo, so save before you open another world.</p>
-        <h3 data-group="Editor guide">Premade scripts and models</h3>
-        <p>The <a href="../toolbox/"><b>toolbox</b></a> page holds ready-made scripts and models. Each one downloads as a <code>.vanilla</code> file, which you add with <b>File → Add .vanilla instance…</b>: it is added alongside your own instances instead of replacing them, so a premade script or model can be dropped into a world you are already building.</p>
+        <h3 data-group="Editor guide">Premade scripts, models and interfaces</h3>
+        <p>The <a href="../toolbox/"><b>toolbox</b></a> page holds ready-made scripts, models and interfaces. Each one downloads as a <code>.vanilla</code> file, which you add with <b>File → Add .vanilla instance…</b>: it is added alongside your own instances instead of replacing them, so a premade script, model or interface can be dropped into a world you are already building.</p>
         <p>A <code>.vanilla</code> file is plain JSON holding <b>one</b> instance at the top of a space, plus any number of children:</p>
         <pre><code>{
   "format": "VanillaInstance",
@@ -873,21 +873,21 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=3.10.2.0"></script>
-  <script>const ENGINE_VERSION = '3.10.2.0';</script>
+  <script src="../vanillalua.js?v=3.10.3.0"></script>
+  <script>const ENGINE_VERSION = '3.10.3.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/scene.js?v=3.10.2.0"></script>
-  <script defer src="js/version-history.js?v=3.10.2.0"></script>
-  <script defer src="js/player.js?v=3.10.2.0"></script>
-  <script defer src="js/sounds.js?v=3.10.2.0"></script>
-  <script defer src="js/scripting.js?v=3.10.2.0"></script>
-  <script defer src="js/shell.js?v=3.10.2.0"></script>
-  <script defer src="js/files.js?v=3.10.2.0"></script>
-  <script defer src="js/offline.js?v=3.10.2.0"></script>
-  <script defer src="js/explorer.js?v=3.10.2.0"></script>
-  <script defer src="js/properties.js?v=3.10.2.0"></script>
-  <script defer src="js/render.js?v=3.10.2.0"></script>
-  <script defer src="js/gl.js?v=3.10.2.0"></script>
-  <script defer src="js/main.js?v=3.10.2.0"></script>
+  <script defer src="js/scene.js?v=3.10.3.0"></script>
+  <script defer src="js/version-history.js?v=3.10.3.0"></script>
+  <script defer src="js/player.js?v=3.10.3.0"></script>
+  <script defer src="js/sounds.js?v=3.10.3.0"></script>
+  <script defer src="js/scripting.js?v=3.10.3.0"></script>
+  <script defer src="js/shell.js?v=3.10.3.0"></script>
+  <script defer src="js/files.js?v=3.10.3.0"></script>
+  <script defer src="js/offline.js?v=3.10.3.0"></script>
+  <script defer src="js/explorer.js?v=3.10.3.0"></script>
+  <script defer src="js/properties.js?v=3.10.3.0"></script>
+  <script defer src="js/render.js?v=3.10.3.0"></script>
+  <script defer src="js/gl.js?v=3.10.3.0"></script>
+  <script defer src="js/main.js?v=3.10.3.0"></script>
 </body>
 </html>

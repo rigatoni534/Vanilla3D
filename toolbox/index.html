@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#171a21">
-<meta name="description" content="Premade Vanillalua scripts and models for Vanilla3D, ready to add to your world.">
+<meta name="description" content="Premade Vanillalua scripts, models and interfaces for Vanilla3D, ready to add to your world.">
 <title>Vanilla Toolbox</title>
 <link rel="stylesheet" href="../assets/vanilla.css">
 <style>
@@ -102,9 +102,9 @@
   <main class="tb-main">
     <h1>Toolbox<span class="tb-dot">.</span></h1>
     <p class="tb-lede">
-      Premade scripts and models for your worlds. Download a file, then add it to the editor with
+      Premade scripts, models and interfaces for your worlds. Download a file, then add it to the editor with
       <b>File → Add .vanilla instance…</b>. Each one is added next to your own instances, so nothing you have built is
-      replaced. The format is documented under <b>Premade scripts and models</b> in the editor's guide.
+      replaced. The format is documented under <b>Premade scripts, models and interfaces</b> in the editor's guide.
     </p>
 
     <div class="tb-grid">
@@ -156,15 +156,74 @@ end
         </details>
       </article>
 
+      <article class="tb-card">
+        <div class="tb-card-top">
+          <h2>Player Stats HUD</h2>
+          <span class="tb-tag">UI</span>
+        </div>
+        <p>
+          A compact player panel with the player's name and bars for health and stamina. Its Local script waits
+          for <code>player.ModelAdded</code>, so it works even when the model is not ready as the simulation starts.
+        </p>
+        <ul class="tb-meta">
+          <li>Adds a Frame, two ProgressBars, three labels and one Local script</li>
+          <li>Needs a player model with a <code>Human</code> inside it, like the default PlayerManagement setup</li>
+          <li>Bars scale to <code>MaxHealth</code> and <code>MaxStamina</code></li>
+        </ul>
+        <div class="tb-actions">
+          <a class="btn btn-primary" href="player-stats.vanilla" download="PlayerStats.vanilla">Download .vanilla</a>
+        </div>
+        <details class="tb-source">
+          <summary>View the script</summary>
+          <pre><code># HandleBars: shows the player's name, health and stamina.
+call Scripts
+call Players
+get Instance
+
+player = Players.LocalPlayer
+hp = script.Parent.Health
+stamina = script.Parent.Stamina
+playerName = script.Parent.PlayerName
+
+hp.Length = 0
+stamina.Length = 0
+playerName.Text = player.Name
+
+function refresh()
+    local character = player.Character
+    if character ~= nil then
+        local human = character.Human
+        if human ~= nil then
+            hp.Length = human.Health / human.MaxHealth * 100
+            stamina.Length = human.Stamina / human.MaxStamina * 100
+        end
+    end
+end
+
+function setup(character)
+    local human = character.Human
+    if human ~= nil then
+        refresh()
+        human.HealthChanged:Connect(refresh)
+        human.StaminaChanged:Connect(refresh)
+    end
+end
+
+player.ModelAdded:Connect(setup)
+if player.Character then setup(player.Character) end
+</code></pre>
+        </details>
+      </article>
+
       <div class="tb-empty">
-        More premade scripts and models are on the way. Anything you add to this folder and list here works the same way.
+        More premade scripts, models and interfaces are on the way. Anything you add to this folder and list here works the same way.
       </div>
     </div>
   </main>
 
   <footer class="tb-foot">
     <span>Vanilla3D</span>
-    <span>premade scripts and models</span>
+    <span>premade scripts, models and interfaces</span>
   </footer>
 </body>
 </html>

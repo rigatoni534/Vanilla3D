@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=3.6.0.0">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.7.0.0">
   
 </head>
 <body>
@@ -241,6 +241,10 @@
           <div class="info-row"><dt>Version</dt><dd id="info-version"></dd></div>
           <div class="info-row"><dt>Renderer</dt><dd>Canvas 2D</dd></div>
         </dl>
+        <section class="version-history" aria-labelledby="vh-title">
+          <h3 class="version-history-title" id="vh-title">Version history</h3>
+          <div id="version-history" class="version-list"></div>
+        </section>
       </div>
     </div>
   </div>
@@ -387,7 +391,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.6.0.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.7.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -810,19 +814,20 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=3.6.0.0"></script>
-  <script>const ENGINE_VERSION = '3.6.0.0';</script>
+  <script src="../vanillalua.js?v=3.7.0.0"></script>
+  <script>const ENGINE_VERSION = '3.7.0.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/scene.js?v=3.6.0.0"></script>
-  <script defer src="js/player.js?v=3.6.0.0"></script>
-  <script defer src="js/sounds.js?v=3.6.0.0"></script>
-  <script defer src="js/scripting.js?v=3.6.0.0"></script>
-  <script defer src="js/shell.js?v=3.6.0.0"></script>
-  <script defer src="js/files.js?v=3.6.0.0"></script>
-  <script defer src="js/explorer.js?v=3.6.0.0"></script>
-  <script defer src="js/properties.js?v=3.6.0.0"></script>
-  <script defer src="js/render.js?v=3.6.0.0"></script>
-  <script defer src="js/gl.js?v=3.6.0.0"></script>
-  <script defer src="js/main.js?v=3.6.0.0"></script>
+  <script defer src="js/scene.js?v=3.7.0.0"></script>
+  <script defer src="js/version-history.js?v=3.7.0.0"></script>
+  <script defer src="js/player.js?v=3.7.0.0"></script>
+  <script defer src="js/sounds.js?v=3.7.0.0"></script>
+  <script defer src="js/scripting.js?v=3.7.0.0"></script>
+  <script defer src="js/shell.js?v=3.7.0.0"></script>
+  <script defer src="js/files.js?v=3.7.0.0"></script>
+  <script defer src="js/explorer.js?v=3.7.0.0"></script>
+  <script defer src="js/properties.js?v=3.7.0.0"></script>
+  <script defer src="js/render.js?v=3.7.0.0"></script>
+  <script defer src="js/gl.js?v=3.7.0.0"></script>
+  <script defer src="js/main.js?v=3.7.0.0"></script>
 </body>
 </html>

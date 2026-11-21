@@ -654,3 +654,18 @@
   .vui-guide[data-axis="x"] { width: 1px; height: 100%; }
   .vui-guide[data-axis="y"] { height: 1px; width: 100%; }
   .tree-group.selected { color: var(--accent); }
+
+  /* ───── Version history ───── */
+  #modal-version .modal-card { width: min(540px, 94vw); }
+  .version-history { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+  .version-history-title { margin: 0 0 8px; color: var(--text); font: 650 11px var(--ui); letter-spacing: .06em; text-transform: uppercase; }
+  .version-list { display: grid; gap: 8px; max-height: min(46vh, 360px); overflow-y: auto; padding-right: 4px; }
+  .version-entry { padding: 9px 10px; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--panel-2); }
+  .version-entry.current { border-color: var(--accent); background: var(--accent-soft); }
+  .version-head { display: flex; align-items: center; gap: 8px; }
+  .version-tag { color: var(--text); font: 600 12px var(--mono); }
+  .version-date { margin-left: auto; color: var(--muted); font: 11px var(--mono); }
+  .version-current { padding: 1px 6px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font: 650 10px var(--ui); }
+  .version-notes { margin: 6px 0 0; padding-left: 16px; color: var(--text-2); font-size: 12px; line-height: 1.5; }
+  .version-notes li + li { margin-top: 3px; }
+  .version-missing { margin: 0 0 8px; padding: 7px 9px; border-radius: 7px; background: var(--accent-soft); color: var(--text); font-size: 12px; }

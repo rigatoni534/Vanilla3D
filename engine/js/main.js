@@ -230,6 +230,7 @@
         // The autosave baseline is the world as it is now, so an untouched world is never written over your save.
         try { autosaveBase = JSON.stringify(buildWorldFile()); } catch (e) { autosaveBase = ''; }
         refreshTheme();
+        renderVersionHistory();
         renderExplorer();
         renderProperties();
         setMode('select');

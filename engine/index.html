@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.5.0.1">
   
 </head>
 <body>
@@ -385,7 +385,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.5.0.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.5.0.1</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of four <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -808,7 +808,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
   <script src="../vanillalua.js"></script>
   <script>
-        const ENGINE_VERSION = '3.5.0.0';
+        const ENGINE_VERSION = '3.5.0.1';
         const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
@@ -1965,14 +1965,15 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
         // The interface is authored on the server side, in the UI space. When a player joins, that player takes it:
         // the elements move inside the Player in Players (keeping their UIDs, so script references keep working) and
-        // are drawn for them. Stop restores the snapshot, which puts them back in UI.
+        // are drawn for them. This keeps running every frame, so anything added to the UI space during a run (by the
+        // editor or by a script) reaches the player too. Stop restores the snapshot, which puts it all back in UI.
         function takeUIForPlayers() {
+            const players = Object.entries(sceneObjects).filter(([, o]) => o.type === 'player')
+                .sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+            if (!players.length) return;
+            const pid = players[0][0];
             let moved = false;
-            for (const [pid, p] of Object.entries(sceneObjects)) {
-                if (p.type !== 'player' || p.uiTaken) continue;
-                for (const o of Object.values(sceneObjects)) if (isUI(o) && o.parent === 'ui') { o.parent = pid; moved = true; }
-                if (moved) p.uiTaken = true;
-            }
+            for (const o of Object.values(sceneObjects)) if (isUI(o) && o.parent === 'ui') { o.parent = pid; moved = true; }
             if (moved) uiDirty = true;
         }
 
@@ -6182,7 +6183,12 @@ void main() { o = texture(uTex, vT); }`;
                         const top = topModelOf(clickedId);
                         if (top && selectedObjectId !== top) toSelect = top;
                     }
-                    if (toSelect !== selectedObjectId) selectItem(toSelect);
+                    // Clicking empty space while working on the interface returns to the whole UI preview instead of
+                    // hiding it, so the screen does not disappear from under the editor.
+                    if (!toSelect && (selectedSpaceId === 'ui' || isUI(sceneObjects[selectedObjectId]))) {
+                        selectedObjectId = null; selectedSpaceId = 'ui'; multiSel.clear();
+                        renderExplorer(); renderProperties(); applyModeHint();
+                    } else if (toSelect !== selectedObjectId) selectItem(toSelect);
                 }
                 camDrag = null;
             }

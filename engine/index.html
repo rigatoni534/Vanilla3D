@@ -54,6 +54,11 @@
     <symbol id="i-union" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="7.5" height="7.5" rx="1.25"/><rect x="6" y="6" width="7.5" height="7.5" rx="1.25"/></symbol>
     <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 2.5 14.2 13H1.8z M8 6.6v3M8 11.4h.01"/></symbol>
     <symbol id="i-engine" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1.5"/><path d="M6.5 1.75V4M9.5 1.75V4M6.5 12v2.25M9.5 12v2.25M1.75 6.5H4M1.75 9.5H4M12 6.5h2.25M12 9.5h2.25"/></symbol>
+    <symbol id="i-ui-frame" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/></symbol>
+    <symbol id="i-ui-text" viewBox="0 0 16 16"><path d="M3.5 4.5V3h9v1.5M8 3v10M6 13h4"/></symbol>
+    <symbol id="i-ui-button" viewBox="0 0 16 16"><rect x="2" y="5" width="12" height="6" rx="3"/><path d="M6 8h4"/></symbol>
+    <symbol id="i-ui-image" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><circle cx="6" cy="6.5" r="1"/><path d="m3.5 11.5 3-3 2.5 2.5L11 8.5l2 3"/></symbol>
+    <symbol id="i-ui-input" viewBox="0 0 16 16"><rect x="2" y="4.5" width="12" height="7" rx="1.5"/><path d="M5 6.5v3M4.25 6.5h1.5M4.25 9.5h1.5"/></symbol>
   </svg>
 
   <!-- Toolbar -->
@@ -131,6 +136,7 @@
         <canvas id="sky-canvas" class="layer"></canvas>
         <canvas id="gl-canvas" class="layer"></canvas>
         <canvas id="screen"></canvas>
+        <div id="ui-layer" aria-live="off"></div>
 
         <div id="tools" role="toolbar" aria-label="Edit mode">
           <button class="tool" data-mode="select" aria-pressed="true" title="Select (1)"><svg class="ic"><use href="#i-pointer"/></svg><span class="tool-key">1</span></button>
@@ -185,6 +191,11 @@
     <button class="menu-item" role="menuitem" data-kind="cylinder"><svg class="ic"><use href="#i-cylinder"/></svg>Cylinder<span class="menu-meta">cylinder</span></button>
     <button class="menu-item" role="menuitem" data-kind="sound"><svg class="ic"><use href="#i-sound"/></svg>Sound<span class="menu-meta">sound</span></button>
     <button class="menu-item" role="menuitem" data-kind="highlight"><svg class="ic"><use href="#i-highlight"/></svg>Highlight<span class="menu-meta">highlight</span></button>
+    <button class="menu-item" role="menuitem" data-kind="frame"><svg class="ic"><use href="#i-ui-frame"/></svg>Frame<span class="menu-meta">frame</span></button>
+    <button class="menu-item" role="menuitem" data-kind="text"><svg class="ic"><use href="#i-ui-text"/></svg>Text<span class="menu-meta">text</span></button>
+    <button class="menu-item" role="menuitem" data-kind="button"><svg class="ic"><use href="#i-ui-button"/></svg>Button<span class="menu-meta">button</span></button>
+    <button class="menu-item" role="menuitem" data-kind="image"><svg class="ic"><use href="#i-ui-image"/></svg>Image<span class="menu-meta">image</span></button>
+    <button class="menu-item" role="menuitem" data-kind="input"><svg class="ic"><use href="#i-ui-input"/></svg>Input<span class="menu-meta">input</span></button>
     <button class="menu-item" role="menuitem" data-kind="texture"><svg class="ic"><use href="#i-grid"/></svg>Texture<span class="menu-meta">texture</span></button>
     <button class="menu-item" role="menuitem" data-kind="model"><svg class="ic"><use href="#i-model"/></svg>Model<span class="menu-meta">model</span></button>
     <button class="menu-item" role="menuitem" data-kind="human"><svg class="ic"><use href="#i-human"/></svg>Human<span class="menu-meta">human</span></button>
@@ -287,6 +298,7 @@
             <label class="setting" for="sv-world"><div><div class="setting-title">World</div><div class="setting-desc">Blocks, models and everything placed in World.</div></div><input type="checkbox" id="sv-world" class="switch"></label>
             <label class="setting" for="sv-storage"><div><div class="setting-title">Storage</div><div class="setting-desc">Templates kept in Storage, such as DefaultPlayer.</div></div><input type="checkbox" id="sv-storage" class="switch"></label>
             <label class="setting" for="sv-scripts"><div><div class="setting-title">Scripts</div><div class="setting-desc">The Scripts space, including every script's source.</div></div><input type="checkbox" id="sv-scripts" class="switch"></label>
+            <label class="setting" for="sv-ui"><div><div class="setting-title">UI</div><div class="setting-desc">Frames, text, buttons, images and inputs handed to the player on spawn.</div></div><input type="checkbox" id="sv-ui" class="switch"></label>
             <div class="set-sub">Instance types</div>
             <div class="name-grid">
               <label for="sv-prism6">Blocks</label><input type="checkbox" id="sv-prism6" class="switch">
@@ -301,6 +313,11 @@
               <label for="sv-texture">Textures</label><input type="checkbox" id="sv-texture" class="switch">
               <label for="sv-sound">Sounds</label><input type="checkbox" id="sv-sound" class="switch">
               <label for="sv-highlight">Highlights</label><input type="checkbox" id="sv-highlight" class="switch">
+              <label for="sv-frame">UI frames</label><input type="checkbox" id="sv-frame" class="switch">
+              <label for="sv-text">UI text</label><input type="checkbox" id="sv-text" class="switch">
+              <label for="sv-button">UI buttons</label><input type="checkbox" id="sv-button" class="switch">
+              <label for="sv-image">UI images</label><input type="checkbox" id="sv-image" class="switch">
+              <label for="sv-input">UI inputs</label><input type="checkbox" id="sv-input" class="switch">
             </div>
             <div class="set-sub">Reset</div>
             <div class="setting"><div><div class="setting-title">Reset all settings</div><div class="setting-desc">Puts every setting back to its default. Your world is not changed.</div></div><button class="btn btn-outline" id="reset-settings" type="button">Reset settings</button></div>
@@ -368,11 +385,11 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.4.1.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.5.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
-        <p>The editor is built from a few panels. Everything you build lives in one of three <b>spaces</b> in the Explorer.</p>
+        <p>The editor is built from a few panels. Everything you build lives in one of four <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
-          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b> and <b>Scripts</b> spaces. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Wedge, a Cylinder, a Ball, a Sound, a Highlight, a Human, a World Settings or a Script. Storage holds objects kept for scripts and never renders; only World renders.</td></tr>
+          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b>, <b>Scripts</b> and <b>UI</b> spaces. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Wedge, a Cylinder, a Ball, a Sound, a Highlight, a Human, a World Settings or a Script. Storage holds objects kept for scripts and never renders; only World renders. UI holds the screen interface.</td></tr>
           <tr><td>Viewport</td><td>The 3D view. Select, Move and Scale modes work here.</td></tr>
           <tr><td>Properties</td><td>Edits the selected instance: name, position, size, physics flags, script options.</td></tr>
           <tr><td>Tab bar</td><td>World is always open. Scripts open as tabs over the viewport.</td></tr>
@@ -392,6 +409,19 @@
         </ul>
         <p>Handles are always drawn on top of the scene at about a third of the block's size. The <b>Offset</b> box next to Run sets the step for both tools in Vanillameters. It starts at <code>0.5</code>; set it to <code>0</code> for free, unstepped movement.</p>
         <p>The <b>Rotate</b> tool (key <span class="kbd">4</span>) turns a prism or ball. Each axis has a double-headed curved arrow; drag it to turn the shape about that axis. The <b>Rotation</b> box beside Offset sets how many degrees the arrows snap to (45 by default, 0 for free turning). Rotation is also in the Properties panel as three numbers. The turn about Y is applied first, then the tilt about X, then the roll about Z, and each arrow edits exactly its own number. Physics treats a tilted prism as the box around it, and a tilted prism still blocks balls at its real angle. Models cannot be rotated yet.</p>
+        <h3 data-group="Editor guide">User interface</h3>
+        <p>The <b>UI</b> space is the player's screen. It is drawn over the viewport rather than in the 3D world, and it is made of five instances:</p>
+        <table class="docs-table"><thead><tr><th>Instance</th><th>What it is for</th></tr></thead><tbody>
+          <tr><td><code>frame</code></td><td>A box to group other elements in, or a fill for a progress bar. It can clip whatever sits outside it.</td></tr>
+          <tr><td><code>text</code></td><td>Text on the screen: a score, a label, a message.</td></tr>
+          <tr><td><code>button</code></td><td>A pressable element. While the simulation runs it fires its <code>Clicked</code> event for scripts.</td></tr>
+          <tr><td><code>image</code></td><td>A picture from a URL, stretched to its box.</td></tr>
+          <tr><td><code>input</code></td><td>A text field the player types into. Pressing Enter fires <code>Submitted</code> with the text.</td></tr>
+        </tbody></table>
+        <p><b>Size and position are percentages.</b> Position is the <b>centre</b> of the element, so <code>50, 50</code> is the middle of the screen, and Size is the part of what it sits in that the element covers. A strip across the top is a position of <code>50, 2.5</code> with a size of <code>100, 5</code>. An element inside a Frame is placed in percentages of that Frame, which is how a fill inside a bar works.</p>
+        <p><b>Previewing.</b> Select any UI instance, or the <b>UI</b> space itself, and the whole interface appears in the viewport so you can lay it out against the scene. Selecting something else hides the preview again.</p>
+        <p><b>Editing.</b> With <b>Move</b> active, press on an element in the viewport and drag it; it snaps to a 1% grid and a guide line appears only for the position it is snapping to. With <b>Scale</b> active, each corner has a handle: drag a corner diagonally to scale evenly, or mostly sideways or up and down to change only the width or only the height. The opposite corner stays where it is. Every number is also in Properties.</p>
+        <p><b>Run.</b> The UI is the server end of the interface. When a player joins in the simulation, that player takes it: the elements move inside the <b>Player</b> instance in Players, keeping their UIDs, and are drawn for the player. Buttons and inputs work there. Scripts reach them through the player, for example <code>player.UI.Score.Text = "10"</code>, or through a reference they took before the join. <b>Stop</b> puts everything back in the UI space.</p>
         <h3 data-group="Editor guide">Run and Stop</h3>
         <p><b>Run</b> works like Roblox Studio: the world is snapshotted, physics and scripts run live, and <b>Stop</b> restores the snapshot exactly as it was. Anything scripts create or change during a run is discarded on Stop, and global variables are cleared.</p>
         <div class="callout"><b>Heads up:</b> saving, opening a world and starting a new one are blocked while a simulation runs. Stop first.</div>
@@ -778,7 +808,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
   <script src="../vanillalua.js"></script>
   <script>
-        const ENGINE_VERSION = '3.4.2.1';
+        const ENGINE_VERSION = '3.5.0.0';
         const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
@@ -786,18 +816,19 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             world:   { name: 'World',   icon: 'i-world',  addable: true },
             storage: { name: 'Storage', icon: 'i-folder', addable: true },
             scripts: { name: 'Scripts', icon: 'i-script', addable: true },
+            ui:      { name: 'UI',      icon: 'i-ui-frame', addable: true },
             players: { name: 'Players', icon: 'i-players', addable: false },
             engine:  { name: 'Engine',  icon: 'i-engine', addable: false }
         };
         // ── Childing: an instance's parent is a space id or another instance's UID ──
-        const SPACE_KEYS = ['world', 'storage', 'scripts', 'players'];
+        const SPACE_KEYS = ['world', 'storage', 'scripts', 'ui', 'players'];
         function spaceOf(o) { let n = 0; while (o && !SPACE_KEYS.includes(o.parent) && n++ < 64) o = sceneObjects[o.parent]; return o ? o.parent : null; }
         function isInside(id, ancestorId) { let o = sceneObjects[id], n = 0; while (o && n++ < 64) { if (o.parent === ancestorId) return true; o = sceneObjects[o.parent]; } return false; }
         function pruneOrphans() {
             let changed = true;
             while (changed) { changed = false; for (const [id, o] of Object.entries(sceneObjects)) if (o.parent !== 'engine' && !SPACE_KEYS.includes(o.parent) && !sceneObjects[o.parent]) { delete sceneObjects[id]; physicsVelocity.delete(id); vlInstCache.delete(id); if (selectedObjectId === id) selectedObjectId = null; changed = true; } }
         }
-        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player', wedge: 'Wedge', cylinder: 'Cylinder', sound: 'Sound', highlight: 'Highlight', union: 'Union' })[type] || 'Instance'; }
+        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player', wedge: 'Wedge', cylinder: 'Cylinder', sound: 'Sound', highlight: 'Highlight', union: 'Union', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input' })[type] || 'Instance'; }
         function preInc(n) { return typeof settings !== 'undefined' && !!(settings.preinclude && settings.preinclude[n]); }
         // Textures: a child of a prism6 that paints chosen faces. Faces use the engine's face order.
         const FACE_LABELS = ['Front', 'Back', 'Right', 'Left', 'Top', 'Bottom'];
@@ -829,6 +860,50 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             return { type: 'highlight', name, parent, color: '#ffd23f', overObjects: true };
         }
         const isShape = (o) => !!o && (o.type === 'prism6' || o.type === 'ball' || o.type === 'wedge' || o.type === 'cylinder' || o.type === 'union');
+
+        // ───────── User interfaces ─────────
+        // A UI instance is laid out in percentages of what it sits in: the UI space is the whole screen, and a Frame
+        // inside it is that Frame's box. Position is the centre of the element, so 50, 50 is the middle of its parent,
+        // and Size is the part of the parent it covers. None of this is in the 3D world.
+        const UI_TYPES = ['frame', 'text', 'button', 'image', 'input'];
+        const UI_ALIGNS = ['Left', 'Center', 'Right'];
+        const isUI = (o) => !!o && UI_TYPES.includes(o.type);
+        const uiClamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Number.isFinite(+v) ? +v : lo));
+        function uiBase(name, parent, props) {
+            return Object.assign({ name, parent, posX: 50, posY: 50, sizeX: 30, sizeY: 10, visible: true, color: '#1c2230', transparency: 0 }, props);
+        }
+        // A frame groups other elements, or fills up as a progress bar.
+        function makeFrame(name, parent, props) {
+            return Object.assign(uiBase(name, parent), { type: 'frame', sizeX: 40, sizeY: 20, color: '#1c2230', transparency: 0.35, borderWidth: 0, borderColor: '#000000', clipChildren: false }, props);
+        }
+        function makeText(name, parent, props) {
+            return Object.assign(uiBase(name, parent), { type: 'text', sizeX: 30, sizeY: 6, transparency: 1, text: 'Text', textColor: '#ffffff', textSize: 18, bold: false, align: 'Center' }, props);
+        }
+        function makeButton(name, parent, props) {
+            return Object.assign(uiBase(name, parent), { type: 'button', sizeX: 24, sizeY: 8, color: '#f2b134', transparency: 0, text: 'Button', textColor: '#14181f', textSize: 18, bold: true, align: 'Center' }, props);
+        }
+        function makeImage(name, parent, props) {
+            return Object.assign(uiBase(name, parent), { type: 'image', sizeX: 30, sizeY: 20, transparency: 0, image: '' }, props);
+        }
+        function makeInput(name, parent, props) {
+            return Object.assign(uiBase(name, parent), { type: 'input', sizeX: 30, sizeY: 7, color: '#12161f', transparency: 0, text: '', placeholder: 'Type here', textColor: '#ffffff', textSize: 16, align: 'Left' }, props);
+        }
+        function makeUI(type, name, parent) {
+            if (type === 'frame') return makeFrame(name, parent);
+            if (type === 'text') return makeText(name, parent);
+            if (type === 'button') return makeButton(name, parent);
+            if (type === 'image') return makeImage(name, parent);
+            return makeInput(name, parent);
+        }
+        // Frame, Frame 2, Frame 3, ...
+        function newUIName(type) { const n = ++counters[type]; return dn(type) + (n === 1 ? '' : ' ' + n); }
+        // The top-most UI instance above this one. Its parent is either the UI space or a Player.
+        function uiTopOf(id) {
+            let cur = id, n = 0;
+            while (cur && n++ < 64) { const p = sceneObjects[cur] && sceneObjects[cur].parent; if (!isUI(sceneObjects[p])) return cur; cur = p; }
+            return id;
+        }
+        const uiContainerOf = (id) => { const top = uiTopOf(id); return top && sceneObjects[top] ? sceneObjects[top].parent : null; };
         // Rotation: degrees about X, Y and Z, applied as R = Ry * Rx * Rz (turn, then tilt, then roll). Matrices are 3x3 row-major.
         const ROT_IDENT = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
         const rotCache = new WeakMap();
@@ -1048,12 +1123,13 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         };
         sceneObjects['Linen551'] = makeTexture('Texture', 'Cobalt092', [4], 'grid');
         sceneObjects['Amber417'] = { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 };
-        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0, wedge: 0, cylinder: 0, union: 0, sound: 0, highlight: 0 };
-        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human', wedge: 'i-wedge', cylinder: 'i-cylinder', union: 'i-union', sound: 'i-sound', highlight: 'i-highlight' };
+        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0, wedge: 0, cylinder: 0, union: 0, sound: 0, highlight: 0, frame: 0, text: 0, button: 0, image: 0, input: 0 };
+        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human', wedge: 'i-wedge', cylinder: 'i-cylinder', union: 'i-union', sound: 'i-sound', highlight: 'i-highlight', frame: 'i-ui-frame', text: 'i-ui-text', button: 'i-ui-button', image: 'i-ui-image', input: 'i-ui-input' };
 
         let isLightMode = false;
         let accentCol = '#f2b134';
         let selectedObjectId = null;
+        let selectedSpaceId = null;
         let mode = 'select';
 
         // Rigid-body simulation for World prisms.
@@ -1849,6 +1925,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
         function setSimulationRunning(running) {
             if (running === simulationRunning) return;
+            // A focused UI input belongs to the run that is ending (or starting), so it never keeps the keyboard.
+            if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#ui-layer')) document.activeElement.blur();
             physicsLastTime = 0;
             physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear();
             if (running) {
@@ -1885,10 +1963,23 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         }
         document.getElementById('run-btn').addEventListener('click', () => setSimulationRunning(!simulationRunning));
 
+        // The interface is authored on the server side, in the UI space. When a player joins, that player takes it:
+        // the elements move inside the Player in Players (keeping their UIDs, so script references keep working) and
+        // are drawn for them. Stop restores the snapshot, which puts them back in UI.
+        function takeUIForPlayers() {
+            let moved = false;
+            for (const [pid, p] of Object.entries(sceneObjects)) {
+                if (p.type !== 'player' || p.uiTaken) continue;
+                for (const o of Object.values(sceneObjects)) if (isUI(o) && o.parent === 'ui') { o.parent = pid; moved = true; }
+                if (moved) p.uiTaken = true;
+            }
+            if (moved) uiDirty = true;
+        }
+
         // Vanillalua is loaded from the shared external interpreter.
         const vlRuntime = VanillaluaShared.createEditorRuntime({
             sceneObjects, physicsVelocity, physicsVelocityFor, spaceOf, preInc, SPACE_KEYS, isShape, isInside,
-            GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, dn, counters, newId, pruneOrphans,
+            GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, makeUI: (type, spaceId) => makeUI(type, newUIName(type), spaceId), dn, counters, newId, pruneOrphans,
             soundChanged: (id, name) => {
                 const h = sceneObjects[id];
                 if (!h) { stopSound(id); return; }
@@ -2162,6 +2253,13 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function addInstance(kind, space) {
             const id = newId();
             let obj;
+            if (UI_TYPES.includes(kind)) {
+                obj = makeUI(kind, newUIName(kind), space);
+                sceneObjects[id] = obj;
+                collapsed.delete(space);
+                selectItem(id);
+                return;
+            }
             if (kind === 'prism6') {
                 const n = ++counters.prism;
                 const k = n - 2;
@@ -2518,8 +2616,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const slotOf = (id) => SAVE_SLOTS.find(s => s.id === id) || null;
         const VN_RELOAD_RESTORE_KEY = 'vanilla-engine-reload-restore';
         // What a save can include. Settings > What gets saved switches these off one by one.
-        const SAVED_SPACES = [['world', 'World'], ['storage', 'Storage'], ['scripts', 'Scripts']];
-        const SAVED_TYPES = [['prism6', 'Blocks'], ['ball', 'Balls'], ['wedge', 'Wedges'], ['cylinder', 'Cylinders'], ['union', 'Unions'], ['model', 'Models'], ['human', 'Humans'], ['script', 'Script instances'], ['worldsettings', 'World Settings'], ['texture', 'Textures'], ['sound', 'Sounds'], ['highlight', 'Highlights']];
+        const SAVED_SPACES = [['world', 'World'], ['storage', 'Storage'], ['scripts', 'Scripts'], ['ui', 'UI']];
+        const SAVED_TYPES = [['prism6', 'Blocks'], ['ball', 'Balls'], ['wedge', 'Wedges'], ['cylinder', 'Cylinders'], ['union', 'Unions'], ['model', 'Models'], ['human', 'Humans'], ['script', 'Script instances'], ['worldsettings', 'World Settings'], ['texture', 'Textures'], ['sound', 'Sounds'], ['highlight', 'Highlights'], ['frame', 'UI frames'], ['text', 'UI text'], ['button', 'UI buttons'], ['image', 'UI images'], ['input', 'UI inputs']];
         for (const [id] of SAVED_SPACES) document.getElementById('sv-' + id).addEventListener('change', (e) => { settings.saveWhat[id] = e.target.checked; saveSettings(); });
         for (const [t] of SAVED_TYPES) document.getElementById('sv-' + t).addEventListener('change', (e) => { settings.saveWhat.types[t] = e.target.checked; saveSettings(); });
         // The single browser save older versions wrote becomes Browser Slot 1, so nothing is lost.
@@ -2529,7 +2627,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         const fileStatus = document.getElementById('file-status');
         const vnwInput = document.getElementById('vnw-file-input');
         const vanillaInput = document.getElementById('vanilla-file-input');
-        const SPACE_IDS = ['world', 'storage', 'scripts'];
+        const SPACE_IDS = ['world', 'storage', 'scripts', 'ui'];
         function toast(msg, kind) {
             const el = document.createElement('div');
             el.className = 'toast ' + (kind || '');
@@ -2664,7 +2762,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             for (const [old, nid] of Object.entries(remap)) { objs[nid] = objs[old]; delete objs[old]; }
             for (const o of Object.values(objs)) {
                 if (remap[o.parent]) o.parent = remap[o.parent];
-                if (o && typeof o === 'object' && !SPACE_IDS.includes(o.parent) && !objs[o.parent]) o.parent = 'world'; // parent was removed: fall back to World
+                if (o && typeof o === 'object' && !SPACE_IDS.includes(o.parent) && !objs[o.parent]) o.parent = UI_TYPES.includes(o.type) ? 'ui' : 'world'; // parent was removed: fall back to its space
             }
         }
         function validateWorldFile(data) {
@@ -2673,13 +2771,18 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             { let spawnSeen = false; for (const o of Object.values(data.objects)) { if (!o || typeof o !== 'object') continue; if (o.type === 'prism6' && o.spawnpoint === true && !spawnSeen) spawnSeen = true; else if (o.spawnpoint !== undefined) delete o.spawnpoint; } }
             for (const [uid, obj] of Object.entries(data.objects)) {
                 if (!/^[A-Za-z][A-Za-z0-9]*$/.test(uid) || !obj || typeof obj !== 'object' || !(SPACE_IDS.includes(obj.parent) || (data.objects[obj.parent] && obj.parent !== uid))) throw new Error('The file contains an invalid object or UID: ' + uid);
-                if (!['prism6', 'ball', 'wedge', 'cylinder', 'union', 'model', 'worldsettings', 'script', 'texture', 'human', 'sound', 'highlight'].includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
+                if (!['prism6', 'ball', 'wedge', 'cylinder', 'union', 'model', 'worldsettings', 'script', 'texture', 'human', 'sound', 'highlight'].concat(UI_TYPES).includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
+                // The interface and the 3D world are separate trees.
+                if (UI_TYPES.includes(obj.type)) {
+                    const parent = data.objects[obj.parent];
+                    if (obj.parent !== 'ui' && !(parent && UI_TYPES.includes(parent.type))) throw new Error('UI instance ' + uid + ' must sit in the UI space or inside another UI instance.');
+                } else if (obj.parent === 'ui') throw new Error(uid + ' is not a UI instance, so it cannot sit in the UI space.');
             }
             for (const [uid, obj] of Object.entries(data.objects)) { let p = obj, n = 0; while (p && !SPACE_IDS.includes(p.parent) && n++ < 64) p = data.objects[p.parent]; if (!p) throw new Error('Object ' + uid + ' has a circular parent chain.'); }
             return data;
         }
         // The type counters decide the default names (Block, Block2, ...), so they are rebuilt whenever objects change.
-        const COUNTER_TYPES = [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball'], ['human', 'human'], ['wedge', 'wedge'], ['cylinder', 'cylinder'], ['union', 'union'], ['sound', 'sound'], ['highlight', 'highlight']];
+        const COUNTER_TYPES = [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball'], ['human', 'human'], ['wedge', 'wedge'], ['cylinder', 'cylinder'], ['union', 'union'], ['sound', 'sound'], ['highlight', 'highlight'], ['frame', 'frame'], ['text', 'text'], ['button', 'button'], ['image', 'image'], ['input', 'input']];
         function recountTypes() {
             for (const [k] of COUNTER_TYPES) counters[k] = 0;
             for (const o of Object.values(sceneObjects)) { const hit = COUNTER_TYPES.find(c => c[1] === o.type); if (hit) counters[hit[0]]++; }
@@ -2716,6 +2819,21 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 if (obj.type === 'highlight') {
                     if (!HEX6.test(obj.color)) obj.color = '#ffd23f';
                     obj.overObjects = obj.overObjects !== false;
+                }
+                if (isUI(obj)) {
+                    obj.posX = uiClamp(obj.posX, 0, 100); obj.posY = uiClamp(obj.posY, 0, 100);
+                    obj.sizeX = uiClamp(obj.sizeX, 1, 100); obj.sizeY = uiClamp(obj.sizeY, 1, 100);
+                    obj.transparency = uiClamp(obj.transparency, 0, 1);
+                    if (!HEX6.test(obj.color)) obj.color = '#1c2230';
+                    if (!HEX6.test(obj.textColor)) obj.textColor = '#ffffff';
+                    if (!HEX6.test(obj.borderColor)) obj.borderColor = '#000000';
+                    if (typeof obj.text !== 'string') obj.text = '';
+                    if (typeof obj.image !== 'string') obj.image = '';
+                    if (typeof obj.placeholder !== 'string') obj.placeholder = '';
+                    if (!UI_ALIGNS.includes(obj.align)) obj.align = 'Center';
+                    if (!Number.isFinite(obj.textSize)) obj.textSize = 18;
+                    if (!Number.isFinite(obj.borderWidth)) obj.borderWidth = 0;
+                    obj.visible = obj.visible !== false;
                 }
                 if (obj.type === 'union') {
                     const okNum = (v) => Number.isFinite(v) && v > 0;
@@ -2943,11 +3061,11 @@ vanilla3D.Size(1, 2, 1)</code></pre>
                 const kids = Object.entries(sceneObjects).filter(([, o]) => o.parent === sid);
                 const open = !collapsed.has(sid);
                 const rows = kids.length ? kids.map(([id, o]) => rowHtml(id, o, 0)).join('')
-                    : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : sid === 'players' ? 'Players join when the simulation runs' : 'Empty'}</div>`;
+                    : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : sid === 'ui' ? 'No interface yet' : sid === 'players' ? 'Players join when the simulation runs' : 'Empty'}</div>`;
                 return `
                     <div class="tree-space">
                         <div class="tree-row">
-                            <button class="tree-group" data-space="${sid}" aria-expanded="${open}">${icon('i-chev', 'chev')}${icon(sp.icon, 'kind')}${sp.name}</button>
+                            <button class="tree-group${selectedSpaceId === sid ? ' selected' : ''}" data-space="${sid}" aria-expanded="${open}"${selectedSpaceId === sid ? ' aria-current="true"' : ''}>${icon('i-chev', 'chev')}${icon(sp.icon, 'kind')}${sp.name}</button>
                             ${sp.addable ? `<button class="add-btn" data-add="${sid}" aria-label="Add to ${sp.name}" title="Add to ${sp.name}">${icon('i-plus')}</button>` : ''}
                         </div>
                         <div class="tree-children"${open ? '' : ' hidden'}>${rows}</div>
@@ -2973,8 +3091,16 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             const grp = e.target.closest('.tree-group');
             if (grp) {
                 const sid = grp.dataset.space;
-                collapsed.has(sid) ? collapsed.delete(sid) : collapsed.add(sid);
+                // The UI space can be selected on its own, which previews the whole interface in the viewport.
+                const pickingUI = sid === 'ui' && !(selectedSpaceId === 'ui' && !selectedObjectId);
+                if (pickingUI) { collapsed.delete(sid); selectedObjectId = null; multiSel.clear(); selectedSpaceId = 'ui'; }
+                else {
+                    collapsed.has(sid) ? collapsed.delete(sid) : collapsed.add(sid);
+                    if (selectedSpaceId) selectedSpaceId = null;
+                }
                 renderExplorer();
+                renderProperties();
+                applyModeHint();
                 const again = explorerEl.querySelector(`.tree-group[data-space="${sid}"]`);
                 if (again) again.focus();
                 return;
@@ -3037,7 +3163,14 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             menuBtn = btn;
             addMenu.dataset.space = btn.dataset.add;
             document.getElementById('add-menu-title').textContent = spaces[btn.dataset.add] ? 'Add to ' + spaces[btn.dataset.add].name : 'Add inside ' + ((sceneObjects[btn.dataset.add] || {}).name || 'object');
-            { const tgt = sceneObjects[btn.dataset.add]; addMenu.querySelector('[data-kind="texture"]').style.display = tgt && tgt.type === 'prism6' ? '' : 'none'; }
+            { const tgt = sceneObjects[btn.dataset.add];
+              const uiTarget = btn.dataset.add === 'ui' || isUI(tgt);
+              for (const it of addMenu.querySelectorAll('.menu-item')) {
+                  const uiKind = UI_TYPES.includes(it.dataset.kind);
+                  let show = uiTarget ? uiKind : !uiKind;
+                  if (!uiTarget && it.dataset.kind === 'texture') show = !!tgt && tgt.type === 'prism6';
+                  it.style.display = show ? '' : 'none';
+              } }
             addMenu.hidden = false;
             const r = btn.getBoundingClientRect();
             const mw = addMenu.offsetWidth, mh = addMenu.offsetHeight;
@@ -3100,7 +3233,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             off('paste', !clipboard);
             off('camera', !((isShape(o) || o.type === 'model') && spaceOf(o) === 'world'));
             off('ungroup', o.type !== 'model');
-            off('group', !menuTargets(id).length);
+            off('group', !menuTargets(id).length || menuTargets(id).some(k => isUI(sceneObjects[k])));
             { const shapes = menuTargets(id).filter(k => isShape(sceneObjects[k]) && spaceOf(sceneObjects[k]) === 'world');
               off('union', !shapes.length); off('intersect', shapes.length < 2); }
             itemMenu.hidden = false;
@@ -3165,6 +3298,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             const targets = (multiSel.size > 0 ? [...multiSel] : (selectedObjectId ? [selectedObjectId] : []))
                 .filter(id => sceneObjects[id] && !sceneObjects[id].readOnly);
             if (!targets.length) return;
+            if (targets.some(id => isUI(sceneObjects[id]))) { toast('UI instances cannot be grouped into a model.', 'warn'); return; }
             const roots = topRoots(targets);
             if (!roots.length) return;
             const parentSpace = sceneObjects[roots[0]].parent;
@@ -3208,6 +3342,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         function reparent(id, target) {
             const o = sceneObjects[id], t = SPACE_KEYS.includes(target) ? true : sceneObjects[target];
             if (!o || !t || o.readOnly || target === 'players' || id === target || isInside(target, id) || (sceneObjects[target] && sceneObjects[target].readOnly) || o.parent === target) return;
+            // UI lives in the UI space and inside other UI; the 3D world and the interface never mix.
+            if (isUI(o) ? (SPACE_KEYS.includes(target) ? target !== 'ui' : !isUI(sceneObjects[target])) : target === 'ui') return;
             o.parent = target; collapsed.delete(target); renderExplorer(); renderProperties();
         }
         function pasteInto(space) {
@@ -3215,7 +3351,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             if (!c) return;
             if (c.multi) { const list = c.multi, cut = c.cut; for (const sub of list) { clipboard = sub; pasteInto(space); } clipboard = cut ? null : { multi: list, cut: false }; return; }
             const data = cloneData(c.data);
-            data.parent = space;
+            data.parent = isUI(data) && (space === 'ui' || isUI(sceneObjects[space])) ? space : (isUI(data) ? 'ui' : space);
+            if (isUI(data)) { data.posX = uiClamp((+data.posX || 50) + c.pastes * 4, 0, 100); data.posY = uiClamp((+data.posY || 50) + c.pastes * 4, 0, 100); }
             if (!c.cut) {
                 c.pastes++;
                 if (isShape(data)) {
@@ -3295,6 +3432,10 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             const where = f < 0.28 ? 'before' : f > 0.72 ? 'after' : 'child';
             const target = where === 'child' ? t.dataset.id : o.parent;
             if (dragIds.some(id => id === t.dataset.id || id === target || isInside(target, id))) return null;
+            // UI instances stay in the interface and world objects stay out of it.
+            const draggingUI = dragIds.some(id => isUI(sceneObjects[id]));
+            const targetIsUI = SPACE_KEYS.includes(target) ? target === 'ui' : isUI(sceneObjects[target]);
+            if (draggingUI !== targetIsUI) return null;
             return { el: t, where, target, ref: t.dataset.id };
         }
         function moveInOrder(ids, info) {
@@ -3334,17 +3475,19 @@ vanilla3D.Size(1, 2, 1)</code></pre>
         }
         function selectItem(id) {
             selectedObjectId = id || null;
+            selectedSpaceId = null;
             if (id) uncollapseAncestors(id);
             multiSel.clear(); if (id) multiSel.add(id); anchorId = id || null;
             renderExplorer();
             renderProperties();
+            applyModeHint();
         }
         window.selectItem = selectItem;
 
         const objHead = (id, o, ic, extra = '') =>
             `<div class="obj-head">${icon(ic)}<div class="obj-meta"><div class="obj-name">${esc(o.name)}</div>
                 <div class="obj-id"><span title="Instance type">${o.type}</span><span class="uid" title="Unique ID">${id}</span></div></div>${extra}</div>`;
-        const defaultNames = { prism6: 'Block', ball: 'Ball', wedge: 'Wedge', cylinder: 'Cylinder', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player', sound: 'Sound', highlight: 'Highlight' };
+        const defaultNames = { prism6: 'Block', ball: 'Ball', wedge: 'Wedge', cylinder: 'Cylinder', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player', sound: 'Sound', highlight: 'Highlight', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input' };
         const nameField = (o, dis = '') =>
             `<div class="field-label">Name</div><input class="text" type="text" id="prop-name" maxlength="48" value="${esc(o.name)}" aria-label="Name" ${dis}>`;
         function bindName(obj) {
@@ -3380,9 +3523,27 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             }
         }
 
+        // While a UI element is dragged its four numbers in the panel follow the drag.
+        function syncUIPropInputs() {
+            const o = sceneObjects[selectedObjectId];
+            if (!isUI(o)) return;
+            for (const key of ['posX', 'posY', 'sizeX', 'sizeY']) {
+                const el = document.getElementById('prop-ui-' + key);
+                if (el && document.activeElement !== el) el.value = r3(o[key]);
+            }
+        }
+
         function renderProperties() {
             const container = document.getElementById('properties-content');
             if (!selectedObjectId) {
+                if (selectedSpaceId === 'ui') {
+                    const count = Object.values(sceneObjects).filter(o => isUI(o) && spaceOf(o) === 'ui').length;
+                    container.innerHTML = `
+                        ${objHead('ui', { name: 'UI', type: 'space' }, 'i-ui-frame')}
+                        ${section('Layout', `<div class="field-note">The UI space is the whole screen. Elements are sized and placed in percentages of what they sit in, and Position is the centre of the element: <code>50, 50</code> is the middle of the screen and a Size of <code>100, 5</code> is a strip across the top.</div>`)}
+                        ${section('Handed to the player', `<div class="field-note">When a player joins in the simulation, ${count ? 'these ' + count + ' element' + (count === 1 ? '' : 's') + ' go' : 'these elements go'} inside that Player in Players and are drawn for them. Stop puts them back.</div>`)}`;
+                    return;
+                }
                 container.innerHTML = `<div class="empty">${icon('i-pointer')}<p>Nothing selected</p><span>Pick an item in the explorer or click one in the viewport.</span></div>`;
                 return;
             }
@@ -3402,6 +3563,106 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             }
             if (obj.readOnly) {
                 container.innerHTML = `<div class="empty">${icon('i-lock')}<p>${esc(obj.name)}</p><span>This is an engine component and can’t be edited.</span></div>`;
+                return;
+            }
+
+            if (isUI(obj)) {
+                const number = (key, label, tag, min, max, step) => `
+                    <div class="field-label">${label}</div>
+                    <label class="num" title="${label} (percent of the parent)"><span class="tag">${tag}</span><input type="number" id="prop-ui-${key}" min="${min}" max="${max}" step="${step}" value="${r3(uiClamp(obj[key], min, max))}" aria-label="${label}"></label>`;
+                const colorRow = (key, label) => `
+                    <div class="field-label">${label}</div>
+                    <div class="accent-ctl"><input type="color" class="color-pick" id="prop-ui-${key}-pick" value="${HEX6.test(obj[key]) ? obj[key] : '#000000'}" aria-label="${label}"><input class="text hex-in" id="prop-ui-${key}-hex" maxlength="7" spellcheck="false" value="${HEX6.test(obj[key]) ? obj[key] : '#000000'}" aria-label="${label} hex code"></div>`;
+                const textRow = (key, label, value, max) => `
+                    <div class="field-label">${label}</div>
+                    <input class="text" type="text" id="prop-ui-${key}" maxlength="${max}" value="${esc(value)}" aria-label="${label}">`;
+                const transparencyRow = `
+                    <div class="field-label">Transparency</div>
+                    <div class="tod-row">
+                        <input type="range" class="tod" id="prop-ui-transparency" min="0" max="1" step="0.01" value="${uiClamp(obj.transparency, 0, 1)}" aria-label="Transparency">
+                        <span class="field-note" id="prop-ui-transparency-note" style="margin:0;min-width:44px;text-align:right">${Math.round(uiClamp(obj.transparency, 0, 1) * 100)}%</span>
+                    </div>`;
+                const typeLook = obj.type === 'text' || obj.type === 'button' || obj.type === 'input' ? `
+                    ${colorRow('textColor', 'Text color')}
+                    ${number('textSize', 'Text size', 'px', 4, 200, 1)}
+                    <div class="field-label">Align</div>
+                    <div class="pill-row">${UI_ALIGNS.map(a => `<button class="pill" data-align="${a}" aria-pressed="${obj.align === a}">${a}</button>`).join('')}</div>` : '';
+                const look = obj.type === 'frame' ? `
+                    ${colorRow('color', 'Background color')}
+                    ${transparencyRow}
+                    ${number('borderWidth', 'Border width', 'px', 0, 20, 1)}
+                    ${colorRow('borderColor', 'Border color')}
+                    ${switchRow('prop-ui-clip', 'Clip children', !!obj.clipChildren, '')}`
+                    : obj.type === 'image' ? `
+                    ${textRow('image', 'Image URL', obj.image || '', 400)}
+                    ${transparencyRow}
+                    <div class="field-note">A full URL to a PNG, JPEG, GIF or WebP image. It fills the element.</div>`
+                    : obj.type === 'text' ? `
+                    ${textRow('text', 'Text', obj.text || '', 200)}
+                    ${typeLook}
+                    ${switchRow('prop-ui-bold', 'Bold', !!obj.bold, '')}`
+                    : obj.type === 'button' ? `
+                    ${textRow('text', 'Text', obj.text || '', 120)}
+                    ${typeLook}
+                    ${switchRow('prop-ui-bold', 'Bold', !!obj.bold, '')}
+                    ${colorRow('color', 'Background color')}
+                    ${transparencyRow}
+                    <div class="field-note">While the simulation runs, pressing the button fires its <code>Clicked</code> event.</div>`
+                    : `
+                    ${textRow('placeholder', 'Placeholder', obj.placeholder || '', 120)}
+                    ${textRow('text', 'Starting text', obj.text || '', 200)}
+                    ${typeLook}
+                    ${colorRow('color', 'Background color')}
+                    ${transparencyRow}
+                    <div class="field-note">While the simulation runs, the player can type here. Pressing Enter fires <code>Submitted</code> with the text.</div>`;
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, typeIcon[obj.type])}
+                    ${section('Editor', nameField(obj))}
+                    ${section('Layout', `
+                        ${number('posX', 'Position X', '%', 0, 100, 1)}
+                        ${number('posY', 'Position Y', '%', 0, 100, 1)}
+                        ${number('sizeX', 'Width', '%', 1, 100, 1)}
+                        ${number('sizeY', 'Height', '%', 1, 100, 1)}
+                        ${switchRow('prop-ui-visible', 'Visible', obj.visible !== false, '')}
+                        <div class="field-note">Position is the centre of the element. Percentages are of the screen, or of the Frame it sits in.</div>
+                    `)}
+                    ${section('Appearance', look)}`;
+                bindName(obj);
+                for (const [key, lo, hi] of [['posX', 0, 100], ['posY', 0, 100], ['sizeX', UI_MIN_SIZE, 100], ['sizeY', UI_MIN_SIZE, 100], ['textSize', 4, 200], ['borderWidth', 0, 20]]) {
+                    const el = document.getElementById('prop-ui-' + key);
+                    if (!el) continue;
+                    el.addEventListener('input', () => { const v = parseFloat(el.value); if (Number.isFinite(v)) obj[key] = uiClamp(v, lo, hi); });
+                    el.addEventListener('change', () => { el.value = r3(obj[key]); });
+                }
+                for (const key of ['color', 'textColor', 'borderColor']) {
+                    const pick = document.getElementById('prop-ui-' + key + '-pick'), hex = document.getElementById('prop-ui-' + key + '-hex');
+                    if (!pick || !hex) continue;
+                    pick.addEventListener('input', () => { obj[key] = pick.value.toLowerCase(); hex.value = obj[key]; });
+                    hex.addEventListener('change', () => {
+                        let v = hex.value.trim().replace(/^#/, '');
+                        if (/^[0-9a-f]{3}$/i.test(v)) v = v.split('').map(c => c + c).join('');
+                        if (/^[0-9a-f]{6}$/i.test(v)) { obj[key] = ('#' + v).toLowerCase(); pick.value = obj[key]; }
+                        hex.value = HEX6.test(obj[key]) ? obj[key] : '#000000';
+                    });
+                }
+                for (const key of ['text', 'placeholder', 'image']) {
+                    const el = document.getElementById('prop-ui-' + key);
+                    if (el) el.addEventListener('input', () => { obj[key] = el.value; });
+                }
+                const trans = document.getElementById('prop-ui-transparency');
+                if (trans) trans.addEventListener('input', () => {
+                    obj.transparency = uiClamp(parseFloat(trans.value), 0, 1);
+                    document.getElementById('prop-ui-transparency-note').textContent = Math.round(obj.transparency * 100) + '%';
+                });
+                container.querySelectorAll('[data-align]').forEach(b => b.addEventListener('click', () => {
+                    obj.align = b.dataset.align;
+                    container.querySelectorAll('[data-align]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.align === obj.align)));
+                }));
+                document.getElementById('prop-ui-visible').addEventListener('change', (e) => { obj.visible = e.target.checked; });
+                const boldEl = document.getElementById('prop-ui-bold');
+                if (boldEl) boldEl.addEventListener('change', (e) => { obj.bold = e.target.checked; });
+                const clipEl = document.getElementById('prop-ui-clip');
+                if (clipEl) clipEl.addEventListener('change', (e) => { obj.clipChildren = e.target.checked; });
                 return;
             }
 
@@ -3743,10 +4004,19 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
         // ───────── Modes ─────────
         const hintText = { select: 'Click an instance to select it', move: 'Drag an arrow to move', scale: 'Drag a sphere to resize', rotate: 'Drag an arc to rotate' };
+        // The same tools act on the interface when it is being previewed, so the hint follows what will happen.
+        function applyModeHint() {
+            const o = sceneObjects[selectedObjectId];
+            const ui = !simulationRunning && (selectedSpaceId === 'ui' || isUI(o));
+            document.getElementById('hint-mode').textContent = !ui ? hintText[mode] : mode === 'move'
+                ? 'Drag a UI element to move it'
+                : mode === 'scale' ? 'Drag a UI corner to resize it'
+                : mode === 'select' ? 'Click a UI element to select it' : hintText[mode];
+        }
         function setMode(m) {
             mode = m;
             document.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
-            document.getElementById('hint-mode').textContent = hintText[m];
+            applyModeHint();
             hoverKey = null;
             canvas.style.cursor = '';
         }
@@ -4162,6 +4432,267 @@ vanilla3D.Size(1, 2, 1)</code></pre>
             }
             return best;
         }
+
+        // ───────── User interface preview and editing ─────────
+        // The UI is HTML laid over the viewport, so text stays crisp and an Input really takes typed text. In the
+        // editor the layer ignores the mouse and the canvas hit test below drives selecting, moving and scaling;
+        // while the simulation runs, buttons and inputs take their own clicks.
+        const uiLayerEl = document.getElementById('ui-layer');
+        const UI_GRID = 1;                 // percent the editor snaps UI to
+        const UI_MIN_SIZE = 1;             // smallest size a UI element can be dragged to, in percent
+        const uiNodes = new Map();         // instance id -> { el, type, label, field, kids }
+        const uiCornerList = [{ x: -1, y: -1 }, { x: 1, y: -1 }, { x: 1, y: 1 }, { x: -1, y: 1 }];
+        let lastUIHandles = [];
+        let uiDragging = null;
+        let uiGuides = [];
+        let uiChrome = null;
+
+        const uiRGBA = (hex, t) => {
+            const h = HEX6.test(hex || '') ? hex : '#000000';
+            return `rgba(${parseInt(h.slice(1, 3), 16)}, ${parseInt(h.slice(3, 5), 16)}, ${parseInt(h.slice(5, 7), 16)}, ${Math.round((1 - uiClamp(t, 0, 1)) * 1000) / 1000})`;
+        };
+        function uiParentBox(o) {
+            const p = sceneObjects[o.parent];
+            return isUI(p) ? uiLayout(p) : { x: 0, y: 0, w: width, h: height };
+        }
+        // Where an element sits on screen, in canvas pixels. A Frame passes its own box down, so a child's percentages
+        // are of the Frame, which is what makes a bar inside a frame work.
+        function uiLayout(o) {
+            const box = uiParentBox(o);
+            const w = box.w * uiClamp(o.sizeX, UI_MIN_SIZE, 100) / 100, h = box.h * uiClamp(o.sizeY, UI_MIN_SIZE, 100) / 100;
+            const cx = box.x + box.w * uiClamp(o.posX, 0, 100) / 100, cy = box.y + box.h * uiClamp(o.posY, 0, 100) / 100;
+            return { x: cx - w / 2, y: cy - h / 2, w, h, cx, cy };
+        }
+        // Which Player's UI, or the UI space, the viewport is showing. The player's copy while the simulation runs;
+        // otherwise only while a UI instance or the UI space itself is selected.
+        function uiContainers() {
+            if (simulationRunning) {
+                return Object.entries(sceneObjects).filter(([, o]) => o.type === 'player')
+                    .sort((a, b) => (a[1].order || 0) - (b[1].order || 0)).map(([id]) => id);
+            }
+            if (selectedSpaceId === 'ui') return ['ui'];
+            const o = sceneObjects[selectedObjectId];
+            if (!isUI(o)) return [];
+            const c = uiContainerOf(selectedObjectId);
+            return c && (c === 'ui' || sceneObjects[c]) ? [c] : [];
+        }
+        function uiHidden(o) {
+            let p = o, n = 0;
+            while (isUI(p) && n++ < 64) { if (p.visible === false) return true; p = sceneObjects[p.parent]; }
+            return false;
+        }
+        // The top-most element under a point. Later objects draw over earlier ones, so the last match wins.
+        function uiPickAt(x, y, containers) {
+            let hit = null;
+            for (const [id, o] of Object.entries(sceneObjects)) {
+                if (!isUI(o) || !containers.includes(uiContainerOf(id)) || uiHidden(o)) continue;
+                const r = uiLayout(o);
+                if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) hit = id;
+            }
+            return hit;
+        }
+        function findUIHandleAt(x, y) {
+            for (const h of lastUIHandles) if (Math.hypot(x - h.px, y - h.py) <= 10) return h;
+            return null;
+        }
+
+        function uiBuildNode(id, o) {
+            const el = document.createElement('div');
+            el.className = 'vui vui-' + o.type;
+            const node = { el, type: o.type, kids: el, label: null, field: null };
+            if (o.type === 'text' || o.type === 'button' || o.type === 'image') {
+                const label = document.createElement('span');
+                label.className = 'vui-label';
+                el.appendChild(label);
+                node.label = label;
+            }
+            if (o.type === 'button') {
+                el.addEventListener('click', (ev) => {
+                    ev.preventDefault(); ev.stopPropagation();
+                    if (simulationRunning) vlRuntime.fireUIEvent(id, 'Clicked', []);
+                });
+            }
+            if (o.type === 'input') {
+                const inp = document.createElement('input');
+                inp.type = 'text';
+                inp.className = 'vui-field';
+                inp.addEventListener('input', () => { const cur = sceneObjects[id]; if (cur) cur.text = inp.value; });
+                inp.addEventListener('keydown', (ev) => {
+                    if (ev.key !== 'Enter') return;
+                    ev.stopPropagation();
+                    const cur = sceneObjects[id];
+                    if (cur) cur.text = inp.value;
+                    if (simulationRunning) vlRuntime.fireUIEvent(id, 'Submitted', [inp.value]);
+                });
+                el.appendChild(inp);
+                node.field = inp;
+            }
+            return node;
+        }
+        function uiApplyStyle(node, o, z) {
+            const st = node.el.style, pct = (v) => uiClamp(v, 0, 100).toFixed(3) + '%';
+            st.left = pct(o.posX); st.top = pct(o.posY);
+            st.width = pct(o.sizeX); st.height = pct(o.sizeY);
+            st.zIndex = String(z);
+            st.display = o.visible === false ? 'none' : 'flex';
+            st.backgroundColor = uiRGBA(o.color, o.transparency);
+            if (node.type === 'frame') {
+                st.boxShadow = o.borderWidth > 0 ? 'inset 0 0 0 ' + uiClamp(o.borderWidth, 0, 20) + 'px ' + uiRGBA(o.borderColor, 0) : 'none';
+                st.overflow = o.clipChildren ? 'hidden' : 'visible';
+            } else if (node.type === 'text') {
+                node.label.textContent = String(o.text == null ? '' : o.text);
+                st.color = HEX6.test(o.textColor) ? o.textColor : '#ffffff';
+                st.fontSize = uiClamp(o.textSize, 4, 200) + 'px';
+                st.fontWeight = o.bold ? '700' : '400';
+                st.justifyContent = o.align === 'Left' ? 'flex-start' : o.align === 'Right' ? 'flex-end' : 'center';
+            } else if (node.type === 'button') {
+                node.label.textContent = String(o.text == null ? '' : o.text);
+                st.color = HEX6.test(o.textColor) ? o.textColor : '#ffffff';
+                st.fontSize = uiClamp(o.textSize, 4, 200) + 'px';
+                st.fontWeight = o.bold ? '700' : '400';
+                st.justifyContent = o.align === 'Left' ? 'flex-start' : o.align === 'Right' ? 'flex-end' : 'center';
+            } else if (node.type === 'image') {
+                const src = typeof o.image === 'string' ? o.image.trim() : '';
+                st.backgroundImage = src ? `url("${src.replace(/"/g, '%22')}")` : 'none';
+                st.opacity = String(1 - uiClamp(o.transparency, 0, 1));
+                node.label.textContent = src ? '' : 'Image';
+            } else if (node.type === 'input') {
+                const inp = node.field;
+                if (document.activeElement !== inp && inp.value !== (o.text || '')) inp.value = o.text || '';
+                inp.placeholder = o.placeholder || '';
+                inp.style.color = HEX6.test(o.textColor) ? o.textColor : '#ffffff';
+                inp.style.fontSize = uiClamp(o.textSize, 4, 200) + 'px';
+                inp.style.textAlign = o.align === 'Right' ? 'right' : o.align === 'Center' ? 'center' : 'left';
+            }
+        }
+        function uiSyncLayer() {
+            if (!uiLayerEl) return;
+            const containers = uiContainers();
+            uiLayerEl.classList.toggle('live', simulationRunning && containers.length > 0);
+            const wanted = new Set();
+            let z = 0;
+            const place = (id, parentEl, o) => {
+                wanted.add(id);
+                let node = uiNodes.get(id);
+                if (!node || node.type !== o.type) { if (node) node.el.remove(); node = uiBuildNode(id, o); uiNodes.set(id, node); }
+                if (node.el.parentElement !== parentEl) parentEl.appendChild(node.el);
+                uiApplyStyle(node, o, ++z);
+                for (const [kidId, kid] of Object.entries(sceneObjects)) if (kid.parent === id && isUI(kid) && kid.visible !== false) place(kidId, node.kids, kid);
+            };
+            for (const [id, o] of Object.entries(sceneObjects)) if (isUI(o) && containers.includes(o.parent) && o.visible !== false) place(id, uiLayerEl, o);
+            for (const [id, node] of [...uiNodes]) if (!wanted.has(id)) { node.el.remove(); uiNodes.delete(id); }
+            uiSyncChrome(containers);
+        }
+        // Selection box, corner handles and the snapping lines are HTML too, so they always sit above the elements.
+        function uiChromeReady() {
+            if (uiChrome || !uiLayerEl) return uiChrome;
+            const box = document.createElement('div'); box.className = 'vui-select';
+            const handles = uiCornerList.map(() => { const h = document.createElement('div'); h.className = 'vui-handle'; return h; });
+            const guides = [0, 1, 2, 3].map(() => { const g = document.createElement('div'); g.className = 'vui-guide'; return g; });
+            uiLayerEl.append(...guides, box, ...handles);
+            uiChrome = { box, handles, guides };
+            return uiChrome;
+        }
+        function uiSyncChrome(containers) {
+            const c = uiChromeReady();
+            if (!c) return;
+            const o = sceneObjects[selectedObjectId];
+            lastUIHandles = [];
+            const show = !simulationRunning && isUI(o) && containers.includes(uiContainerOf(selectedObjectId));
+            c.box.style.display = show ? 'block' : 'none';
+            c.handles.forEach(h => { h.style.display = 'none'; });
+            if (show) {
+                const r = uiLayout(o);
+                Object.assign(c.box.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+                if (mode === 'scale') {
+                    uiCornerList.forEach((corner, i) => {
+                        const px = r.cx + corner.x * r.w / 2, py = r.cy + corner.y * r.h / 2;
+                        Object.assign(c.handles[i].style, { display: 'block', left: px + 'px', top: py + 'px' });
+                        lastUIHandles.push({ corner, px, py });
+                    });
+                }
+            }
+            // Grid lines are shown only for the edges a drag is snapping to.
+            c.guides.forEach((g, i) => {
+                const line = uiGuides[i];
+                if (!line || simulationRunning) { g.style.display = 'none'; return; }
+                g.style.display = 'block';
+                g.dataset.axis = line.axis;
+                g.style.left = line.axis === 'x' ? line.px + 'px' : '0';
+                g.style.top = line.axis === 'y' ? line.px + 'px' : '0';
+            });
+        }
+
+        // Where dragging a corner puts an element: the opposite corner stays put, and a mostly diagonal drag scales both
+        // axes evenly while a mostly horizontal or vertical one changes only that axis.
+        function uiScaleResult(d, m) {
+            const box = d.box, c = d.corner, s = d.start;
+            const cx0 = box.w * s.posX / 100, cy0 = box.h * s.posY / 100;
+            const hw0 = box.w * s.sizeX / 200, hh0 = box.h * s.sizeY / 200;
+            const fx = cx0 - c.x * hw0, fy = cy0 - c.y * hh0;
+            const mx = m.x - box.x, my = m.y - box.y;
+            // How far the corner has moved on screen decides uniform against one-axis scaling, so the feel does not
+            // depend on the shape of the element's parent.
+            const rx = Math.abs(mx - (cx0 + c.x * hw0)), ry = Math.abs(my - (cy0 + c.y * hh0));
+            let sizeX = Math.round(uiClamp(Math.abs(mx - fx) / Math.max(1, box.w) * 100, UI_MIN_SIZE, 100) / UI_GRID) * UI_GRID;
+            let sizeY = Math.round(uiClamp(Math.abs(my - fy) / Math.max(1, box.h) * 100, UI_MIN_SIZE, 100) / UI_GRID) * UI_GRID;
+            if (!(rx > 2 * ry || ry > 2 * rx)) {
+                const grow = Math.max(sizeX / s.sizeX, sizeY / s.sizeY);
+                sizeX = uiClamp(Math.round(s.sizeX * grow / UI_GRID) * UI_GRID, UI_MIN_SIZE, 100);
+                sizeY = uiClamp(Math.round(s.sizeY * grow / UI_GRID) * UI_GRID, UI_MIN_SIZE, 100);
+            } else if (rx > ry) sizeY = s.sizeY;
+            else sizeX = s.sizeX;
+            const nw = box.w * sizeX / 100, nh = box.h * sizeY / 100;
+            return {
+                posX: uiClamp((fx + c.x * nw / 2) / Math.max(1, box.w) * 100, 0, 100),
+                posY: uiClamp((fy + c.y * nh / 2) / Math.max(1, box.h) * 100, 0, 100),
+                sizeX, sizeY,
+                guides: [{ axis: 'x', px: box.x + fx }, { axis: 'x', px: box.x + fx + c.x * nw },
+                         { axis: 'y', px: box.y + fy }, { axis: 'y', px: box.y + fy + c.y * nh }]
+            };
+        }
+        function uiStartMove(o, m) {
+            uiDragging = { kind: 'move', o, sx: m.x, sy: m.y, box: uiParentBox(o), start: { posX: o.posX, posY: o.posY } };
+            uiGuides = [];
+            canvas.style.cursor = 'grabbing';
+        }
+        function uiStartScale(o, corner, m) {
+            uiDragging = { kind: 'scale', o, corner, sx: m.x, sy: m.y, box: uiParentBox(o), start: { posX: o.posX, posY: o.posY, sizeX: o.sizeX, sizeY: o.sizeY } };
+            uiGuides = [];
+            canvas.style.cursor = 'grabbing';
+        }
+        function uiUpdateDrag(m) {
+            const d = uiDragging;
+            if (!d || !d.o || d.o !== sceneObjects[selectedObjectId]) return;
+            const o = d.o, box = d.box;
+            if (d.kind === 'move') {
+                const snap = (v) => Math.round(v / UI_GRID) * UI_GRID;
+                o.posX = uiClamp(snap(d.start.posX + (m.x - d.sx) / Math.max(1, box.w) * 100), 0, 100);
+                o.posY = uiClamp(snap(d.start.posY + (m.y - d.sy) / Math.max(1, box.h) * 100), 0, 100);
+                uiGuides = [{ axis: 'x', px: box.x + box.w * o.posX / 100 }, { axis: 'y', px: box.y + box.h * o.posY / 100 }];
+            } else {
+                const r = uiScaleResult(d, m);
+                o.posX = r.posX; o.posY = r.posY; o.sizeX = r.sizeX; o.sizeY = r.sizeY;
+                uiGuides = r.guides;
+            }
+            syncUIPropInputs();
+        }
+        function uiMouseDown(m) {
+            if (simulationRunning) return false;   // in the simulation the UI takes its own clicks
+            const containers = uiContainers();
+            if (!containers.length) return false;
+            if (mode === 'scale') {
+                const h = findUIHandleAt(m.x, m.y);
+                const sel = sceneObjects[selectedObjectId];
+                if (h && isUI(sel)) { uiStartScale(sel, h.corner, m); return true; }
+            }
+            const hit = uiPickAt(m.x, m.y, containers);
+            if (!hit) return false;
+            if (hit !== selectedObjectId) selectItem(hit);
+            if (mode === 'move') { uiStartMove(sceneObjects[hit], m); return true; }
+            return mode === 'select' || mode === 'scale';
+        }
+        const UI_CURSOR = { '-1,-1': 'nwse-resize', '1,-1': 'nesw-resize', '1,1': 'nwse-resize', '-1,1': 'nesw-resize' };
 
         function drawHandle(h) {
             const active = manip && manip.h.key === h.key;
@@ -5342,12 +5873,14 @@ void main() { o = texture(uTex, vT); }`;
                 let remaining = Math.min(0.05, Math.max(0, (frameStart - physicsLastTime) / 1000));
                 physicsLastTime = frameStart;
                 stepScripts();
+                takeUIForPlayers();
                 while (remaining > 0) {
                     const step = Math.min(PHYSICS_MAX_STEP, remaining);
                     physicsStep(step);
                     remaining -= step;
                 }
                 syncPropInputs();
+                syncUIPropInputs();
             }
             if (uiDirty) {
                 uiDirty = false;
@@ -5423,6 +5956,8 @@ void main() { o = texture(uTex, vT); }`;
             const ordered = lastHandles.slice().sort((a, b) => b.z - a.z);
             ordered.sort((a, b) => (a.key === hoverKey) - (b.key === hoverKey));
             for (const h of ordered) drawHandle(h);
+
+            uiSyncLayer();
 
             const frameEnd = performance.now();
             frameCount++;
@@ -5594,6 +6129,7 @@ void main() { o = texture(uTex, vT); }`;
             if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
             const m = canvasPos(e);
             if (e.button === 0) {
+                if (uiMouseDown(m)) return;
                 const h = findHandleAt(m.x, m.y);
                 if (h) { startManip(h, m); if (manip) return; }
             }
@@ -5605,6 +6141,7 @@ void main() { o = texture(uTex, vT); }`;
         canvas.addEventListener('contextmenu', (e) => { if (settings.rightClick) e.preventDefault(); });
         window.addEventListener('mousemove', (e) => {
             const m = canvasPos(e);
+            if (uiDragging) { uiUpdateDrag(m); return; }
             if (manip) { updateManip(m); return; }
             if (camDrag) {
                 if (!camDrag.moved && Math.hypot(e.clientX - camDrag.sx, e.clientY - camDrag.sy) > 4) {
@@ -5617,11 +6154,24 @@ void main() { o = texture(uTex, vT); }`;
                 }
                 return;
             }
+            if (e.target === canvas && !simulationRunning) {
+                const containers = uiContainers();
+                if (containers.length) {
+                    const uh = findUIHandleAt(m.x, m.y);
+                    const hit = uh ? null : uiPickAt(m.x, m.y, containers);
+                    if (uh || hit) {
+                        hoverKey = null;
+                        canvas.style.cursor = uh ? UI_CURSOR[uh.corner.x + ',' + uh.corner.y] : mode === 'move' ? 'move' : 'pointer';
+                        return;
+                    }
+                }
+            }
             const h = e.target === canvas ? findHandleAt(m.x, m.y) : null;
             hoverKey = h ? h.key : null;
             canvas.style.cursor = h ? 'pointer' : '';
         });
         window.addEventListener('mouseup', (e) => {
+            if (uiDragging) { uiDragging = null; uiGuides = []; canvas.style.cursor = ''; return; }
             if (manip) { manip = null; canvas.style.cursor = ''; return; }
             if (camDrag && e.button === camDrag.button) {
                 if (!camDrag.moved && camDrag.button === 0) {
@@ -5637,7 +6187,7 @@ void main() { o = texture(uTex, vT); }`;
                 camDrag = null;
             }
         });
-        canvas.addEventListener('mouseleave', () => { if (!manip) { hoverKey = null; canvas.style.cursor = ''; } });
+        canvas.addEventListener('mouseleave', () => { if (!manip && !uiDragging) { hoverKey = null; canvas.style.cursor = ''; } });
 
         // ───────── Boot ─────────
         initGL();

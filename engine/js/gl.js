@@ -102,7 +102,7 @@ vec3 matAlbedo(vec3 alb, vec3 w, vec3 n, int m, vec3 tint) {
         q.x += mod(floor(q.y), 2.0) * 0.5;
         vec2 f = fract(q);
         float mortar = max(matLine(f.x, 0.035), matLine(f.y, 0.045));
-        vec3 brick = tint * (0.78 + 0.28 * matHash21(floor(q)));
+        vec3 brick = mix(tint, alb, 0.35) * (0.78 + 0.28 * matHash21(floor(q)));
         return mix(brick, vec3(0.72, 0.70, 0.66), mortar * 0.72);
     }
     if (m == 5) {                                            // tile: square tiles and grout

@@ -58,6 +58,8 @@ uniform mat4 uLVP0, uLVP1;
 uniform vec4 uShInfo;             // texel size and depth range of both cascades
 uniform vec2 uShSize;
 out vec4 o;
+uniform int uTexDetail;           // texture quality: 0 is the coarse grid, 4 adds the finest lines and surface grain
+uniform float uGrain;
 const vec3 FN[6] = vec3[6](vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, -1.0), vec3(1.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), vec3(0.0, -1.0, 0.0));
 const vec2 PD[12] = vec2[12](vec2(-0.326, -0.406), vec2(-0.840, -0.074), vec2(-0.696, 0.457), vec2(-0.203, 0.621), vec2(0.962, -0.195), vec2(0.473, -0.480), vec2(0.519, 0.767), vec2(0.185, -0.893), vec2(0.507, 0.064), vec2(0.896, 0.412), vec2(-0.322, -0.933), vec2(-0.792, -0.598));
 vec3 toLin(vec3 c) { return pow(c, vec3(2.2)); }
@@ -76,14 +78,27 @@ float gridLvl(vec2 p, float s, float lw) {
     vec2 c = mix(l, mean, smoothstep(vec2(0.35), vec2(0.9), d));
     return 1.0 - (1.0 - c.x) * (1.0 - c.y);
 }
-vec3 gridTex(vec3 base, vec3 w, int face) {
+// Texture detail levels draw progressively finer lines: level 0 keeps only the 1 Vm grid and costs almost nothing,
+// level 2 is the full 0.25 Vm grid, and levels 3 and 4 add 0.125 and 0.0625 Vm lines plus a fine surface grain.
+float hash21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+vec3 gridTex(vec3 base, vec3 w, int face, int detail, float grain) {
     vec2 p = face < 2 ? vec2(dot(w, uRot[0]), dot(w, uRot[1])) : (face < 4 ? vec2(dot(w, uRot[2]), dot(w, uRot[1])) : vec2(dot(w, uRot[0]), dot(w, uRot[2])));
-    float a = max(max(gridLvl(p, 0.25, 1.0) * 0.16, gridLvl(p, 0.5, 1.2) * 0.26), gridLvl(p, 1.0, 1.7) * 0.42);
+    float a = gridLvl(p, 1.0, 1.7) * 0.42;
+    if (detail >= 1) a = max(a, gridLvl(p, 0.5, 1.2) * 0.26);
+    if (detail >= 2) a = max(a, gridLvl(p, 0.25, 1.0) * 0.16);
+    if (detail >= 3) a = max(a, gridLvl(p, 0.125, 0.8) * 0.11);
+    if (detail >= 4) a = max(a, gridLvl(p, 0.0625, 0.7) * 0.08);
     a = max(a, gridLvl(p, 4.0, 2.0) * 0.5 * smoothstep(0.06, 0.25, gridDens(p, 1.0)));
     a = max(a, gridLvl(p, 16.0, 2.4) * 0.55 * smoothstep(0.06, 0.25, gridDens(p, 4.0)));
     a = max(a, gridLvl(p, 64.0, 2.8) * 0.6 * smoothstep(0.06, 0.25, gridDens(p, 16.0)));
     vec3 lc = dot(base, vec3(0.299, 0.587, 0.114)) > 0.3 ? vec3(0.0) : vec3(1.0);
-    return mix(base, lc, a);
+    vec3 col = mix(base, lc, a);
+    // Grain is a close-up detail, so it fades out once a texel covers a noticeable part of a Vanillameter.
+    if (grain > 0.0) {
+        float gd = max(fwidth(p.x), fwidth(p.y));
+        col *= 1.0 + (hash21(floor(p * 10.0)) - 0.5) * 0.12 * grain * (1.0 - smoothstep(0.03, 0.25, gd));
+    }
+    return col;
 }
 // Soft shadows: rotated 12-tap filtering on a hardware-compared depth map. w is how much this cascade covers the pixel.
 float cascadeShadow(highp sampler2DShadow sm, mat4 vp, vec3 wp, vec3 N, float texel, float far, float size, float ang, out float w) {
@@ -127,11 +142,11 @@ void main() {
     }
     vec3 lit;
     if (uMode == 0) {
-        if (uFaceTex[fi] == 1) base = gridTex(base, vW, fi);
+        if (uFaceTex[fi] == 1) base = gridTex(base, vW, fi, uTexDetail, uGrain);
         lit = base;
     } else {
         vec3 alb = uAlbedo[fi];
-        if (uFaceTex[fi] == 1) alb = gridTex(alb, vW, fi);
+        if (uFaceTex[fi] == 1) alb = gridTex(alb, vW, fi, uTexDetail, uGrain);
         alb = toLin(alb);
         vec3 N = normalize(vN);
         vec3 V = normalize(uCam - vW);
@@ -299,6 +314,76 @@ void main() {
     float d = 0.58 + 0.42 * max(dot(N, L), 0.0);
     float rim = pow(1.0 - max(dot(N, normalize(uCam - vW)), 0.0), 3.0) * 0.14;
     o = vec4(clamp(vC * d + rim, 0.0, 1.0), 1.0);
+}`;
+
+        // ───────── Screen-space lighting: bloom and sun rays ─────────
+        // The scene is drawn into an offscreen target, then a bright pass and two blur passes build a bloom texture,
+        // and a radial pass turns that light into sun shafts. All three are composited back over the scene in one
+        // fullscreen pass. Presets below Standard skip the whole thing and draw straight to the canvas.
+        const POST_VS = `
+layout(location = 0) in vec2 aPos;
+out vec2 vUV;
+void main() { vUV = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
+        const BRIGHT_FS = `
+in vec2 vUV;
+uniform sampler2D uSrc;
+uniform float uThreshold;
+out vec4 o;
+void main() {
+    vec3 c = texture(uSrc, vUV).rgb;
+    float l = max(max(c.r, c.g), c.b);
+    o = vec4(c * smoothstep(uThreshold, uThreshold + 0.3, l), 1.0);
+}`;
+        const BLUR_FS = `
+in vec2 vUV;
+uniform sampler2D uSrc;
+uniform vec2 uStep;
+out vec4 o;
+void main() {
+    vec3 c = texture(uSrc, vUV).rgb * 0.2270270270;
+    c += (texture(uSrc, vUV + uStep * 1.3846153846).rgb + texture(uSrc, vUV - uStep * 1.3846153846).rgb) * 0.3162162162;
+    c += (texture(uSrc, vUV + uStep * 3.2307692308).rgb + texture(uSrc, vUV - uStep * 3.2307692308).rgb) * 0.0702702703;
+    o = vec4(c, 1.0);
+}`;
+        const RAYS_FS = `
+in vec2 vUV;
+uniform sampler2D uSrc;
+uniform vec2 uSun;
+uniform vec3 uCol;
+uniform float uVis, uAspect;
+out vec4 o;
+void main() {
+    vec2 stride = (uSun - vUV) / 10.0;
+    vec2 uv = vUV;
+    vec3 sum = vec3(0.0);
+    float w = 1.0, total = 0.0;
+    for (int i = 0; i < 10; i++) {
+        uv += stride;
+        sum += texture(uSrc, clamp(uv, vec2(0.002), vec2(0.998))).rgb * w;
+        total += w;
+        w *= 0.93;
+    }
+    // The sun itself, plus soft shafts around it. The shafts use whole-number harmonics of the angle, so the pattern
+    // joins up where the angle wraps at the far side of the sun.
+    vec2 dv = (vUV - uSun) * vec2(uAspect, 1.0);
+    float r = length(dv);
+    float ang = atan(dv.y, dv.x);
+    float core = exp(-r * r * 900.0);
+    float spokes = 0.5 + 0.5 * sin(ang * 7.0 + r * 5.0) * sin(ang * 13.0 - r * 2.5);
+    float shafts = spokes * exp(-r * 2.2) * smoothstep(0.015, 0.12, r);
+    o = vec4((sum / total * 0.7 + uCol * (core * 0.6 + shafts * 0.45)) * uVis, 1.0);
+}`;
+        const COMP_FS = `
+in vec2 vUV;
+uniform sampler2D uScene, uBloom, uRays;
+uniform float uBloomAmt, uRayAmt;
+out vec4 o;
+void main() {
+    vec4 s = texture(uScene, vUV);
+    vec3 glow = texture(uBloom, vUV).rgb * uBloomAmt + texture(uRays, vUV).rgb * uRayAmt;
+    float ga = clamp(max(max(glow.r, glow.g), glow.b), 0.0, 1.0);
+    // The canvas is premultiplied, so glow that reaches the transparent sky raises its alpha too.
+    o = vec4(s.rgb + glow, max(s.a, ga));
 }`;
 
         function glProgram(gl, vs, fs, names, raw) {
@@ -494,7 +579,7 @@ void main() {
         }
 
         // Uniforms shared by the prism and mesh programs, which use the same fragment shader.
-        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize'];
+        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize', 'uTexDetail', 'uGrain'];
 
         // ── Meshes for the shapes a box cannot describe ──
         // Vertices are position (3), normal (3), edge UV (2) and face index (1) in the same -1..1 space as a box, so Size
@@ -630,6 +715,28 @@ void main() {
                 });
                 gl.bindVertexArray(null);
 
+                // One quad feeds every post pass: each pass binds its own target and program, then draws it.
+                const postVao = gl.createVertexArray();
+                gl.bindVertexArray(postVao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+                gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+                gl.bindVertexArray(null);
+                const black = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, black);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                const post = {
+                    vao: postVao, black,
+                    bright: glProgram(gl, POST_VS, BRIGHT_FS, ['uSrc', 'uThreshold']),
+                    blur: glProgram(gl, POST_VS, BLUR_FS, ['uSrc', 'uStep']),
+                    rays: glProgram(gl, POST_VS, RAYS_FS, ['uSrc', 'uSun', 'uCol', 'uVis', 'uAspect']),
+                    comp: glProgram(gl, POST_VS, COMP_FS, ['uScene', 'uBloom', 'uRays', 'uBloomAmt', 'uRayAmt']),
+                    scene: null, a: null, b: null, active: false, failed: false,
+                    wantSamples: 0, wantDiv: 2, bloomAmt: 0, rayAmt: 0, sunUV: [0.5, 0.5], sunVis: 0, sunCol: [1, 1, 1]
+                };
+
                 const tex = [makeLabelAtlas('#ffffff', true), makeLabelAtlas('#0f172a', false)].map(c => {
                     const t = gl.createTexture();
                     gl.bindTexture(gl.TEXTURE_2D, t);
@@ -642,7 +749,7 @@ void main() {
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                     return t;
                 });
-                GL = { gl, prism, axis, label, gizmo, tex, shadow, ball: ballP, sphere, mesh, sm: null, dummy: makeShadowMap(gl, 1) };
+                GL = { gl, prism, axis, label, gizmo, tex, shadow, ball: ballP, sphere, mesh, post, sm: null, dummy: makeShadowMap(gl, 1) };
                 resize();
             } catch (err) {
                 console.warn('WebGL 2 unavailable, using the 2D renderer instead:', err);
@@ -721,7 +828,198 @@ void main() {
             GL.unionMeshes.clear();
         }
 
-        function drawGL(prisms, balls, meshes, unions, highlights) {
+        // ───────── Render targets for bloom and sun rays ─────────
+        function makeColorTexture(gl, w, h) {
+            const tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            return tex;
+        }
+        function makeColorTarget(gl, w, h) {
+            const tex = makeColorTexture(gl, w, h), fbo = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+            const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            return { tex, fbo, w, h, ok };
+        }
+        // The scene target keeps the depth and stencil the shapes and highlights need. A multisampled target is used
+        // when the preset asks for anti-aliasing, because an offscreen target does not inherit the canvas's own MSAA.
+        // When a driver cannot render to a multisampled target the same texture stays usable without it.
+        function makeSceneTarget(gl, w, h, samples) {
+            const tex = makeColorTexture(gl, w, h), resolve = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, resolve);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+            let ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+            const out = { tex, resolve, fbo: resolve, w, h, samples: 0, colorRb: null, depthRb: null, ok: false };
+            const depth = (ms) => {
+                const rb = gl.createRenderbuffer();
+                gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+                if (ms > 1) gl.renderbufferStorageMultisample(gl.RENDERBUFFER, ms, gl.DEPTH24_STENCIL8, w, h);
+                else gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, w, h);
+                gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rb);
+                return rb;
+            };
+            if (ok) {
+                out.depthRb = depth(1);
+                ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+            }
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            if (!ok || samples <= 1) { out.ok = ok; return out; }
+            const fbo = gl.createFramebuffer(), colorRb = gl.createRenderbuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, colorRb);
+            gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.RGBA8, w, h);
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, colorRb);
+            const msDepth = depth(samples);
+            const msOk = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            if (!msOk) {
+                gl.deleteFramebuffer(fbo); gl.deleteRenderbuffer(colorRb); gl.deleteRenderbuffer(msDepth);
+                out.ok = true;
+                return out;
+            }
+            out.fbo = fbo; out.colorRb = colorRb; out.samples = samples;
+            out.depthRb = msDepth;
+            out.ok = true;
+            return out;
+        }
+        function freeSceneTarget(gl, t) {
+            if (!t) return;
+            gl.deleteTexture(t.tex);
+            gl.deleteFramebuffer(t.resolve);
+            if (t.fbo !== t.resolve) gl.deleteFramebuffer(t.fbo);
+            if (t.colorRb) gl.deleteRenderbuffer(t.colorRb);
+            if (t.depthRb) gl.deleteRenderbuffer(t.depthRb);
+        }
+        function freeColorTarget(gl, t) { if (t) { gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fbo); } }
+        function ensurePost(gl) {
+            const post = GL.post;
+            if (!post || post.failed) return null;
+            const w = glCanvas.width, h = glCanvas.height;
+            if (!w || !h) return null;
+            const samples = Math.max(0, Math.min(post.wantSamples, gl.getParameter(gl.MAX_SAMPLES) || 0));
+            const want = samples > 1 ? samples : 0;
+            if (post.scene && post.scene.w === w && post.scene.h === h && post.scene.samples === want) return post;
+            freeSceneTarget(gl, post.scene); freeColorTarget(gl, post.a); freeColorTarget(gl, post.b);
+            post.scene = null; post.a = null; post.b = null; post.active = false;
+            const scene = makeSceneTarget(gl, w, h, samples);
+            if (!scene.ok) {
+                freeSceneTarget(gl, scene); post.failed = true;
+                console.warn('Bloom and sun rays are off: this graphics card cannot render to an offscreen target.');
+                return null;
+            }
+            const div = Math.max(1, Math.min(4, post.wantDiv));
+            const a = makeColorTarget(gl, Math.max(2, Math.ceil(w / div)), Math.max(2, Math.ceil(h / div)));
+            const b = makeColorTarget(gl, a.w, a.h);
+            if (!a.ok || !b.ok) {
+                freeSceneTarget(gl, scene); freeColorTarget(gl, a); freeColorTarget(gl, b);
+                post.failed = true;
+                console.warn('Bloom and sun rays are off: this graphics card cannot create the blur targets.');
+                return null;
+            }
+            post.scene = scene; post.a = a; post.b = b;
+            return post;
+        }
+        // Reads the preset, aims the sun-shaft pass at the sun and binds the scene target. Returns null when the frame
+        // should draw straight to the canvas (no bloom or rays, classic lighting, or a card that cannot do it).
+        function beginPost(gl) {
+            const post = GL.post;
+            if (!post || post.failed) return null;
+            const enhanced = settings.lighting !== 'classic';
+            post.bloomAmt = enhanced ? Math.max(0, Number(settings.bloom) || 0) : 0;
+            post.rayAmt = enhanced ? Math.max(0, Number(settings.rays) || 0) : 0;
+            post.wantSamples = Math.max(0, Math.min(8, Number(settings.msaa) | 0));
+            post.wantDiv = Math.max(1, Math.min(4, Number(settings.bloomDiv) | 0 || 2));
+            post.active = false;
+            if (post.bloomAmt <= 0 && post.rayAmt <= 0) return null;
+            const p = ensurePost(gl);
+            if (!p) return null;
+            // The sun's place on screen, in texture space with the origin at the bottom left.
+            const c = rotateVector(sky.sunDir);
+            p.sunUV[0] = 0.5 + (c.z > 0.05 ? c.x / c.z * FOV / Math.max(1, width) : 0);
+            p.sunUV[1] = 0.5 - (c.z > 0.05 ? c.y / c.z * FOV / Math.max(1, height) : 0);
+            const off = Math.max(Math.abs(p.sunUV[0] - 0.5), Math.abs(p.sunUV[1] - 0.5));
+            p.sunVis = (c.z > 0.05 ? smooth(0, 0.16, sky.sunElev) : 0) * (1 - smooth(0.9, 1.35, off));
+            const warm = 1 - smooth(0, 0.45, sky.sunElev);
+            p.sunCol = mixRGB([1.0, 0.97, 0.9], [1.0, 0.68, 0.38], warm);
+            p.active = true;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, p.scene.fbo);
+            gl.viewport(0, 0, p.scene.w, p.scene.h);
+            return p;
+        }
+        // Runs after the gizmos, which draw into the same scene target, and puts the finished frame on the canvas.
+        function presentPost() {
+            const post = GL && GL.post;
+            if (!post || !post.active || !post.scene) { if (GL) GL.gl.bindVertexArray(null); return; }
+            const gl = GL.gl, S = post.scene, A = post.a, B = post.b;
+            gl.disable(gl.DEPTH_TEST); gl.disable(gl.STENCIL_TEST); gl.disable(gl.CULL_FACE); gl.disable(gl.BLEND);
+            gl.depthMask(false); gl.colorMask(true, true, true, true);
+            if (S.samples > 0) {
+                gl.bindFramebuffer(gl.READ_FRAMEBUFFER, S.fbo);
+                gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, S.resolve);
+                gl.blitFramebuffer(0, 0, S.w, S.h, 0, 0, S.w, S.h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+                gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+                gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+            }
+            gl.bindVertexArray(post.vao);
+            gl.activeTexture(gl.TEXTURE0);
+            // Bright pass: only what is bright enough to glow feeds the bloom.
+            gl.bindFramebuffer(gl.FRAMEBUFFER, A.fbo);
+            gl.viewport(0, 0, A.w, A.h);
+            gl.useProgram(post.bright.prog);
+            gl.bindTexture(gl.TEXTURE_2D, S.tex);
+            gl.uniform1i(post.bright.u.uSrc, 0);
+            gl.uniform1f(post.bright.u.uThreshold, 0.8);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            const blur = (src, dst, dx, dy) => {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fbo);
+                gl.viewport(0, 0, dst.w, dst.h);
+                gl.useProgram(post.blur.prog);
+                gl.bindTexture(gl.TEXTURE_2D, src.tex);
+                gl.uniform1i(post.blur.u.uSrc, 0);
+                gl.uniform2f(post.blur.u.uStep, dx / dst.w, dy / dst.h);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            };
+            blur(A, B, 1, 0);
+            blur(B, A, 0, 1);
+            blur(A, B, 1.6, 0);
+            blur(B, A, 0, 1.6);
+            let raysOn = false;
+            if (post.rayAmt > 0 && post.sunVis > 0.002) {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, B.fbo);
+                gl.viewport(0, 0, B.w, B.h);
+                gl.useProgram(post.rays.prog);
+                gl.bindTexture(gl.TEXTURE_2D, A.tex);
+                gl.uniform1i(post.rays.u.uSrc, 0);
+                gl.uniform2f(post.rays.u.uSun, post.sunUV[0], post.sunUV[1]);
+                gl.uniform1f(post.rays.u.uVis, post.sunVis);
+                gl.uniform1f(post.rays.u.uAspect, B.w / B.h);
+                gl.uniform3fv(post.rays.u.uCol, post.sunCol);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                raysOn = true;
+            }
+            // Composite the scene with the glow on the canvas the browser shows.
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+            gl.useProgram(post.comp.prog);
+            gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, S.tex); gl.uniform1i(post.comp.u.uScene, 0);
+            gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, A.tex); gl.uniform1i(post.comp.u.uBloom, 1);
+            gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, raysOn ? B.tex : post.black); gl.uniform1i(post.comp.u.uRays, 2);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.uniform1f(post.comp.u.uBloomAmt, post.bloomAmt);
+            gl.uniform1f(post.comp.u.uRayAmt, raysOn ? post.rayAmt : 0);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            gl.bindVertexArray(null);
+            gl.depthMask(true);
+            post.active = false;
+        }
+
+        function drawGL(prisms, balls, meshes, unions, highlights, countFaces) {
             const { gl, prism: P, axis: A, label: L, tex } = GL;
             const cam = [camPosX, camPosY, camPosZ];
             const setCam = (p) => {
@@ -755,6 +1053,8 @@ void main() {
             const Ldir = sky.lightWorld, shStr = smooth(0.02, 0.16, Ldir.y);
             let shadowSet = null;
             if (shSize > 0 && shStr > 0.01) { const sm = ensureShadowMaps(gl, shSize); if (sm) shadowSet = renderShadows(gl, prisms, sm, balls, meshes, unions); }
+            // When bloom or rays are on, everything from here draws into the offscreen scene target instead.
+            beginPost(gl);
             gl.viewport(0, 0, glCanvas.width, glCanvas.height);
             gl.clearColor(0, 0, 0, 0);
             gl.clearStencil(0);
@@ -766,8 +1066,12 @@ void main() {
             // 1. prisms
             gl.useProgram(P.prog); setCam(P); gl.bindVertexArray(P.vao);
             const lt = lightingColors();
+            // Texture quality: the shaders add finer lines and surface grain at the higher presets.
+            const texDetail = Math.max(0, Math.min(4, Number(settings.texDetail) || 0));
             const setLight = (P) => {
                 gl.uniform1i(P.u.uMode, enhanced ? 1 : 0);
+                gl.uniform1i(P.u.uTexDetail, texDetail);
+                gl.uniform1f(P.u.uGrain, texDetail >= 4 ? 1 : texDetail >= 3 ? 0.55 : 0);
                 gl.uniform3f(P.u.uSunDir, Ldir.x, Ldir.y, Ldir.z);
                 gl.uniform3fv(P.u.uSunCol, lt.sun); gl.uniform3fv(P.u.uSkyCol, lt.sky); gl.uniform3fv(P.u.uGndCol, lt.gnd); gl.uniform3fv(P.u.uHazeCol, lt.haze);
                 gl.uniform1f(P.u.uHaze, enhanced && settings.haze !== false ? 0.0035 : 0);
@@ -839,7 +1143,7 @@ void main() {
                 gl.uniformMatrix3fv(P.u.uRot, false, rotGL(o));
                 const look = shapeLook(id, o);
                 // The face counter only feeds the status bar, so it is skipped entirely when that bar is hidden.
-                if (settings.showStatus !== false) {
+                if (countFaces) {
                     const Ro = rotMat(o);
                     for (let fi = 0; fi < 6; fi++) {
                         const n = faces[fi].normal;
@@ -1401,6 +1705,9 @@ void main() {
         function render() {
             if (!width || !height || !Number.isFinite(cx + cy)) { requestAnimationFrame(render); return; }
             const frameStart = performance.now();
+            // Counting visible faces and scanning the scene for the status bar is done about once a second, not per
+            // frame: it is only display data and it used to cost a full walk of the scene every frame.
+            const statDue = frameStart - lastFpsTime >= 950;
             if (simulationRunning) {
                 if (!physicsLastTime) physicsLastTime = frameStart;
                 let remaining = Math.min(0.05, Math.max(0, (frameStart - physicsLastTime) / 1000));
@@ -1470,9 +1777,11 @@ void main() {
 
             // Without WebGL 2 the flat renderer draws wedges, cylinders and unions as their boxes.
             glDrawCalls = 0;
-            const visibleCount = GL ? drawGL(prisms, balls, meshes, unions, highlights) : drawFallback(prisms.concat(meshes, unions), balls);
+            const visibleCount = GL
+                ? drawGL(prisms, balls, meshes, unions, highlights, statDue && settings.showStatus !== false)
+                : drawFallback(prisms.concat(meshes, unions), balls);
             // WebGL draws the gizmos as solid, shaded geometry. The flat fallback keeps its 2D handles below.
-            if (GL) drawGizmosGL(ordered);
+            if (GL) { drawGizmosGL(ordered); presentPost(); }
 
             // Model bounding box in 3D
             if (selectedObjectId && sceneObjects[selectedObjectId] && sceneObjects[selectedObjectId].type === 'model') {
@@ -1497,32 +1806,42 @@ void main() {
 
             const frameEnd = performance.now();
             frameCount++;
-            if (frameEnd - lastFpsTime >= 1000) { currentFps = frameCount; frameCount = 0; lastFpsTime = frameEnd; }
-            statFps.textContent = currentFps;
-            statFps.dataset.state = currentFps >= 55 ? 'good' : currentFps >= 30 ? 'warn' : 'bad';
-            statCpu.textContent = (frameEnd - frameStart).toFixed(2) + " ms";
-            if (window.performance && performance.memory) {
-                statMem.textContent = (performance.memory.usedJSHeapSize / 1048576).toFixed(1) + " MB";
-                statMem.title = 'JavaScript heap in use (performance.memory, Chromium).';
-            } else {
-                statMem.textContent = "N/A";
-                statMem.title = /Firefox/i.test(navigator.userAgent || '')
-                    ? 'Firefox does not expose page memory to websites. Open about:memory or the Memory tool in Firefox Developer Tools.'
-                    : 'This browser does not expose page memory to websites.';
+            if (statDue) {
+                currentFps = Math.max(1, Math.round(frameCount * 1000 / Math.max(1, frameEnd - lastFpsTime)));
+                frameCount = 0; lastFpsTime = frameEnd;
             }
-            const objectCount = Object.values(sceneObjects).filter(o => o && o.type !== 'viewfinder').length;
-            const uiCount = Object.values(sceneObjects).filter(o => isUI(o)).length;
-            const scriptTotal = Object.values(sceneObjects).filter(o => o && o.type === 'script').length;
-            const scriptActive = (typeof scriptTasks !== 'undefined' && Array.isArray(scriptTasks)) ? scriptTasks.length : 0;
-            statObjects.textContent = String(objectCount);
-            statUI.textContent = String(uiCount);
-            statScripts.textContent = scriptActive + ' / ' + scriptTotal;
-            statScripts.title = 'Running script instances / script instances in the project';
-            statDraws.textContent = GL ? String(glDrawCalls) : 'N/A';
-            statSim.textContent = simulationRunning ? 'Live' : 'Edit';
-            statSim.dataset.state = simulationRunning ? 'good' : '';
-            statVerts.textContent = prisms.length * 8;
-            statFaces.textContent = `${visibleCount} / ${prisms.length * 6}`;
+            if (statDue && settings.showStatus !== false) {
+                statFps.textContent = currentFps;
+                statFps.dataset.state = currentFps >= 55 ? 'good' : currentFps >= 30 ? 'warn' : 'bad';
+                statCpu.textContent = (frameEnd - frameStart).toFixed(2) + " ms";
+                if (window.performance && performance.memory) {
+                    statMem.textContent = (performance.memory.usedJSHeapSize / 1048576).toFixed(1) + " MB";
+                    statMem.title = 'JavaScript heap in use (performance.memory, Chromium).';
+                } else {
+                    statMem.textContent = "N/A";
+                    statMem.title = /Firefox/i.test(navigator.userAgent || '')
+                        ? 'Firefox does not expose page memory to websites. Open about:memory or the Memory tool in Firefox Developer Tools.'
+                        : 'This browser does not expose page memory to websites.';
+                }
+                // One walk of the scene fills all three counts instead of three separate scans.
+                let objectCount = 0, uiCount = 0, scriptTotal = 0;
+                for (const o of Object.values(sceneObjects)) {
+                    if (!o || o.type === 'viewfinder') continue;
+                    objectCount++;
+                    if (isUI(o)) uiCount++;
+                    if (o.type === 'script') scriptTotal++;
+                }
+                const scriptActive = (typeof scriptTasks !== 'undefined' && Array.isArray(scriptTasks)) ? scriptTasks.length : 0;
+                statObjects.textContent = String(objectCount);
+                statUI.textContent = String(uiCount);
+                statScripts.textContent = scriptActive + ' / ' + scriptTotal;
+                statScripts.title = 'Running script instances / script instances in the project';
+                statDraws.textContent = GL ? String(glDrawCalls) : 'N/A';
+                statSim.textContent = simulationRunning ? 'Live' : 'Edit';
+                statSim.dataset.state = simulationRunning ? 'good' : '';
+                statVerts.textContent = prisms.length * 8;
+                statFaces.textContent = `${visibleCount} / ${prisms.length * 6}`;
+            }
 
             requestAnimationFrame(render);
         }

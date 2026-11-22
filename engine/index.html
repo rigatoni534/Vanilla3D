@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=3.13.0.1">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.14.0.0">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
   
 </head>
@@ -393,12 +393,17 @@
             <label class="setting" for="opt-inverty"><div><div class="setting-title">Invert vertical look</div><div class="setting-desc">Dragging up looks down, like a flight stick.</div></div><input type="checkbox" id="opt-inverty" class="switch"></label>
             <div class="setting"><div><div class="setting-title">Field of view</div><div class="setting-desc">How wide the camera sees. Higher shows more of the world.</div></div>
               <div class="fov-row"><input type="range" class="tod" id="set-fov" min="40" max="110" step="1" aria-label="Field of view in degrees"><output id="set-fov-out" for="set-fov">75°</output></div></div>
+            <div class="set-sub">Graphics</div>
+            <div class="setting"><div><div class="setting-title">Graphics preset</div><div class="setting-desc">Shadows, texture detail, anti-aliasing, resolution, bloom and sun rays in one choice. Higher presets look sharper; lower presets run faster.</div></div>
+              <select id="set-quality" class="sel" aria-label="Graphics preset"><option value="low">Low</option><option value="medium">Medium</option><option value="standard">Standard</option><option value="high">High</option><option value="extra">Extra High</option><option value="unlimited">Unlimited</option><option value="custom">Custom</option></select></div>
+            <div class="setting-desc set-note" id="quality-note"></div>
             <div class="set-sub">Lighting</div>
             <div class="setting"><div><div class="setting-title">Lighting style</div><div class="setting-desc">Enhanced adds sky light, sun highlights and shadows that follow the time of day. Classic is the flat shading from before.</div></div>
               <select id="set-lighting" class="sel" aria-label="Lighting style"><option value="enhanced">Enhanced</option><option value="classic">Classic</option></select></div>
             <div class="setting"><div><div class="setting-title">Shadows</div><div class="setting-desc">Soft sun and moon shadows. Higher quality is sharper but needs a faster graphics card.</div></div>
               <select id="set-shadows" class="sel" aria-label="Shadow quality"><option value="off">Off</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
             <label class="setting" for="opt-haze"><div><div class="setting-title">Atmospheric haze</div><div class="setting-desc">Distant objects fade into the color of the sky, so far edges blend into the horizon.</div></div><input type="checkbox" id="opt-haze" class="switch"></label>
+            <label class="setting" for="opt-bloom"><div><div class="setting-title">Bloom and sun rays</div><div class="setting-desc">Bright surfaces glow and the sun casts soft light shafts across the view. Applies to Enhanced lighting; the Standard preset and above turn it on.</div></div><input type="checkbox" id="opt-bloom" class="switch"></label>
             <div class="setting"><div><div class="setting-title">Render distance</div><div class="setting-desc">How far away shapes are drawn. Off draws everything. Anything past the distance fades into the sky color and is skipped, which is faster on large worlds.</div></div>
               <select id="set-renderdist" class="sel" aria-label="Render distance"><option value="0">Off</option><option value="40">40 Vm</option><option value="60">60 Vm</option><option value="80">80 Vm</option><option value="120">120 Vm</option><option value="160">160 Vm</option><option value="250">250 Vm</option><option value="400">400 Vm</option></select></div>
             <div class="set-sub">Interface in the viewport</div>
@@ -487,7 +492,7 @@
             <div class="version-list">
               <div class="version-row"><span>Created</span><code id="world-created-version">Unknown</code></div>
               <div class="version-row"><span>Current</span><code id="world-current-version">Unknown</code></div>
-              <div class="version-row"><span>Latest</span><code id="world-latest-version">3.13.0.1</code></div>
+              <div class="version-row"><span>Latest</span><code id="world-latest-version">3.14.0.0</code></div>
             </div>
             <button class="btn btn-primary" id="world-migrate" type="button" style="width:100%;justify-content:center;margin-top:10px">Up to date</button>
             <div class="field-note" id="world-version-note"></div>
@@ -557,7 +562,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.13.0.1</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.14.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -693,6 +698,8 @@
           <tr><td>Look sensitivity</td><td>How far the view turns for each mouse movement, from Very slow to Very fast.</td></tr>
           <tr><td>Invert vertical look</td><td>Flips the up and down direction of looking around.</td></tr>
           <tr><td>Field of view</td><td>40 to 110 degrees. Higher shows more of the world. The default is 75.</td></tr>
+          <tr><td>Graphics preset</td><td>Low, Medium, Standard, High, Extra High or Unlimited. A preset sets shadows, texture detail, anti-aliasing, render resolution, bloom and sun rays together. Low and Medium draw no bloom and use a coarser grid texture at a lower resolution, so they run on weaker graphics cards. Extra High and Unlimited draw above screen resolution, add the finest grid lines and surface grain, and use the sharpest shadows.</td></tr>
+          <tr><td>Bloom and sun rays</td><td>Bright surfaces glow softly and the sun casts light shafts across the viewport. Needs Enhanced lighting. Turn it off to keep the sharpest possible image.</td></tr>
           <tr><td>Lighting style</td><td>Enhanced uses sky light, sun highlights and shadows that follow the World Settings time of day. Classic is the earlier flat shading.</td></tr>
           <tr><td>Shadows</td><td>Off, Low, Medium or High. Shadows are soft, follow the sun by day and the moon by night, and stay sharp around where you are looking.</td></tr>
           <tr><td>Atmospheric haze</td><td>Fades distant objects into the sky color. Only applies to Enhanced lighting.</td></tr>
@@ -1060,22 +1067,22 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=3.13.0.1"></script>
-  <script>const ENGINE_VERSION = '3.13.0.1';</script>
+  <script src="../vanillalua.js?v=3.14.0.0"></script>
+  <script>const ENGINE_VERSION = '3.14.0.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/scene.js?v=3.13.0.1"></script>
-  <script defer src="js/csg.js?v=3.13.0.1"></script>
-  <script defer src="js/version-history.js?v=3.13.0.1"></script>
-  <script defer src="js/player.js?v=3.13.0.1"></script>
-  <script defer src="js/sounds.js?v=3.13.0.1"></script>
-  <script defer src="js/scripting.js?v=3.13.0.1"></script>
-  <script defer src="js/shell.js?v=3.13.0.1"></script>
-  <script defer src="js/files.js?v=3.13.0.1"></script>
-  <script defer src="js/offline.js?v=3.13.0.1"></script>
-  <script defer src="js/explorer.js?v=3.13.0.1"></script>
-  <script defer src="js/properties.js?v=3.13.0.1"></script>
-  <script defer src="js/render.js?v=3.13.0.1"></script>
-  <script defer src="js/gl.js?v=3.13.0.1"></script>
-  <script defer src="js/main.js?v=3.13.0.1"></script>
+  <script defer src="js/scene.js?v=3.14.0.0"></script>
+  <script defer src="js/csg.js?v=3.14.0.0"></script>
+  <script defer src="js/version-history.js?v=3.14.0.0"></script>
+  <script defer src="js/player.js?v=3.14.0.0"></script>
+  <script defer src="js/sounds.js?v=3.14.0.0"></script>
+  <script defer src="js/scripting.js?v=3.14.0.0"></script>
+  <script defer src="js/shell.js?v=3.14.0.0"></script>
+  <script defer src="js/files.js?v=3.14.0.0"></script>
+  <script defer src="js/offline.js?v=3.14.0.0"></script>
+  <script defer src="js/explorer.js?v=3.14.0.0"></script>
+  <script defer src="js/properties.js?v=3.14.0.0"></script>
+  <script defer src="js/render.js?v=3.14.0.0"></script>
+  <script defer src="js/gl.js?v=3.14.0.0"></script>
+  <script defer src="js/main.js?v=3.14.0.0"></script>
 </body>
 </html>

@@ -228,10 +228,20 @@
             return { x: cx + c.x / c.z * FOV, y: cy + c.y / c.z * FOV };
         }
 
+        // The sky is two full-screen gradients plus stars and the sun or moon. Redrawing it every frame is wasted work
+        // while the camera and time of day have not moved, so it is repainted only when something in it changes.
+        let lastSkyKey = '';
         function drawSky() {
             // The horizon sits where level ground would meet the sky, so it follows the camera tilt
             let horizonY = cy + FOV * Math.tan(angleX);
             if (!Number.isFinite(horizonY)) horizonY = cy;
+            const sunP = sky.sunElev > -0.15 ? skyPoint(sky.sunDir) : null;
+            const moonP = sky.sunElev < 0.1 ? skyPoint(sky.moonDir) : null;
+            const skyKey = [width, height, horizonY.toFixed(1), sky.top.join(','), sky.hor.join(','), sky.nightAmt.toFixed(2),
+                sunP ? Math.round(sunP.x) + ':' + Math.round(sunP.y) : '-',
+                moonP ? Math.round(moonP.x) + ':' + Math.round(moonP.y) : '-'].join('|');
+            if (skyKey === lastSkyKey) return;
+            lastSkyKey = skyKey;
             const below = skyCtx.createLinearGradient(0, horizonY, 0, horizonY + height * 0.8);
             below.addColorStop(0, rgbStr(sky.hor));
             below.addColorStop(1, rgbStr(mixRGB(sky.hor, sky.top, 0.35).map(v => v * 0.8)));
@@ -257,7 +267,7 @@
             }
 
             if (sky.sunElev > -0.15) {
-                const p = skyPoint(sky.sunDir);
+                const p = sunP;
                 if (p) {
                     const warm = 1 - smooth(0, 0.4, sky.sunElev);
                     const col = mixRGB([255, 244, 210], [255, 140, 60], warm);
@@ -273,7 +283,7 @@
                 }
             }
             if (sky.sunElev < 0.1) {
-                const p = skyPoint(sky.moonDir);
+                const p = moonP;
                 if (p) {
                     skyCtx.save();
                     skyCtx.globalAlpha = smooth(-0.1, 0.15, -sky.sunElev);

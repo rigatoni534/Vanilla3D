@@ -21,7 +21,35 @@
 
         // Camera control settings (saved in this browser)
         let FOV = 450;
-        const defaultSettings = () => ({ leftDrag: true, rightClick: false, gizmoOffset: 0.5, rotOffset: 45, camSpeed: 0.1, axisLength: 8, lookSens: 1, invertY: false, fov: 75, lighting: 'enhanced', shadows: 'medium', haze: true, renderDistance: 0, showAxes: true, showViewfinder: true, hintMode: 'auto', showStatus: true, alwaysShowUI: false, uiGrid: 1, seFont: 13, autosave: 3, saveWhat: {}, accent: 'vanilla', light: false, showUid: false, syntax: true, defaultNames: {}, preinclude: {} });
+        const defaultSettings = () => ({
+            leftDrag: true, rightClick: false, gizmoOffset: 0.5, rotOffset: 45, camSpeed: 0.1, axisLength: 8,
+            lookSens: 1, invertY: false, fov: 75, lighting: 'enhanced', shadows: 'medium', haze: true, renderDistance: 0,
+            // Graphics preset and the values it writes. See GRAPHICS_PRESETS.
+            quality: 'standard', texDetail: 2, msaa: 2, renderScale: 1, dprCap: 1.5, bloom: 0.45, rays: 0.42, bloomDiv: 4,
+            showAxes: true, showViewfinder: true, hintMode: 'auto', showStatus: true, alwaysShowUI: false, uiGrid: 1,
+            seFont: 13, autosave: 3, saveWhat: {}, accent: 'vanilla', light: false, showUid: false, syntax: true,
+            defaultNames: {}, preinclude: {}
+        });
+        // A graphics preset is a bundle of rendering settings. Choosing one writes each value into settings, so the
+        // renderer reads plain numbers and one setting can still be changed without losing the others (that turns the
+        // preset into Custom). texDetail is the texture quality level the shaders understand: 0 is the coarsest grid
+        // and 4 adds the finest lines and surface grain. bloom and rays are strengths, 0 turns them off.
+        const GRAPHICS_PRESETS = {
+            low:       { name: 'Low',        shadows: 'off',    texDetail: 0, msaa: 0, renderScale: 0.7,  dprCap: 1,   bloom: 0,    rays: 0,    bloomDiv: 4 },
+            medium:    { name: 'Medium',     shadows: 'low',    texDetail: 1, msaa: 0, renderScale: 0.85, dprCap: 1,   bloom: 0,    rays: 0,    bloomDiv: 4 },
+            standard:  { name: 'Standard',   shadows: 'medium', texDetail: 2, msaa: 2, renderScale: 1,    dprCap: 1.5, bloom: 0.45, rays: 0.42, bloomDiv: 4 },
+            high:      { name: 'High',       shadows: 'high',   texDetail: 3, msaa: 4, renderScale: 1,    dprCap: 2,   bloom: 0.75, rays: 0.65, bloomDiv: 2 },
+            extra:     { name: 'Extra High', shadows: 'high',   texDetail: 4, msaa: 4, renderScale: 1.25, dprCap: 2,   bloom: 0.9,  rays: 0.8,  bloomDiv: 2 },
+            unlimited: { name: 'Unlimited',  shadows: 'high',   texDetail: 4, msaa: 8, renderScale: 1.5,  dprCap: 2,   bloom: 1.05, rays: 0.95, bloomDiv: 1 }
+        };
+        const GRAPHICS_KEYS = ['shadows', 'texDetail', 'msaa', 'renderScale', 'dprCap', 'bloom', 'rays', 'bloomDiv'];
+        function applyGraphicsPreset(id) {
+            const p = GRAPHICS_PRESETS[id];
+            if (!p) return false;
+            for (const k of GRAPHICS_KEYS) settings[k] = p[k];
+            settings.quality = id;
+            return true;
+        }
         const settings = defaultSettings();
         let autosaveTimer = null, autosaveMins = -1, autosaveBase = '';
         // Accent colors: each preset has a dark-theme and a light-theme shade.
@@ -71,7 +99,16 @@
             el.textContent = ':root{' + accentVars(dark, false) + '}body.light-theme{' + accentVars(light, true) + '}';
             updateFavicon();
         }
-        try { Object.assign(settings, JSON.parse(localStorage.getItem('vanilla-editor-settings') || '{}')); } catch (e) {}
+        try {
+            const rawSettings = localStorage.getItem('vanilla-editor-settings');
+            const savedSettings = rawSettings ? JSON.parse(rawSettings) : null;
+            if (savedSettings && typeof savedSettings === 'object') {
+                // A file saved before graphics presets has no quality. It becomes Custom, so the shadows it already has
+                // stay exactly as they were instead of being reset by a preset.
+                if (!('quality' in savedSettings)) savedSettings.quality = 'custom';
+                Object.assign(settings, savedSettings);
+            }
+        } catch (e) {}
         const AXIS_MIN = 0.1, AXIS_MAX = 100;
         const clampAxis = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? Math.min(AXIS_MAX, Math.max(AXIS_MIN, Math.round(n * 1000) / 1000)) : 8; };
         // Origin marker geometry: half-length, tick spacing (about ten ticks per side) and tick size.
@@ -90,11 +127,32 @@
             if (!['auto', 'always', 'never'].includes(settings.hintMode)) settings.hintMode = 'auto';
             if (!['enhanced', 'classic'].includes(settings.lighting)) settings.lighting = 'enhanced';
             if (!['off', 'low', 'medium', 'high'].includes(settings.shadows)) settings.shadows = 'medium';
+            // An unknown preset (a hand-edited file, or a preset removed in a later version) keeps its values and is
+            // shown as Custom rather than being snapped back to a preset.
+            if (!GRAPHICS_PRESETS[settings.quality]) settings.quality = 'custom';
+            settings.texDetail = pick(settings.texDetail, [0, 1, 2, 3, 4], 2);
+            settings.msaa = pick(settings.msaa, [0, 2, 4, 8], 2);
+            settings.renderScale = pick(settings.renderScale, [0.5, 0.7, 0.85, 1, 1.25, 1.5], 1);
+            settings.dprCap = pick(settings.dprCap, [1, 1.5, 2, 3], 1.5);
+            settings.bloom = Math.max(0, Math.min(1.5, Number.isFinite(settings.bloom) ? settings.bloom : 0.45));
+            settings.rays = Math.max(0, Math.min(1.5, Number.isFinite(settings.rays) ? settings.rays : 0.42));
+            settings.bloomDiv = pick(settings.bloomDiv, [1, 2, 4], 2);
             document.getElementById('set-lighting').value = settings.lighting;
+            document.getElementById('set-quality').value = GRAPHICS_PRESETS[settings.quality] ? settings.quality : 'custom';
             document.getElementById('set-shadows').value = settings.shadows;
             document.getElementById('set-shadows').disabled = settings.lighting === 'classic';
             document.getElementById('opt-haze').checked = settings.haze !== false;
             document.getElementById('opt-haze').disabled = settings.lighting === 'classic';
+            document.getElementById('opt-bloom').checked = settings.bloom > 0 || settings.rays > 0;
+            {
+                const q = GRAPHICS_PRESETS[settings.quality];
+                const scale = Math.min(3, Math.min(window.devicePixelRatio || 1, settings.dprCap) * settings.renderScale);
+                document.getElementById('quality-note').textContent = (q ? q.name : 'Custom') +
+                    ': draws at ' + (Math.round(scale * 100) / 100) + '× screen pixels, ' +
+                    (settings.msaa > 0 ? settings.msaa + '× anti-aliasing' : 'no anti-aliasing') + ', ' +
+                    (settings.bloom > 0 || settings.rays > 0 ? 'bloom and sun rays on' : 'no bloom or rays') +
+                    ', ' + settings.shadows + ' shadows, texture detail ' + (settings.texDetail + 1) + '/5.';
+            }
             settings.renderDistance = pick(settings.renderDistance, [0, 40, 60, 80, 120, 160, 250, 400], 0);
             document.getElementById('set-renderdist').value = String(settings.renderDistance);
             isLightMode = !!settings.light;
@@ -129,6 +187,8 @@
             if (typeof settings.defaultNames !== 'object' || !settings.defaultNames) settings.defaultNames = {};
             if (typeof settings.preinclude !== 'object' || !settings.preinclude) settings.preinclude = {};
             document.getElementById('set-cam').value = settings.rightClick && !settings.leftDrag ? 'right' : 'drag';
+            // The render resolution depends on the preset, so a change has to re-size the canvases.
+            if (typeof resize === 'function') resize();
             if (!(settings.camSpeed > 0)) settings.camSpeed = 0.1;
             document.getElementById('set-camspeed').value = String(settings.camSpeed);
             if (document.getElementById('set-camspeed').value !== String(settings.camSpeed)) document.getElementById('set-camspeed').value = '0.1';
@@ -161,7 +221,21 @@
         const bindSel = (id, key, parse) => document.getElementById(id).addEventListener('change', (e) => { settings[key] = parse(e.target.value); saveSettings(); });
         const bindChk = (id, key) => document.getElementById(id).addEventListener('change', (e) => { settings[key] = e.target.checked; saveSettings(); });
         bindSel('set-looksens', 'lookSens', parseFloat); bindSel('set-hint', 'hintMode', v => v); bindSel('set-sefont', 'seFont', Number); bindSel('set-autosave', 'autosave', Number);
-        bindSel('set-lighting', 'lighting', v => v); bindSel('set-shadows', 'shadows', v => v); bindChk('opt-haze', 'haze');
+        bindSel('set-lighting', 'lighting', v => v); bindChk('opt-haze', 'haze');
+        document.getElementById('set-quality').addEventListener('change', (e) => {
+            if (!applyGraphicsPreset(e.target.value)) settings.quality = 'custom';
+            saveSettings();
+            const q = GRAPHICS_PRESETS[settings.quality];
+            toast('Graphics set to ' + (q ? q.name : 'Custom') + '.');
+        });
+        // Changing one graphics setting by hand keeps the others and marks the preset Custom.
+        document.getElementById('set-shadows').addEventListener('change', (e) => { settings.shadows = e.target.value; settings.quality = 'custom'; saveSettings(); });
+        document.getElementById('opt-bloom').addEventListener('change', (e) => {
+            settings.bloom = e.target.checked ? (GRAPHICS_PRESETS[settings.quality] || GRAPHICS_PRESETS.standard).bloom || 0.45 : 0;
+            settings.rays = e.target.checked ? (GRAPHICS_PRESETS[settings.quality] || GRAPHICS_PRESETS.standard).rays || 0.42 : 0;
+            settings.quality = 'custom';
+            saveSettings();
+        });
         bindSel('set-renderdist', 'renderDistance', Number); bindSel('set-uigrid', 'uiGrid', Number);
         bindChk('opt-inverty', 'invertY'); bindChk('opt-axes', 'showAxes'); bindChk('opt-viewcube', 'showViewfinder'); bindChk('opt-status', 'showStatus');
         bindChk('opt-ui-always', 'alwaysShowUI');

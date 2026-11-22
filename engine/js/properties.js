@@ -721,10 +721,23 @@
             const container = document.getElementById('canvas-container');
             width = container.clientWidth;
             height = container.clientHeight;
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
-            for (const c of [canvas, skyCanvas, glCanvas]) { c.width = Math.round(width * dpr); c.height = Math.round(height * dpr); }
-            ctx.scale(dpr, dpr);
-            skyCtx.scale(dpr, dpr);
+            // The graphics preset picks the drawing resolution: a cap on the device pixel ratio times a render scale.
+            // Low presets draw fewer pixels, higher presets draw more than the screen for a sharper image.
+            const dpr = Math.max(0.5, Math.min(3,
+                Math.min(window.devicePixelRatio || 1, Number(settings.dprCap) || 2) * (Number(settings.renderScale) || 1)));
+            const setSize = (c, ratio) => {
+                const cw = Math.round(width * ratio), ch = Math.round(height * ratio);
+                // Only touch a canvas when its size changes: assigning width clears it and costs an allocation.
+                if (c.width !== cw) c.width = cw;
+                if (c.height !== ch) c.height = ch;
+            };
+            setSize(skyCanvas, dpr); setSize(glCanvas, dpr);
+            // The 2D canvas carries the editor's own outlines and guides, so it keeps the screen's resolution even when
+            // a low preset draws the scene itself smaller.
+            const uiDpr = Math.min(window.devicePixelRatio || 1, 2);
+            setSize(canvas, uiDpr);
+            ctx.setTransform(uiDpr, 0, 0, uiDpr, 0, 0);
+            skyCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
             cx = width / 2; cy = height / 2;
         }
         resize();

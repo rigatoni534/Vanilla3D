@@ -151,9 +151,8 @@
                             ${field('prop-conn-client2', 'Client 2', obj.client2, 120, '', '192.168.1.21')}
                         `)}
                         ${section('Players', `
-                            ${field('prop-conn-player1', 'Player 1', obj.player1, 120, '', '192.168.1.20')}
-                            ${field('prop-conn-player2', 'Player 2', obj.player2, 120, '', '192.168.1.21')}
-                            <div class="field-note">Player 1 and Player 2 hold the IPv4 address of each player\u2019s client.</div>
+                            ${field('prop-conn-player1', 'Player 1', obj.player1, 48, 'The first Player in Players on this connection.', 'Player1', 'prop-conn-players')}
+                            ${field('prop-conn-player2', 'Player 2', obj.player2, 48, 'The second Player in Players on this connection.', 'Player2', 'prop-conn-players')}
                         `)}`;
                 } else {
                     const rows = obj.clients.map((c, i) => `
@@ -462,6 +461,10 @@
             }
 
             if (obj.type === 'human') {
+                const defaultHuman = (() => {
+                    const parent = sceneObjects[obj.parent];
+                    return !!parent && parent.type === 'model' && parent.name === 'DefaultPlayer' && spaceOf(parent) === 'storage';
+                })();
                 const HF = (key, label, unit, step) => `
                     <div class="field-label">${label}</div>
                     <label class="num hnum"><input type="number" id="prop-h-${key}" min="0" step="${step}" value="${Number.isFinite(obj[key]) ? obj[key] : HUMAN_DEFAULTS[key]}" aria-label="${label}"><span class="tag">${unit}</span></label>`;
@@ -483,6 +486,11 @@
                         const v = parseFloat(el.value);
                         obj[key] = Number.isFinite(v) && v >= 0 ? v : HUMAN_DEFAULTS[key];
                         el.value = obj[key];
+                        // The DefaultPlayer's Human is the world's default player: keep World Settings in step.
+                        if (defaultHuman) {
+                            const ws = activeWorldSettings();
+                            if (ws) { ws.defaults = ws.defaults || {}; ws.defaults.player = ws.defaults.player || {}; ws.defaults.player[key] = obj[key]; }
+                        }
                     });
                 }
                 document.getElementById('prop-h-playername').addEventListener('input', (e) => { obj.playerName = e.target.value; });
@@ -621,7 +629,7 @@
                     ${numField('prop-width', 'W', 'x', 'Width (X)', obj.width, sizeDis)}
                     ${numField('prop-height', 'H', 'y', 'Height (Y)', obj.height, sizeDis)}
                 </div>${obj.type === 'union' ? '<div class="field-note">A union keeps the size of the parts it was built from.</div>' : ''}`)}
-                ${obj.type === 'union' ? section('Union', `<div class="field-note">Built from ${(obj.cells || []).length} merged block${(obj.cells || []).length === 1 ? '' : 's'}. To change it, select parts in World and choose Union Selected or Intersect Selected.</div>`) : ''}
+                ${obj.type === 'union' ? section('Union', `<div class="field-note">One real surface: its outline follows the creases of the shape, and cut-out parts stay hollow. Its ${(obj.cells || []).length} collision cell${(obj.cells || []).length === 1 ? '' : 's'} only decide where the player is blocked. To change it, select parts in World and choose Union Selected or Intersect Selected.</div>`) : ''}
                 ${section('Rotation', `<div class="field-row">
                     ${numField('prop-rx', 'X', 'x', 'Rotation X in degrees', obj.rotX || 0, dis)}
                     ${numField('prop-ry', 'Y', 'y', 'Rotation Y in degrees', obj.rotY || 0, dis)}

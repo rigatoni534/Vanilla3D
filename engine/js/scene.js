@@ -40,9 +40,10 @@
         function makeCylinder(name, parent, dims) {
             return Object.assign(makePrism(name, parent, {}), { type: 'cylinder' }, dims);
         }
-        // A union is a shape built out of blocks: its cells are the boxes that survived the union, subtraction and intersection.
+        // A union is one solid surface built from its parts. Its cells are only a simple collision proxy, kept in the
+        // shape's own space; the mesh is what is drawn.
         function makeUnion(name, parent, dims) {
-            return Object.assign(makePrism(name, parent, {}), { type: 'union', cells: [] }, dims);
+            return Object.assign(makePrism(name, parent, {}), { type: 'union', cells: [], cellBase: null, mesh: [] }, dims);
         }
         function makeSound(name, parent) {
             return { type: 'sound', name, parent, preset: 'beep', playing: false, looped: false, volume: 0.6, maxDistance: 20 };
@@ -50,11 +51,47 @@
         function makeHighlight(name, parent) {
             return { type: 'highlight', name, parent, color: '#ffd23f', overObjects: true };
         }
+        // The stats a DefaultPlayer Human starts with, also shown in World Settings > Defaults.
+        const DEFAULT_PLAYER_STATS = Object.freeze({
+            health: 100, maxHealth: 100, walkSpeed: 3.5, runSpeed: 6, stamina: 100, maxStamina: 100,
+            runStaminaLoss: 3, jumpHeight: 1.5, jumpStaminaLoss: 20, staminaGain: 6.5
+        });
         function makeWorldSettings(name, parent, props) {
             return Object.assign({
                 type: 'worldsettings', name, parent, timeOfDay: 14, gravity: 9.8, killY: -5000,
-                worldName: 'My World', creator: '', description: '', maxPlayers: DEFAULT_MAX_PLAYERS, assets: []
+                worldName: 'My World', creator: '', description: '', maxPlayers: DEFAULT_MAX_PLAYERS, assets: [],
+                defaults: { player: Object.assign({}, DEFAULT_PLAYER_STATS) }
             }, props);
+        }
+        function normalizeHumanStats(src) {
+            const out = {};
+            for (const [key, fallback] of Object.entries(DEFAULT_PLAYER_STATS)) {
+                const n = Number(src && src[key]);
+                out[key] = Number.isFinite(n) && n >= 0 ? n : fallback;
+            }
+            return out;
+        }
+        // The defaults a new Human and the DefaultPlayer template get. They live on the World Settings instance, so the
+        // whole setup travels with the world.
+        function defaultHumanStats() {
+            const ws = activeWorldSettings();
+            return normalizeHumanStats(ws && ws.defaults && ws.defaults.player);
+        }
+        function applyDefaultPlayerStats(ws) {
+            if (!ws) return;
+            const modelId = Object.keys(sceneObjects).find(id => {
+                const o = sceneObjects[id];
+                return o && o.type === 'model' && o.name === 'DefaultPlayer' && spaceOf(o) === 'storage';
+            });
+            const template = modelId ? Object.values(sceneObjects).find(o => o.type === 'human' && o.parent === modelId) : null;
+            ws.defaults = ws.defaults && typeof ws.defaults === 'object' ? ws.defaults : {};
+            // A world from before this setting has no defaults: its DefaultPlayer Human is the old default, so start
+            // from that instead of resetting the character to the engine values.
+            if (!ws.defaults.player || typeof ws.defaults.player !== 'object') ws.defaults.player = normalizeHumanStats(template);
+            const stats = normalizeHumanStats(ws.defaults.player);
+            ws.defaults.player = Object.assign({}, stats);
+            if (!modelId) return;
+            for (const o of Object.values(sceneObjects)) if (o.type === 'human' && o.parent === modelId) Object.assign(o, stats);
         }
         const isShape = (o) => !!o && (o.type === 'prism6' || o.type === 'ball' || o.type === 'wedge' || o.type === 'cylinder' || o.type === 'union');
 
@@ -93,9 +130,21 @@
             if (typeof o.creator !== 'string') o.creator = '';
             if (typeof o.description !== 'string') o.description = '';
             o.maxPlayers = Math.max(1, Math.min(100, Math.round(Number.isFinite(+o.maxPlayers) ? +o.maxPlayers : DEFAULT_MAX_PLAYERS)));
+            // Uploaded assets are files from the picker, kept as data URLs inside the world file. Older worlds may
+            // still list an ordinary URL, which is kept as it is.
             o.assets = Array.isArray(o.assets)
-                ? o.assets.filter(a => a && typeof a === 'object' && typeof a.url === 'string').slice(0, 100).map(a => ({ name: typeof a.name === 'string' ? a.name : '', url: a.url }))
+                ? o.assets.filter(a => a && typeof a === 'object' && typeof a.url === 'string' && a.url).slice(0, 100).map(a => ({
+                    name: typeof a.name === 'string' ? a.name.slice(0, 120) : '',
+                    url: a.url,
+                    type: typeof a.type === 'string' ? a.type.slice(0, 100) : '',
+                    size: Number.isFinite(+a.size) && +a.size > 0 ? Math.round(+a.size) : 0
+                }))
                 : [];
+            o.defaults = o.defaults && typeof o.defaults === 'object' ? o.defaults : {};
+            // Left unset when the file predates this setting; applyDefaultPlayerStats then copies the DefaultPlayer
+            // Human's own values into it, so an old world keeps its character.
+            if (o.defaults.player && typeof o.defaults.player === 'object') o.defaults.player = normalizeHumanStats(o.defaults.player);
+            else o.defaults.player = null;
             return o;
         }
         function normalizeConnection(o) {
@@ -217,12 +266,22 @@
             return id;
         }
         
-        // A union stores its cells around its own centre, in its own axes, so turning the union turns all of them.
+        // A union stores its cells around its own centre, in its own axes, so turning the union turns all of them. The
+        // cells are measured against the size the union was built at, so scaling the union scales its collision too.
         function unionCellWorld(u, c) {
             const R = rotMat(u);
-            return { x: u.x + R[0] * c.x + R[1] * c.y + R[2] * c.z,
-                     y: u.y + R[3] * c.x + R[4] * c.y + R[5] * c.z,
-                     z: u.z + R[6] * c.x + R[7] * c.y + R[8] * c.z };
+            const base = Array.isArray(u.cellBase) && u.cellBase.length === 3 && u.cellBase.every(v => Number.isFinite(v) && v > 0)
+                ? u.cellBase : [u.width || 1, u.height || 1, u.length || 1];
+            const sx = base[0] ? (u.width || base[0]) / base[0] : 1;
+            const sy = base[1] ? (u.height || base[1]) / base[1] : 1;
+            const sz = base[2] ? (u.length || base[2]) / base[2] : 1;
+            const cx = c.x * sx, cy = c.y * sy, cz = c.z * sz;
+            return {
+                x: u.x + R[0] * cx + R[1] * cy + R[2] * cz,
+                y: u.y + R[3] * cx + R[4] * cy + R[5] * cz,
+                z: u.z + R[6] * cx + R[7] * cy + R[8] * cz,
+                width: c.width * sx, height: c.height * sy, length: c.length * sz
+            };
         }
         // What a Highlight outlines: its parent object and every shape under it.
         function highlightTargets(h) {
@@ -236,7 +295,8 @@
 
         // ───────── Unions ─────────
         // A union turns a set of shapes into one solid: the union of the normal parts, minus the negated parts, or for
-        // Intersect only the space every part shares. The solid is stored as boxes, so it draws with the block shader.
+        // Intersect only the space every part shares. It stores the real surface in `mesh` and a simple grid of boxes in
+        // `cells` only for collision, so the drawn shape and its outline follow the actual cut surfaces.
         const shapeIsAxisBox = (o) => o.type === 'prism6' || o.type === 'union';
         function shapeContains(o, px, py, pz) {
             const R = rotMat(o), dx = px - o.x, dy = py - o.y, dz = pz - o.z;
@@ -244,7 +304,15 @@
             if (o.type === 'wedge') return Math.abs(x) <= o.width && Math.abs(z) <= o.length && y >= -o.height && y <= o.height * (z / (o.length || 1));
             if (o.type === 'cylinder') { const rx = x / (o.width || 1), rz = z / (o.length || 1); return rx * rx + rz * rz <= 1 && Math.abs(y) <= o.height; }
             if (o.type === 'ball') { const rx = x / (o.width || 1), ry = y / (o.height || 1), rz = z / (o.length || 1); return rx * rx + ry * ry + rz * rz <= 1; }
-            if (o.type === 'union') return (o.cells || []).some(c => Math.abs(x - c.x) <= c.width && Math.abs(y - c.y) <= c.height && Math.abs(z - c.z) <= c.length);
+            if (o.type === 'union') {
+                // The saved cells are in the union's base size; undo a resize before testing them.
+                const base = Array.isArray(o.cellBase) && o.cellBase.length === 3 && o.cellBase.every(v => Number.isFinite(v) && v > 0)
+                    ? o.cellBase : [o.width || 1, o.height || 1, o.length || 1];
+                const sx = base[0] ? (o.width || base[0]) / base[0] : 1;
+                const sy = base[1] ? (o.height || base[1]) / base[1] : 1;
+                const sz = base[2] ? (o.length || base[2]) / base[2] : 1;
+                return (o.cells || []).some(c => Math.abs(x / sx - c.x) <= c.width && Math.abs(y / sy - c.y) <= c.height && Math.abs(z / sz - c.z) <= c.length);
+            }
             return Math.abs(x) <= o.width && Math.abs(y) <= o.height && Math.abs(z) <= o.length;
         }
         // parts: [{ shape, op: 'add' | 'subtract' | 'intersect' }]. Returns merged boxes in world space.
@@ -299,23 +367,24 @@
             if (all.length < need) { toast(mode === 'intersect' ? 'Select at least two parts in World to intersect them.' : 'Select one or more parts in World to union them.', 'warn'); return; }
             const parts = all.map(k => ({ shape: sceneObjects[k], op: mode === 'intersect' ? 'intersect' : (sceneObjects[k].negated ? 'subtract' : 'add') }));
             if (mode !== 'intersect' && !parts.some(p => p.op === 'add')) { toast('Every selected part is negated, so there would be nothing left. Un-negate one part first.', 'warn'); return; }
+            // The drawn solid is a real surface built from the parts. The cells are only a simple collision proxy: no
+            // outline or shading ever comes from them.
+            const solid = csgBuildUnion(parts, mode);
+            if (!solid) { toast(mode === 'intersect' ? 'Those parts do not overlap, so there is nothing to keep.' : 'The result is empty, so nothing was created.', 'warn'); return; }
             const { cells } = unionSolid(parts, mode);
-            if (!cells.length) { toast(mode === 'intersect' ? 'Those parts do not overlap, so there is nothing to keep.' : 'The result is empty, so nothing was created.', 'warn'); return; }
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
-            for (const c of cells) {
-                minX = Math.min(minX, c.x0); maxX = Math.max(maxX, c.x1); minY = Math.min(minY, c.y0);
-                maxY = Math.max(maxY, c.y1); minZ = Math.min(minZ, c.z0); maxZ = Math.max(maxZ, c.z1);
-            }
-            const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
+            const cx = solid.center[0], cy = solid.center[1], cz = solid.center[2];
+            const halfX = Math.max(0.05, solid.half[0]), halfY = Math.max(0.05, solid.half[1]), halfZ = Math.max(0.05, solid.half[2]);
             const first = parts.find(p => p.op === 'add') || parts[0];
             const parent = SPACE_KEYS.includes(first.shape.parent) ? 'world' : first.shape.parent;
             const uid = newId();
             const n = ++counters.union;
             const u = makeUnion(dn('union') + (n === 1 ? '' : ' ' + n), parent, {
                 x: r3(cx), y: r3(cy), z: r3(cz),
-                width: r3((maxX - minX) / 2), height: r3((maxY - minY) / 2), length: r3((maxZ - minZ) / 2),
+                width: r3(halfX), height: r3(halfY), length: r3(halfZ),
                 color: prismColor(first.shape), anchored: parts.every(p => !!p.shape.anchored),
                 collidable: parts.some(p => p.shape.collidable !== false),
+                cellBase: [r3(halfX), r3(halfY), r3(halfZ)],
+                mesh: solid.mesh,
                 cells: cells.map(c => ({
                     x: r3((c.x0 + c.x1) / 2 - cx), y: r3((c.y0 + c.y1) / 2 - cy), z: r3((c.z0 + c.z1) / 2 - cz),
                     width: r3((c.x1 - c.x0) / 2), height: r3((c.y1 - c.y0) / 2), length: r3((c.z1 - c.z0) / 2)

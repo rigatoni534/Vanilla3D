@@ -319,15 +319,43 @@
             document.querySelectorAll('#modal-world [data-world-tod]').forEach(b => b.setAttribute('aria-pressed', String(Math.abs((ws.timeOfDay % 24) - Number(b.dataset.worldTod)) < 0.01)));
             document.querySelectorAll('#modal-world [data-world-grav]').forEach(b => b.setAttribute('aria-pressed', String(Math.abs(ws.gravity - Number(b.dataset.worldGrav)) < 0.005)));
         }
+        const assetBytes = (n) => {
+            if (!(n > 0)) return '';
+            if (n < 1024) return n + ' B';
+            if (n < 1024 * 1024) return (n / 1024).toFixed(n < 10 * 1024 ? 1 : 0) + ' KB';
+            return (n / (1024 * 1024)).toFixed(n < 10 * 1024 * 1024 ? 1 : 0) + ' MB';
+        };
         function renderWorldAssets(ws) {
             const box = document.getElementById('world-asset-list');
             if (!box) return;
-            box.innerHTML = ws.assets.length ? ws.assets.map((a, i) => `
-                <div class="asset-row">
-                    <input class="text" type="text" data-asset="${i}" data-key="name" maxlength="48" placeholder="Name" value="${esc(a.name || '')}" aria-label="Asset ${i + 1} name">
-                    <input class="text" type="text" data-asset="${i}" data-key="url" maxlength="400" spellcheck="false" placeholder="https://…" value="${esc(a.url || '')}" aria-label="Asset ${i + 1} URL">
+            const assets = Array.isArray(ws.assets) ? ws.assets : [];
+            box.innerHTML = assets.length ? assets.map((a, i) => {
+                const image = /^image\//i.test(a.type || '') || /^data:image\//i.test(a.url || '');
+                const thumb = image
+                    ? `<img src="${esc(a.url)}" alt="">`
+                    : `<svg class="ic"><use href="#i-folder"/></svg>`;
+                const meta = [a.type || 'file', assetBytes(a.size)].filter(Boolean).join(' \u00b7 ');
+                return `<div class="asset-row asset-upload">
+                    <div class="asset-thumb">${thumb}</div>
+                    <div class="asset-meta">
+                        <input class="text" type="text" data-asset="${i}" data-key="name" maxlength="120" placeholder="Asset name" value="${esc(a.name || '')}" aria-label="Asset ${i + 1} name">
+                        <span class="asset-sub">${esc(meta)}</span>
+                    </div>
                     <button class="btn icon-btn" type="button" data-remove-asset="${i}" aria-label="Remove asset ${i + 1}">${icon('i-trash')}</button>
-                </div>`).join('') : '<div class="asset-empty">No assets yet. Add the first one below.</div>';
+                </div>`;
+            }).join('') : '<div class="asset-empty">No assets yet. Upload the first one below.</div>';
+            const total = assets.reduce((n, a) => n + (Number.isFinite(+a.size) ? +a.size : 0), 0);
+            const note = document.getElementById('world-asset-size');
+            if (note) note.textContent = assets.length
+                ? `${assets.length} asset${assets.length === 1 ? '' : 's'} \u00b7 ${assetBytes(total)}. Everything is saved inside the .vnw file.`
+                : 'Assets are saved inside the .vnw file, not linked from the web.';
+        }
+        function fillWorldDefaults(ws) {
+            const stats = ws.defaults && ws.defaults.player ? ws.defaults.player : DEFAULT_PLAYER_STATS;
+            for (const key of Object.keys(DEFAULT_PLAYER_STATS)) {
+                const el = document.getElementById('world-def-' + key);
+                if (el && el !== document.activeElement) el.value = Number.isFinite(+stats[key]) ? stats[key] : DEFAULT_PLAYER_STATS[key];
+            }
         }
         function fillWorldSettings(ws) {
             document.getElementById('world-name').value = ws.worldName;
@@ -341,6 +369,7 @@
             gr.value = Math.min(30, ws.gravity); gn.value = ws.gravity;
             document.getElementById('world-kill').value = ws.killY;
             syncWorldPills(ws);
+            fillWorldDefaults(ws);
             renderWorldAssets(ws);
         }
         function bindWorldSettings() {
@@ -399,6 +428,35 @@
                 kill.value = ws.killY;
                 refreshWorldProperties();
             });
+            // Defaults: the engine's own defaults stay put, and every change goes straight to the DefaultPlayer's Human.
+            for (const key of Object.keys(DEFAULT_PLAYER_STATS)) {
+                const el = document.getElementById('world-def-' + key);
+                if (!el) continue;
+                el.addEventListener('input', () => {
+                    const ws = currentWorld(); if (!ws) return;
+                    const v = parseFloat(el.value);
+                    if (!Number.isFinite(v) || v < 0) return;
+                    ws.defaults.player[key] = v;
+                    applyDefaultPlayerStats(ws);
+                    refreshWorldProperties();
+                });
+                el.addEventListener('change', () => {
+                    const ws = currentWorld(); if (!ws) return;
+                    normalizeWorldSettings(ws);
+                    applyDefaultPlayerStats(ws);
+                    el.value = ws.defaults.player[key];
+                    refreshWorldProperties();
+                });
+            }
+            document.getElementById('world-def-reset').addEventListener('click', () => {
+                const ws = currentWorld(); if (!ws) return;
+                ws.defaults.player = Object.assign({}, DEFAULT_PLAYER_STATS);
+                applyDefaultPlayerStats(ws);
+                fillWorldDefaults(ws);
+                refreshWorldProperties();
+                toast('Default player settings reset.');
+            });
+            // Assets: picked files are read as data URLs, so they travel inside the saved world.
             const assetList = document.getElementById('world-asset-list');
             assetList.addEventListener('input', (e) => {
                 const input = e.target.closest('[data-asset]'), ws = currentWorld();
@@ -412,13 +470,38 @@
                 ws.assets.splice(Number(btn.dataset.removeAsset), 1);
                 renderWorldAssets(ws);
             });
-            document.getElementById('world-asset-add').addEventListener('click', () => {
+            const assetFile = document.getElementById('world-asset-file');
+            document.getElementById('world-asset-upload').addEventListener('click', () => {
                 const ws = currentWorld(); if (!ws) return;
-                if (ws.assets.length >= 100) { toast('A world can list up to 100 assets.', 'warn'); return; }
-                ws.assets.push({ name: '', url: '' });
+                if (ws.assets.length >= 100) { toast('A world can hold up to 100 assets.', 'warn'); return; }
+                assetFile.click();
+            });
+            assetFile.addEventListener('change', async () => {
+                const ws = currentWorld(), files = Array.from(assetFile.files || []);
+                assetFile.value = '';
+                if (!ws || !files.length) return;
+                const MAX_FILE = 25 * 1024 * 1024;
+                for (const file of files) {
+                    if (ws.assets.length >= 100) { toast('A world can hold up to 100 assets.', 'warn'); break; }
+                    if (file.size > MAX_FILE) { toast('"' + file.name + '" is larger than 25 MB, so it was not added.', 'warn'); continue; }
+                    try {
+                        const url = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(String(reader.result || ''));
+                            reader.onerror = () => reject(reader.error || new Error('could not read the file'));
+                            reader.readAsDataURL(file);
+                        });
+                        if (!url) continue;
+                        ws.assets.push({ name: file.name.slice(0, 120), type: file.type || '', size: file.size, url });
+                    } catch (err) { toast('Could not add "' + file.name + '": ' + err.message, 'bad'); }
+                }
                 renderWorldAssets(ws);
-                const first = assetList.querySelector('.asset-row:last-child input');
-                if (first) first.focus();
+            });
+            document.getElementById('world-asset-clear').addEventListener('click', () => {
+                const ws = currentWorld(); if (!ws) return;
+                if (!ws.assets.length) return;
+                ws.assets.length = 0;
+                renderWorldAssets(ws);
             });
         }
         bindWorldSettings();

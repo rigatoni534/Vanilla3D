@@ -30,7 +30,8 @@ flat out vec3 vN;
 flat out float vFace;
 void main() {
     vec3 w = uCenter + uRot * (aPos * uHalf);
-    vec3 n = uRot * aNormal;
+    // Size scales the shape, so a normal has to undo that scale. Axis-aligned block normals are unchanged by it.
+    vec3 n = uRot * normalize(aNormal / max(uHalf, vec3(1e-4)));
     vUV = aUV; vFace = aFace; vW = w; vN = n;
     if (dot(n, w - uCam) >= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }   // back face
     gl_Position = project(w);
@@ -339,21 +340,10 @@ void main() { o = texture(uTex, vT); }`;
             const r = vNorm(vCross(f, Math.abs(L[1]) > 0.99 ? [1, 0, 0] : [0, 1, 0])), u = vCross(r, f);
             const cam = [camPosX, camPosY, camPosZ], fw = [fwdX, fwdY, fwdZ];
             let hit = Infinity, minY = Infinity, maxY = -Infinity;
-            const casters = [], ballCasters = [], meshCasters = [];
-            for (const [, o] of prisms.concat(balls, meshes || [], unions || [])) {
-                const ex = shapeHalfExt(o);
-                minY = Math.min(minY, o.y - ex[1]); maxY = Math.max(maxY, o.y + ex[1]);
-                if (o.wireframe) continue;
-                if (o.type === 'union') {
-                    // A union casts the shadow of its cells, so a shape cut out of it lets light through.
-                    for (const c of o.cells || []) {
-                        const p = unionCellWorld(o, c);
-                        casters.push({ x: p.x, y: p.y, z: p.z, width: c.width, height: c.height, length: c.length, rotX: o.rotX, rotY: o.rotY, rotZ: o.rotZ });
-                        minY = Math.min(minY, p.y - c.height); maxY = Math.max(maxY, p.y + c.height);
-                    }
-                } else if (o.type === 'ball') ballCasters.push(o);
-                else if (o.type === 'wedge' || o.type === 'cylinder') meshCasters.push(o);
-                else casters.push(o);
+            const casters = [], ballCasters = [], meshCasters = [], unionCasters = [];
+            // The tight shadow maps are aimed at whatever is in front of the camera, so every caster contributes both
+            // its bounds and its distance along the view.
+            const measure = (o, ex) => {
                 let t0 = 0, t1 = Infinity;
                 const c = [o.x, o.y, o.z], h = ex;
                 for (let i = 0; i < 3 && t0 <= t1; i++) {
@@ -363,8 +353,24 @@ void main() { o = texture(uTex, vT); }`;
                     t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
                 }
                 if (t0 <= t1 && t1 >= 0 && t0 < hit) hit = t0;
+            };
+            for (const [, o] of prisms.concat(balls, meshes || [])) {
+                const ex = shapeHalfExt(o);
+                minY = Math.min(minY, o.y - ex[1]); maxY = Math.max(maxY, o.y + ex[1]);
+                if (!o.wireframe) {
+                    if (o.type === 'ball') ballCasters.push(o);
+                    else if (o.type === 'wedge' || o.type === 'cylinder') meshCasters.push(o);
+                    else casters.push(o);
+                }
+                measure(o, ex);
             }
-            if (!casters.length && !ballCasters.length) return null;
+            for (const [id, o] of unions || []) {
+                const ex = shapeHalfExt(o);
+                minY = Math.min(minY, o.y - ex[1]); maxY = Math.max(maxY, o.y + ex[1]);
+                if (!o.wireframe) { const g = unionGL(id, o); if (g) unionCasters.push({ o, g }); }
+                measure(o, ex);
+            }
+            if (!casters.length && !ballCasters.length && !meshCasters.length && !unionCasters.length) return null;
             const hs = Math.min(4000, Math.max(20, (maxY - minY) / 2 + 10));
             const S = GL.shadow, P = GL.prism;
             gl.useProgram(S.prog); gl.bindVertexArray(P.vao);
@@ -422,6 +428,17 @@ void main() { o = texture(uTex, vT); }`;
                         gl.uniformMatrix3fv(S.u.uRot, false, rotGL(o));
                         gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
                     }
+                }
+                // A union's own surface casts its shadow, so a hole cut through it is a hole in the light too.
+                for (const { o, g } of unionCasters) {
+                    const rad = Math.hypot(o.width, o.height, o.length);
+                    const px = o.x - c[0], py = o.y - c[1], pz = o.z - c[2];
+                    if (Math.abs(r[0] * px + r[1] * py + r[2] * pz) - rad > R * 1.42 || Math.abs(u[0] * px + u[1] * py + u[2] * pz) - rad > R * 1.42) continue;
+                    gl.bindVertexArray(g.vao);
+                    gl.uniform3f(S.u.uCenter, o.x, o.y, o.z);
+                    gl.uniform3f(S.u.uHalf, o.width, o.height, o.length);
+                    gl.uniformMatrix3fv(S.u.uRot, false, rotGL(o));
+                    gl.drawArrays(gl.TRIANGLES, 0, g.count);
                 }
                 out.vp.push(m); out.info.push(texel, far); out.sizes.push(map.size);
             });
@@ -599,7 +616,7 @@ void main() { o = texture(uTex, vT); }`;
         }
 
         const FACE_COLS_F32 = new Float32Array([].concat(...faces.map(f => [1, 3, 5].map(i => parseInt(f.color.slice(i, i + 2), 16) / 255))));
-        // Per-face colors and outline settings, shared by prisms, wedges, cylinders and union cells.
+        // Per-face colors and outline settings, shared by prisms, wedges, cylinders and unions.
         // Per-face colors only change when a shape's color, its rotation or the light changes, so they are cached and a
         // big build costs uniforms and draw calls per frame instead of color maths and two typed arrays per shape.
         const shadeCache = new Map();
@@ -640,6 +657,35 @@ void main() { o = texture(uTex, vT); }`;
             gl.uniform1f(P.u.uEdgeAlpha, edgeA);
             gl.uniform1f(P.u.uEdgeW, w);
         }
+        // A union's surface is its own vertex buffer, built once from the stored mesh. The buffer uses the same
+        // position/normal/edge-UV/face layout as a block, so the same program draws it and the same shadow shader can
+        // cast it.
+        function unionGL(id, u) {
+            if (!GL) return null;
+            if (!GL.unionMeshes) GL.unionMeshes = new Map();
+            const hit = GL.unionMeshes.get(id);
+            if (hit) return hit;
+            const data = unionVertexData(u);
+            if (!data || !data.length) return null;
+            const gl = GL.gl, vao = gl.createVertexArray();
+            gl.bindVertexArray(vao);
+            const buf = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+            gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+            [[0, 3, 0], [1, 3, 3], [2, 2, 6], [3, 1, 8]].forEach(([loc, size, off]) => {
+                gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 36, off * 4);
+            });
+            gl.bindVertexArray(null);
+            const out = { vao, buf, count: data.length / 9 };
+            GL.unionMeshes.set(id, out);
+            return out;
+        }
+        function clearUnionMeshes() {
+            if (!GL || !GL.unionMeshes) return;
+            for (const g of GL.unionMeshes.values()) { GL.gl.deleteVertexArray(g.vao); GL.gl.deleteBuffer(g.buf); }
+            GL.unionMeshes.clear();
+        }
+
         function drawGL(prisms, balls, meshes, unions, highlights) {
             const { gl, prism: P, axis: A, label: L, tex } = GL;
             const cam = [camPosX, camPosY, camPosZ];
@@ -705,6 +751,37 @@ void main() { o = texture(uTex, vT); }`;
             setLight(P);
             gl.enable(gl.POLYGON_OFFSET_FILL);
             const wireRGB = skyBright ? [0.059, 0.09, 0.165] : [0.22, 0.74, 0.97];
+            // Outlines are drawn as real screen-space lines, so a union shows only its creases and a highlight can
+            // leave out the edges on the far side of a shape. The same small helper draws both.
+            const drawOutlineLines = (segs, depthTest) => {
+                if (!segs.length) return;
+                const verts = new Float32Array(segs.length * 6 * 13);
+                const near = 0.15;
+                const zOf = (p) => (p[0] - cam[0]) * fwdX + (p[1] - cam[1]) * fwdY + (p[2] - cam[2]) * fwdZ;
+                const mixP = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+                let i = 0;
+                for (const s of segs) {
+                    let a = s.a, b = s.b;
+                    const za = zOf(a), zb = zOf(b);
+                    if (za < near && zb < near) continue;
+                    if (za < near) a = mixP(a, b, (near - za) / (zb - za));
+                    else if (zb < near) b = mixP(b, a, (near - zb) / (za - zb));
+                    for (const [side, end] of [[-1, 0], [1, 0], [1, 1], [-1, 0], [1, 1], [-1, 1]]) {
+                        verts[i++] = a[0]; verts[i++] = a[1]; verts[i++] = a[2];
+                        verts[i++] = b[0]; verts[i++] = b[1]; verts[i++] = b[2];
+                        verts[i++] = side; verts[i++] = end;
+                        verts[i++] = s.color[0]; verts[i++] = s.color[1]; verts[i++] = s.color[2];
+                        verts[i++] = s.alpha; verts[i++] = s.width;
+                    }
+                }
+                if (!i) return;
+                gl.useProgram(A.prog); setCam(A); gl.bindVertexArray(A.vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, A.buf);
+                gl.bufferData(gl.ARRAY_BUFFER, verts.subarray(0, i), gl.DYNAMIC_DRAW);
+                if (!depthTest) gl.disable(gl.DEPTH_TEST);
+                gl.drawArrays(gl.TRIANGLES, 0, i / 13);
+                if (!depthTest) gl.enable(gl.DEPTH_TEST);
+            };
             let visible = 0;
             const faceTex = new Map();
             for (const t of Object.values(sceneObjects)) {
@@ -767,23 +844,24 @@ void main() { o = texture(uTex, vT); }`;
                 gl.disable(gl.POLYGON_OFFSET_FILL);
             }
 
-            // 1c. unions: each cell is a block, so they draw through the prism program
+            // 1c. unions: one surface each, drawn through the prism program
             if (unions.length) {
                 gl.useProgram(P.prog); setCam(P); setLight(P); gl.bindVertexArray(P.vao);
                 gl.enable(gl.POLYGON_OFFSET_FILL);
-                let cellN = 0;
-                for (const [id, u] of unions) {
-                    if (!onScreen(u)) continue;
+                unions.forEach(([id, u], i) => {
+                    if (!onScreen(u)) return;
+                    const g = unionGL(id, u);
+                    if (!g) return;
+                    gl.polygonOffset(0, -(i + 1));
                     applyShapeLook(P, id, u, faceTex, noTex);
+                    // The surface carries no edge UVs: its outline is drawn along the real creases below.
+                    gl.uniform1i(P.u.uWire, 0); gl.uniform1f(P.u.uEdgeAlpha, 0);
+                    gl.uniform3f(P.u.uCenter, u.x, u.y, u.z);
+                    gl.uniform3f(P.u.uHalf, u.width, u.height, u.length);
                     gl.uniformMatrix3fv(P.u.uRot, false, rotGL(u));
-                    for (const c of u.cells) {
-                        const p = unionCellWorld(u, c);
-                        gl.polygonOffset(0, -(++cellN));
-                        gl.uniform3f(P.u.uCenter, p.x, p.y, p.z);
-                        gl.uniform3f(P.u.uHalf, c.width, c.height, c.length);
-                        gl.drawArrays(gl.TRIANGLES, 0, 36);
-                    }
-                }
+                    gl.bindVertexArray(g.vao);
+                    gl.drawArrays(gl.TRIANGLES, 0, g.count);
+                });
                 gl.disable(gl.POLYGON_OFFSET_FILL);
             }
 
@@ -819,54 +897,42 @@ void main() { o = texture(uTex, vT); }`;
                 gl.disable(gl.CULL_FACE);
             }
 
-            // 1d. highlights: the edges of the parts under each Highlight, optionally drawn over everything
-            if (highlights.length) {
-                gl.depthMask(false);
-                for (const [, h] of highlights) {
-                    const targets = highlightTargets(h);
-                    if (!targets.length) continue;
-                    const hc = prismColor(h);
-                    const hr = parseInt(hc.slice(1, 3), 16) / 255, hg = parseInt(hc.slice(3, 5), 16) / 255, hb = parseInt(hc.slice(5, 7), 16) / 255;
-                    if (h.overObjects) gl.disable(gl.DEPTH_TEST);
-                    const boxes = targets.filter(([, o]) => o.type !== 'wedge' && o.type !== 'cylinder');
-                    const meshy = targets.filter(([, o]) => o.type === 'wedge' || o.type === 'cylinder');
-                    if (boxes.length) {
-                        gl.useProgram(P.prog); setCam(P); gl.bindVertexArray(P.vao);
-                        gl.uniform1i(P.u.uWire, 1); gl.uniform1f(P.u.uEdgeAlpha, 1); gl.uniform1f(P.u.uEdgeW, 2.6);
-                        gl.uniform3f(P.u.uEdgeColor, hr, hg, hb);
-                        for (const [, o] of boxes) {
-                            gl.uniformMatrix3fv(P.u.uRot, false, rotGL(o));
-                            if (o.type === 'union') {
-                                for (const c of o.cells) {
-                                    const p = unionCellWorld(o, c);
-                                    gl.uniform3f(P.u.uCenter, p.x, p.y, p.z);
-                                    gl.uniform3f(P.u.uHalf, c.width, c.height, c.length);
-                                    gl.drawArrays(gl.TRIANGLES, 0, 36);
-                                }
-                            } else {
-                                gl.uniform3f(P.u.uCenter, o.x, o.y, o.z);
-                                gl.uniform3f(P.u.uHalf, o.width, o.height, o.length);
-                                gl.drawArrays(gl.TRIANGLES, 0, 36);
-                            }
-                        }
+            // 1d. union outlines: the creases of the surface only, never the seams of its triangles. Edges on the
+            // far side are dropped, and the depth buffer hides the ones behind walls.
+            gl.depthMask(false);
+            const unionOutlines = [];
+            for (const [id, u] of unions) {
+                if (!onScreen(u)) continue;
+                const sel = id === selectedObjectId || (selectedObjectId && isInside(id, selectedObjectId));
+                if (!u.wireframe && u.outline === false && !sel) continue;
+                const data = unionMeshData(u);
+                const edges = u.wireframe ? data.edges.all : data.edges.creases;
+                const color = sel ? accentRGB : wireRGB;
+                const alpha = sel || u.wireframe ? 1 : 0.5;
+                const lineWidth = sel ? 1.6 : 0.8;
+                for (const e of edges) {
+                    const a = csgShapePoint(u, e.a), b = csgShapePoint(u, e.b);
+                    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, mz = (a[2] + b[2]) / 2;
+                    let front = false;
+                    for (const n of e.normals) {
+                        const w = csgShapeNormal(u, n);
+                        if (w[0] * (mx - cam[0]) + w[1] * (my - cam[1]) + w[2] * (mz - cam[2]) < 1e-4) { front = true; break; }
                     }
-                    if (meshy.length) {
-                        const M = GL.mesh;
-                        gl.useProgram(M.prog); setCam(M);
-                        gl.uniform1i(M.u.uWire, 1); gl.uniform1f(M.u.uEdgeAlpha, 1); gl.uniform1f(M.u.uEdgeW, 2.6);
-                        gl.uniform3f(M.u.uEdgeColor, hr, hg, hb);
-                        for (const [, o] of meshy) {
-                            gl.uniform3f(M.u.uCenter, o.x, o.y, o.z);
-                            gl.uniform3f(M.u.uHalf, o.width, o.height, o.length);
-                            gl.uniformMatrix3fv(M.u.uRot, false, rotGL(o));
-                            const mesh = o.type === 'wedge' ? M.wedge : M.cylinder;
-                            gl.bindVertexArray(mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
-                        }
-                    }
-                    if (h.overObjects) gl.enable(gl.DEPTH_TEST);
+                    if (front) unionOutlines.push({ a, b, color, alpha, width: lineWidth });
                 }
-                gl.depthMask(true);
             }
+            drawOutlineLines(unionOutlines, true);
+
+            // 1e. highlights: only the edges the camera can see with nothing in the way. A highlight set to appear
+            // over objects still draws on top of walls; otherwise the depth buffer hides it behind them.
+            for (const [, h] of highlights) {
+                const edges = highlightOutlineEdges(h);
+                if (!edges.length) continue;
+                const hc = prismColor(h);
+                const color = [parseInt(hc.slice(1, 3), 16) / 255, parseInt(hc.slice(3, 5), 16) / 255, parseInt(hc.slice(5, 7), 16) / 255];
+                drawOutlineLines(edges.map(e => ({ a: e.a, b: e.b, color, alpha: 1, width: 1.8 })), !h.overObjects);
+            }
+            gl.depthMask(true);
             gl.depthMask(false);
 
             // 2. axes (depth-tested, so prisms hide them correctly)

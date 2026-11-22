@@ -176,7 +176,8 @@
         // Vanillalua is loaded from the shared external interpreter.
         const vlRuntime = VanillaluaShared.createEditorRuntime({
             sceneObjects, physicsVelocity, physicsVelocityFor, spaceOf, preInc, SPACE_KEYS, isShape, isInside,
-            GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, makeUI: (type, spaceId) => makeUI(type, newUIName(type), spaceId), dn, counters, newId, pruneOrphans,
+            GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, makeUI: (type, spaceId) => makeUI(type, newUIName(type), spaceId),
+            makeConnection, CONNECTION_TYPES, makeWorldSettings, defaultHumanStats, dn, counters, newId, pruneOrphans,
             soundChanged: (id, name) => {
                 const h = sceneObjects[id];
                 if (!h) { stopSound(id); return; }
@@ -186,4 +187,4 @@
             getSelectedObjectId: () => selectedObjectId, setSelectedObjectId: value => { selectedObjectId = value; },
             markUIDirty: () => { uiDirty = true; }, markOutputDirty: () => { outputDirty = true; }
         });
-        const { VL_KEYWORDS, VL_SPACES, VL_MODULES, VL_TYPES, VL_GLOBALS, VLParseError, VLError, vlLex, vlParse, vlAnalyze, jsonDiagnostics, SCRIPT_TEMPLATE, newScriptData, makeHuman, HUMAN_DEFAULTS, makePlayerSetup, ensureScript, computeDiagnostics, VLFn, VLWait, VLModule, VLSpace, VLInst, VLVec, VLScope, vlInstCache, vlSpaces, vlInst, vlObj, vlRound, vlTypeName, vlStr, vlTruthy, VL_PROPS, vlGetProp, vlSetProp, vlGetMember, vlSetMember, vlCreate, vlDeleteInst, vlGetUID, vlSetUID, vlGetUIDFn, vlSetUIDFn, vlScriptingModule, vlInstanceModule, vlVanilla3D, vlVecFrom, vlRootScope, vlEq, vlBinary, vlEval, vlExec, vlMain, scriptTasks, outputLog, logOutput, vlStartTask, vlRunScript, startSimulationScripts, stepScripts, stopScripts } = vlRuntime;
+        const { VL_KEYWORDS, VL_SPACES, VL_MODULES, VL_TYPES, VL_GLOBALS, VLParseError, VLError, vlLex, vlParse, vlAnalyze, jsonDiagnostics, SCRIPT_TEMPLATE, newScriptData, makeHuman, HUMAN_DEFAULTS, makePlayerSetup, NETWORKING_SOURCE, makeNetworkingScript, ensureScript, computeDiagnostics, VLFn, VLWait, VLModule, VLSpace, VLInst, VLVec, VLScope, vlInstCache, vlSpaces, vlInst, vlObj, vlRound, vlTypeName, vlStr, vlTruthy, VL_PROPS, vlGetProp, vlSetProp, vlGetMember, vlSetMember, vlCreate, vlDeleteInst, vlGetUID, vlSetUID, vlGetUIDFn, vlSetUIDFn, vlScriptingModule, vlInstanceModule, vlVanilla3D, vlVecFrom, vlRootScope, vlEq, vlBinary, vlEval, vlExec, vlMain, scriptTasks, outputLog, logOutput, vlStartTask, vlRunScript, startSimulationScripts, stepScripts, stopScripts } = vlRuntime;

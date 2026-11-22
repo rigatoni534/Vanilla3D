@@ -57,9 +57,10 @@
             if (major >= 3) return;
             const objs = data.objects, entries = Object.entries(objs);
             const hasScript = entries.some(([, o]) => o && o.type === 'script' && o.name === 'PlayerManagement');
+            const hasNetworking = entries.some(([, o]) => o && o.type === 'script' && o.name === 'Networking');
             const modelEntry = entries.find(([, o]) => o && o.type === 'model' && o.name === 'DefaultPlayer');
             const hasHuman = (mid) => entries.some(([, o]) => o && o.type === 'human' && o.parent === mid);
-            if (hasScript && modelEntry && modelEntry[1].parent === 'storage' && hasHuman(modelEntry[0])) return;
+            if (hasScript && hasNetworking && modelEntry && modelEntry[1].parent === 'storage' && hasHuman(modelEntry[0])) return;
             const what = modelEntry ? 'This moves the DefaultPlayer model into Storage and adds a Human inside it' : 'This adds a DefaultPlayer model to Storage with a Human inside it';
             const text = 'This world was made before players existed. ' + what + (hasScript ? '' : ', and adds the PlayerManagement script that gives every player a model') + '. Choose Cancel to open the world without it.';
             if (!(await confirmDialog('Add the player setup?', text, 'Add', false))) return;
@@ -70,7 +71,9 @@
                 if (!hasHuman(modelEntry[0])) objs[gen()] = makeHuman(dn('human') + 1, modelEntry[0]);
             }
             for (const [id, o] of makePlayerSetup(gen)) {
-                if (o.type === 'script' ? hasScript : !!modelEntry) continue;
+                if (o.type === 'script' && o.name === 'Networking') { if (hasNetworking) continue; }
+                else if (o.type === 'script') { if (hasScript) continue; }
+                else if (modelEntry) continue;
                 objs[id] = o;
             }
         }
@@ -252,14 +255,22 @@
                 }
                 if (obj.type === 'union') {
                     const okNum = (v) => Number.isFinite(v) && v > 0;
+                    for (const k of ['width', 'height', 'length']) if (!okNum(obj[k])) obj[k] = 0.5;
                     obj.cells = Array.isArray(obj.cells) ? obj.cells.filter(c => c && Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z) && okNum(c.width) && okNum(c.height) && okNum(c.length))
                         .map(c => ({ x: c.x, y: c.y, z: c.z, width: c.width, height: c.height, length: c.length })) : [];
                     if (!obj.cells.length) obj.cells = [{ x: 0, y: 0, z: 0, width: Math.max(0.05, obj.width || 0.5), height: Math.max(0.05, obj.height || 0.5), length: Math.max(0.05, obj.length || 0.5) }];
+                    // The surface is saved in the file. A world from before real union surfaces only has cells, so its
+                    // surface is built from them once, here.
+                    obj.mesh = Array.isArray(obj.mesh) ? obj.mesh.filter(poly => Array.isArray(poly) && poly.length >= 9 && poly.length % 3 === 0 && poly.every(Number.isFinite)) : [];
+                    if (!Array.isArray(obj.cellBase) || obj.cellBase.length !== 3 || !obj.cellBase.every(okNum)) obj.cellBase = [obj.width, obj.height, obj.length];
+                    ensureUnionMesh(obj);
                 }
                 sceneObjects[uid] = obj;
             }
             for (const sid of [...activeSounds.keys()]) stopSound(sid);
             vlInstCache.clear(); physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear(); selectedObjectId = null; renamingId = null; menuItemId = null;
+            clearUnionMeshes();
+            applyDefaultPlayerStats(activeWorldSettings());
             recountTypes();
             uiDirty = true;
             renderTabs(); renderExplorer(); renderProperties();

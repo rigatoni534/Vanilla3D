@@ -37,9 +37,15 @@
             for (const [id, o] of physicsBodyList()) {
                 if (own.has(id) || o.collidable === false) continue;
                 if (o.type === 'union') {      // a union blocks with its cells, so a hole cut through it is a hole
-                    for (const c of o.cells || []) {
-                        const p = unionCellWorld(o, c);
-                        cols.push({ k: 0, x: p.x, z: p.z, w: c.width, l: c.length, y0: p.y - c.height, y1: p.y + c.height });
+                    const cells = Array.isArray(o.cells) ? o.cells : [];
+                    if (cells.length) {
+                        for (const c of cells) {
+                            const p = unionCellWorld(o, c);
+                            cols.push({ k: 0, x: p.x, z: p.z, w: p.width, l: p.length, y0: p.y - p.height, y1: p.y + p.height });
+                        }
+                    } else {
+                        const e = shapeHalfExt(o);
+                        cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1] });
                     }
                     continue;
                 }

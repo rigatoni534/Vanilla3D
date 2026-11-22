@@ -216,6 +216,7 @@
                     obj.name = 'Human';
                 }
                 if (isShape(obj) && !HEX6.test(obj.color)) obj.color = '#888888';
+                if (isShape(obj) && !MATERIAL_KEYS.has(obj.material)) obj.material = 'plastic';
                 if (isShape(obj)) for (const k of ['rotX', 'rotY', 'rotZ']) if (!Number.isFinite(obj[k])) obj[k] = 0;
                 if (obj.type === 'texture') {
                     obj.faces = Array.isArray(obj.faces) ? [...new Set(obj.faces.filter(i => Number.isInteger(i) && i >= 0 && i < 6))] : [4];

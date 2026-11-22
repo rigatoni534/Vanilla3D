@@ -646,6 +646,9 @@
                     </div>
                 `)}
                 ${section('Render', `
+                    <div class="field-label">Material</div>
+                    <select class="text" id="prop-material" aria-label="Material" ${dis}>${MATERIAL_ORDER.map(k => `<option value="${k}"${materialKey(obj) === k ? ' selected' : ''}>${esc(MATERIALS[k].name)}</option>`).join('')}</select>
+                    <div class="field-note" id="prop-material-note">${esc(materialDef(obj).note)}</div>
                     <div class="field-label">Color</div>
                     <div class="accent-ctl"><input type="color" class="color-pick" id="prop-color" value="${prismColor(obj)}" aria-label="Color" ${dis}><input class="text hex-in" id="prop-color-hex" maxlength="7" spellcheck="false" value="${prismColor(obj)}" aria-label="Color hex code" ${dis}></div>
                     ${obj.faceColoring ? '<div class="field-note">Face coloring is on, so each face uses its own color instead of this one.</div>' : ''}
@@ -669,6 +672,10 @@
                     document.getElementById(elId).addEventListener('input', (e) => { obj[key] = parseFloat(e.target.value) || 0; });
                 }
                 document.getElementById('prop-face-coloring').addEventListener('change', (e) => { obj.faceColoring = e.target.checked; renderProperties(); });
+                document.getElementById('prop-material').addEventListener('change', (e) => {
+                    obj.material = MATERIAL_KEYS.has(e.target.value) ? e.target.value : 'plastic';
+                    document.getElementById('prop-material-note').textContent = materialDef(obj).note;
+                });
                 const colPick = document.getElementById('prop-color'), colHex = document.getElementById('prop-color-hex');
                 colPick.addEventListener('input', () => { obj.color = colPick.value.toLowerCase(); colHex.value = obj.color; });
                 colHex.addEventListener('change', () => {

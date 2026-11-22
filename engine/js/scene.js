@@ -28,6 +28,25 @@
         function makeTexture(name, parent, faces, texture) { return { type: 'texture', name, parent, faces: (faces || [4]).slice(), texture: texture || 'grid' }; }
         const HEX6 = /^#[0-9a-f]{6}$/i;
         const prismColor = (o) => HEX6.test(o.color) ? o.color : '#888888';
+        // A material is a surface, not a different shape. The shader uses the pattern and the Color property tints it,
+        // so a brick wall can still be blue and a grass floor still has the color you chose.
+        const MATERIALS = {
+            plastic:  { name: 'Plastic',  tint: '#c9cfd9', pattern: 0, spec: 1.0, note: 'Smooth moulded surface. Color sets the plastic.' },
+            glass:    { name: 'Glass',    tint: '#9fd9ea', pattern: 1, spec: 2.6, note: 'Cool, glossy surface with a bright fresnel edge.' },
+            metal:    { name: 'Metal',    tint: '#b6c0cc', pattern: 2, spec: 2.8, note: 'Brushed metal with a sharp, strong reflection.' },
+            grass:    { name: 'Grass',    tint: '#4f8f3a', pattern: 3, spec: 0.25, note: 'Mottled green blades with a matte finish.' },
+            brick:    { name: 'Brick',    tint: '#9e4a3a', pattern: 4, spec: 0.35, note: 'Staggered brick courses with pale mortar lines.' },
+            tile:     { name: 'Tile',     tint: '#ddd6c8', pattern: 5, spec: 0.8, note: 'Square tiles with grout lines and a light sheen.' },
+            carpet:   { name: 'Carpet',   tint: '#6b5a50', pattern: 6, spec: 0.15, note: 'Fine woven fibers with a soft, matte finish.' },
+            wood:     { name: 'Wood',     tint: '#8a5a33', pattern: 7, spec: 0.45, note: 'Warm planks with grain and growth rings.' },
+            concrete: { name: 'Concrete', tint: '#9a9a94', pattern: 8, spec: 0.3, note: 'Poured stone with a fine, uneven grain.' },
+            neon:     { name: 'Neon',     tint: '#38e6ff', pattern: 9, spec: 0.5, note: 'Bright self-lit color. Glows when bloom is on.' }
+        };
+        const MATERIAL_ORDER = ['plastic', 'glass', 'metal', 'grass', 'brick', 'tile', 'carpet', 'wood', 'concrete', 'neon'];
+        const MATERIAL_KEYS = new Set(MATERIAL_ORDER);
+        const materialKey = (o) => o && MATERIAL_KEYS.has(o.material) ? o.material : 'plastic';
+        const materialDef = (o) => MATERIALS[materialKey(o)];
+        const materialId = (o) => MATERIAL_ORDER.indexOf(materialKey(o));
         // A ball is an ellipsoid with the same properties as a prism. Its Size is the radius on each axis.
         function makeBall(name, parent, dims) {
             return Object.assign(makePrism(name, parent, {}), { type: 'ball', length: 0.5, width: 0.5, height: 0.5 }, dims);
@@ -338,7 +357,7 @@
             return Object.assign({
                 type: 'prism6', name, parent,
                 x: 0, y: 0, z: 0, length: 0.5, width: 1, height: 0.5, rotX: 0, rotY: 0, rotZ: 0,
-                color: '#888888', faceColoring: false, showLabels: false, wireframe: false, locked: false, reactsToPhysics: true, collidable: true, anchored: false
+                color: '#888888', material: 'plastic', faceColoring: false, showLabels: false, wireframe: false, locked: false, reactsToPhysics: true, collidable: true, anchored: false
             }, dims);
         }
         // Every instance has a type (its label, e.g. "prism6", shared by all of that kind)
@@ -468,7 +487,7 @@
             const u = makeUnion(dn('union') + (n === 1 ? '' : ' ' + n), parent, {
                 x: r3(cx), y: r3(cy), z: r3(cz),
                 width: r3(halfX), height: r3(halfY), length: r3(halfZ),
-                color: prismColor(first.shape), anchored: parts.every(p => !!p.shape.anchored),
+                color: prismColor(first.shape), material: materialKey(first.shape), anchored: parts.every(p => !!p.shape.anchored),
                 collidable: parts.some(p => p.shape.collidable !== false),
                 cellBase: [r3(halfX), r3(halfY), r3(halfZ)],
                 mesh: solid.mesh,

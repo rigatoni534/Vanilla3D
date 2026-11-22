@@ -49,6 +49,9 @@ uniform vec3 uEdgeColor;
 uniform float uEdgeAlpha, uEdgeW;
 uniform int uWire;
 uniform int uMode;                // 0 classic, 1 enhanced
+uniform int uMat;                 // surface pattern: plastic, glass, metal, grass, brick, tile, carpet, wood, concrete, neon
+uniform vec3 uMatTint;            // the material's own color, mixed with the Color property
+uniform float uMatSpec;           // how strong this material's highlight is
 uniform vec3 uSunDir, uSunCol, uSkyCol, uGndCol, uHazeCol;
 uniform float uHaze, uFogFar, uShStr, uSpec;
 uniform int uShadowOn;
@@ -64,6 +67,67 @@ const vec3 FN[6] = vec3[6](vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, -1.0), vec3(1.0, 
 const vec2 PD[12] = vec2[12](vec2(-0.326, -0.406), vec2(-0.840, -0.074), vec2(-0.696, 0.457), vec2(-0.203, 0.621), vec2(0.962, -0.195), vec2(0.473, -0.480), vec2(0.519, 0.767), vec2(0.185, -0.893), vec2(0.507, 0.064), vec2(0.896, 0.412), vec2(-0.322, -0.933), vec2(-0.792, -0.598));
 vec3 toLin(vec3 c) { return pow(c, vec3(2.2)); }
 vec3 toSRGB(vec3 c) { return pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2)); }
+// Materials: patterns and surface response layered over the shape's own color. Color still tints the result, so one
+// material can be used in many colors without turning every brick wall the same red.
+float matHash21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+vec2 matPlane(vec3 w, vec3 n) {
+    vec3 a = abs(n);
+    if (a.y > max(a.x, a.z)) return w.xz;
+    if (a.x > a.z) return w.zy;
+    return w.xy;
+}
+float matLine(float x, float width) {
+    float d = min(fract(x), 1.0 - fract(x));
+    float aa = fwidth(x) * 1.25 + 0.006;
+    return 1.0 - smoothstep(width, width + aa, d);
+}
+vec3 matAlbedo(vec3 alb, vec3 w, vec3 n, int m, vec3 tint) {
+    if (m == 0) return alb;                                  // plastic: the color is the surface
+    vec2 p = matPlane(w, n);
+    if (m == 1) {                                            // glass: cool tint and a bright fresnel edge
+        float fres = pow(1.0 - max(dot(n, normalize(uCam - w)), 0.0), 2.0);
+        return mix(alb, tint, 0.45) + vec3(0.16, 0.22, 0.26) * fres;
+    }
+    if (m == 2) {                                            // metal: brushed bands over a cool tint
+        float brush = 0.5 + 0.5 * sin(p.y * 180.0 + matHash21(vec2(floor(p.x * 9.0), 0.0)) * 3.0);
+        return mix(alb, tint, 0.75) * (0.82 + 0.18 * brush);
+    }
+    if (m == 3) {                                            // grass: mottled blades
+        float g = matHash21(floor(p * 14.0));
+        float blade = 0.5 + 0.5 * sin(p.x * 20.0 + p.y * 7.0 + g * 4.0);
+        return mix(alb, mix(tint * 0.55, tint * 1.15, g), 0.85) * (0.82 + 0.25 * blade);
+    }
+    if (m == 4) {                                            // brick: staggered courses and mortar
+        vec2 q = p * vec2(2.0, 4.0);
+        q.x += mod(floor(q.y), 2.0) * 0.5;
+        vec2 f = fract(q);
+        float mortar = max(matLine(f.x, 0.035), matLine(f.y, 0.045));
+        vec3 brick = tint * (0.78 + 0.28 * matHash21(floor(q)));
+        return mix(brick, vec3(0.72, 0.70, 0.66), mortar * 0.72);
+    }
+    if (m == 5) {                                            // tile: square tiles and grout
+        vec2 q = p * 2.0, f = fract(q);
+        float grout = max(matLine(f.x, 0.03), matLine(f.y, 0.03));
+        vec3 tile = mix(alb, tint, 0.68) * (0.94 + 0.06 * mod(floor(q.x) + floor(q.y), 2.0));
+        return mix(tile, vec3(0.78, 0.77, 0.74), grout * 0.65);
+    }
+    if (m == 6) {                                            // carpet: fine woven fibers
+        float fuzz = matHash21(floor(p * 28.0));
+        float rib = 0.5 + 0.5 * sin(p.x * 70.0);
+        return mix(alb, tint, 0.78) * (0.78 + 0.18 * fuzz + 0.06 * rib);
+    }
+    if (m == 7) {                                            // wood: rings across the grain
+        float rings = 0.5 + 0.5 * sin(p.y * 8.0 + sin(p.x * 2.0) * 2.0);
+        float grain = matHash21(floor(p * vec2(3.0, 20.0)));
+        return mix(alb, mix(tint * 0.75, tint * 1.15, rings), 0.8) * (0.9 + 0.12 * grain);
+    }
+    if (m == 8) {                                            // concrete: fine poured-stone grain
+        float n1 = matHash21(floor(p * 9.0)), n2 = matHash21(floor(p * 23.0));
+        return mix(alb, tint, 0.7) * (0.86 + 0.16 * n1 + 0.04 * n2);
+    }
+    // neon: a bright self-lit color; bloom turns it into a glow
+    return mix(alb, tint, 0.9) * (1.12 + 0.25 * (0.5 + 0.5 * sin(p.x * 12.0 + p.y * 9.0)));
+}
 // Grid texture: lines at every 0.25, 0.5 and 1 Vm, locked to world coordinates.
 // Each axis fades on its own, so lines that run away from you stay visible far into the distance. When cells get
 // denser than pixels they settle to their average shade instead of vanishing, and wider markings (every 4, 16
@@ -134,6 +198,7 @@ void main() {
     float line = 1.0 - smoothstep(uEdgeW - 0.75, uEdgeW + 0.75, min(d.x, d.y));
     int fi = int(vFace + 0.5);
     vec3 base = uColors[fi];
+    vec3 N = normalize(vN);
     if (uWire != 0) {
         if (line < 0.02) discard;
         vec3 c = mix(uWire == 2 ? base : uEdgeColor, uHazeCol, viewFog(vW));
@@ -143,12 +208,13 @@ void main() {
     vec3 lit;
     if (uMode == 0) {
         if (uFaceTex[fi] == 1) base = gridTex(base, vW, fi, uTexDetail, uGrain);
+        base = matAlbedo(base, vW, N, uMat, uMatTint);
         lit = base;
     } else {
         vec3 alb = uAlbedo[fi];
         if (uFaceTex[fi] == 1) alb = gridTex(alb, vW, fi, uTexDetail, uGrain);
+        alb = matAlbedo(alb, vW, N, uMat, uMatTint);
         alb = toLin(alb);
-        vec3 N = normalize(vN);
         vec3 V = normalize(uCam - vW);
         float ndl = dot(N, uSunDir);
         float sh = 1.0;
@@ -156,8 +222,13 @@ void main() {
         float diff = max(ndl, 0.0) * sh;
         vec3 col = alb * (mix(uGndCol, uSkyCol, N.y * 0.5 + 0.5) + uSunCol * diff);
         vec3 H = normalize(uSunDir + V);
-        col += uSunCol * pow(max(dot(N, H), 0.0), 64.0) * step(0.0, ndl) * sh * uSpec;
+        col += uSunCol * pow(max(dot(N, H), 0.0), 64.0) * step(0.0, ndl) * sh * uSpec * uMatSpec;
         col += uSkyCol * pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.1;
+        if (uMat == 1) {
+            float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+            col += (uSkyCol * 0.7 + uSunCol * 0.15) * fres;
+        }
+        if (uMat == 9) col += alb * 0.22;
         lit = toSRGB(col);
     }
     lit = mix(lit, uHazeCol, viewFog(vW));
@@ -203,6 +274,7 @@ void main() {
     if (uWire != 0) { o = vec4(mix(uWire == 2 ? uFaceCols[fi] : uEdgeColor, uHazeCol, viewFog(vW)), 1.0); return; }
     vec3 alb = uBase;
     if (uFaceCol != 0) alb = uFaceCols[fi];
+    alb = matAlbedo(alb, vW, N, uMat, uMatTint);
     vec3 lit;
     float ndl = dot(N, uSunDir);
     if (uMode == 0) {
@@ -213,8 +285,13 @@ void main() {
         if (uShadowOn != 0 && ndl > 0.0) sh = mix(1.0, sunShadow(vW, N), uShStr);
         vec3 col = toLin(alb) * (mix(uGndCol, uSkyCol, N.y * 0.5 + 0.5) + uSunCol * max(ndl, 0.0) * sh);
         vec3 H = normalize(uSunDir + V);
-        col += uSunCol * pow(max(dot(N, H), 0.0), 72.0) * step(0.0, ndl) * sh * uSpec * 1.6;
+        col += uSunCol * pow(max(dot(N, H), 0.0), 72.0) * step(0.0, ndl) * sh * uSpec * uMatSpec * 1.6;
         col += uSkyCol * pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.1;
+        if (uMat == 1) {
+            float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+            col += (uSkyCol * 0.7 + uSunCol * 0.15) * fres;
+        }
+        if (uMat == 9) col += toLin(alb) * 0.22;
         lit = toSRGB(col);
     }
     lit = mix(lit, uHazeCol, viewFog(vW));
@@ -594,7 +671,7 @@ void main() {
         }
 
         // Uniforms shared by the prism and mesh programs, which use the same fragment shader.
-        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize', 'uTexDetail', 'uGrain'];
+        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uMat', 'uMatTint', 'uMatSpec', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize', 'uTexDetail', 'uGrain'];
 
         // ── Meshes for the shapes a box cannot describe ──
         // Vertices are position (3), normal (3), edge UV (2) and face index (1) in the same -1..1 space as a box, so Size
@@ -669,7 +746,7 @@ void main() {
                 };
                 mesh.wedge = meshVao(wedgeMesh());
                 mesh.cylinder = meshVao(cylinderMesh(48));
-                const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
+                const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uMat', 'uMatTint', 'uMatSpec', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
                 // unit sphere (32 x 20), shared by every ball: one triangle list and one wireframe list
                 const SEG = 32, RING = 20, sv = [], tri = [], lin = [];
                 for (let i = 0; i <= RING; i++) for (let j = 0; j <= SEG; j++) {
@@ -801,10 +878,17 @@ void main() {
             if (shadeCache.size > 2048) for (const k of shadeCache.keys()) if (!sceneObjects[k]) shadeCache.delete(k);
             return entry;
         }
+        function setMaterial(P, o) {
+            const gl = GL.gl, def = materialDef(o), tint = def.tint;
+            gl.uniform1i(P.u.uMat, materialId(o));
+            gl.uniform3f(P.u.uMatTint, parseInt(tint.slice(1, 3), 16) / 255, parseInt(tint.slice(3, 5), 16) / 255, parseInt(tint.slice(5, 7), 16) / 255);
+            gl.uniform1f(P.u.uMatSpec, def.spec);
+        }
         function applyShapeLook(P, id, o, faceTex, noTex) {
             const gl = GL.gl, look = shapeLook(id, o);
             gl.uniform3fv(P.u.uColors, look.colors); gl.uniform3fv(P.u.uAlbedo, look.albedo);
             gl.uniform1iv(P.u.uFaceTex, faceTex.get(id) || noTex);
+            setMaterial(P, o);
             const sel = id === selectedObjectId || (selectedObjectId && isInside(id, selectedObjectId));
             let wire = 0, edge = [0, 0, 0], edgeA = o.outline === false ? 0 : 0.5, w = 0.9;
             if (sel) { edge = accentRGB; edgeA = 1; w = 1.9; wire = o.wireframe ? 1 : 0; }
@@ -1174,6 +1258,7 @@ void main() {
                 }
                 gl.uniform3fv(P.u.uColors, look.colors); gl.uniform3fv(P.u.uAlbedo, look.albedo);
                 gl.uniform1iv(P.u.uFaceTex, faceTex.get(id) || noTex);
+                setMaterial(P, o);
                 const sel = id === selectedObjectId || id === texParent || (selectedObjectId && isInside(id, selectedObjectId));
                 let wire = 0, edge = [0, 0, 0], edgeA = o.outline === false ? 0 : 0.5, w = 0.9;
                 if (sel) { edge = accentRGB; edgeA = 1; w = 1.9; wire = o.wireframe ? 1 : 0; }
@@ -1243,6 +1328,7 @@ void main() {
                     gl.uniformMatrix3fv(B.u.uRot, false, rotGL(o));
                     gl.uniformMatrix3fv(B.u.uPatT, false, mat3T(mat3mul(mat3T(Rp), Ru)));
                     gl.uniform3f(B.u.uBase, parseInt(col.slice(1, 3), 16) / 255, parseInt(col.slice(3, 5), 16) / 255, parseInt(col.slice(5, 7), 16) / 255);
+                    setMaterial(B, o);
                     gl.uniform1i(B.u.uFaceCol, o.faceColoring ? 1 : 0);
                     gl.uniform1f(B.u.uSel, sel ? 1 : 0);
                     const ec = sel ? accentRGB : wireRGB;

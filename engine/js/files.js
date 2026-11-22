@@ -144,7 +144,10 @@
                 return keep;
             };
             for (const [uid, obj] of Object.entries(sceneObjects)) if (SPACE_IDS.includes(spaceOf(obj)) && included(uid)) objects[uid] = JSON.parse(JSON.stringify(obj));
-            return { format: 'VanillaWorld', formatVersion: 1, engineVersion: ENGINE_VERSION, savedAt: new Date().toISOString(), spaces: SPACE_IDS, objects };
+            const ws = activeWorldSettings(), meta = loadedWorldMeta || {};
+            const currentVersion = normalizeWorldVersion(ws && ws.currentVersion) || normalizeWorldVersion(meta.currentVersion) || '';
+            const createdVersion = normalizeWorldVersion(ws && ws.createdVersion) || normalizeWorldVersion(meta.createdVersion) || currentVersion;
+            return { format: 'VanillaWorld', formatVersion: 1, engineVersion: ENGINE_VERSION, currentVersion, createdVersion, savedAt: new Date().toISOString(), spaces: SPACE_IDS, objects };
         }
         // Engine-owned objects (the Viewfinder) are built in and never come from a file: strip them, and re-key any file object that reuses an engine UID.
         function sanitizeWorldFile(data) {
@@ -191,6 +194,11 @@
         function applyWorldFile(raw) {
             const data = validateWorldFile(raw);
             clearAsk();
+            loadedWorldMeta = {
+                currentVersion: normalizeWorldVersion(raw.currentVersion) || normalizeWorldVersion(raw.engineVersion) || '',
+                createdVersion: normalizeWorldVersion(raw.createdVersion) || normalizeWorldVersion(raw.engineVersion) || '',
+                engineVersion: normalizeWorldVersion(raw.engineVersion) || ''
+            };
             for (const [uid, obj] of Object.entries(sceneObjects)) if (SPACE_IDS.includes(spaceOf(obj))) delete sceneObjects[uid];
             for (const [uid, obj] of Object.entries(data.objects)) {
                 if (obj.type === 'script') {

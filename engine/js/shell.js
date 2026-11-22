@@ -357,6 +357,27 @@
                 if (el && el !== document.activeElement) el.value = Number.isFinite(+stats[key]) ? stats[key] : DEFAULT_PLAYER_STATS[key];
             }
         }
+        function fillWorldVersion(ws) {
+            const pending = pendingWorldMigrations(ws);
+            const latest = currentEngineVersion();
+            const created = document.getElementById('world-created-version');
+            const current = document.getElementById('world-current-version');
+            const newest = document.getElementById('world-latest-version');
+            const button = document.getElementById('world-migrate');
+            const note = document.getElementById('world-version-note');
+            if (created) created.textContent = worldVersionLabel(ws.createdVersion);
+            if (current) current.textContent = worldVersionLabel(ws.currentVersion);
+            if (newest) newest.textContent = latest;
+            if (button) {
+                button.disabled = !pending.length;
+                button.textContent = pending.length ? 'Migrate to ' + latest : (worldVersionCompare(ws.currentVersion, latest) > 0 ? 'Newer than this editor' : 'Up to date');
+            }
+            if (note) note.textContent = pending.length
+                ? 'Migration: ' + pending.flatMap(m => m.notes).join(' ')
+                : (worldVersionCompare(ws.currentVersion, latest) > 0
+                    ? 'This world was saved by a newer engine. Open it there to migrate it.'
+                    : 'This world has the latest engine features for its content.');
+        }
         function fillWorldSettings(ws) {
             document.getElementById('world-name').value = ws.worldName;
             document.getElementById('world-creator').value = ws.creator;
@@ -370,6 +391,7 @@
             document.getElementById('world-kill').value = ws.killY;
             syncWorldPills(ws);
             fillWorldDefaults(ws);
+            fillWorldVersion(ws);
             renderWorldAssets(ws);
         }
         function bindWorldSettings() {
@@ -455,6 +477,29 @@
                 fillWorldDefaults(ws);
                 refreshWorldProperties();
                 toast('Default player settings reset.');
+            });
+            // World version: created, current and the engine it can migrate to. Migrations only add what is missing.
+            document.getElementById('world-migrate').addEventListener('click', async () => {
+                if (simulationRunning) { toast('Stop the simulation first. Stop restores your world.', 'warn'); return; }
+                const ws = currentWorld(); if (!ws) return;
+                const pending = pendingWorldMigrations(ws);
+                if (!pending.length) return;
+                const latest = currentEngineVersion();
+                const text = 'This world is at ' + worldVersionLabel(ws.currentVersion) + '. Migrating to ' + latest +
+                    ' adds: ' + pending.map(m => m.title).join('; ') + '. Existing instances and scripts are kept.';
+                if (!(await confirmDialog('Migrate this world to ' + latest + '?', text, 'Migrate', false))) return;
+                const changes = applyWorldMigrations(ws);
+                fillWorldSettings(ws);
+                renderExplorer();
+                refreshWorldProperties();
+                if (pendingWorldMigrations(ws).length) {
+                    toast('Migration could not finish. The world is still at ' + worldVersionLabel(ws.currentVersion) + '.', 'bad');
+                    return;
+                }
+                if (settings.autosave > 0) autosaveNow();
+                toast(changes.length
+                    ? 'World migrated to ' + latest + ': ' + changes.join(', ') + '.'
+                    : 'World migrated to ' + latest + '.');
             });
             // Assets: picked files are read as data URLs, so they travel inside the saved world.
             const assetList = document.getElementById('world-asset-list');

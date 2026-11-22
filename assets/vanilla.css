@@ -288,6 +288,9 @@
   .setting + .setting { border-top: 1px solid var(--line-soft); }
   .setting-title { font-weight: 600; }
   .setting-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .version-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 4px; }
+  .version-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-size: 12px; }
+  .version-row code { color: var(--text); font: 12px var(--mono); background: none; border: 0; padding: 0; }
 
 
   /* ───── Mode palette ───── */
@@ -613,8 +616,9 @@
   .tag { margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 600; }
   @media (max-width: 640px) {
     .settings-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
-    .set-nav { flex-direction: row; border-right: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; overflow-x: auto; }
-    .set-tab { padding: 0 8px; gap: 6px; }
+    .set-nav { flex-direction: row; border-right: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; overflow-x: auto; scrollbar-width: none; }
+    .set-nav::-webkit-scrollbar { display: none; }
+    .set-tab { flex: 0 0 auto; padding: 0 6px; gap: 5px; font-size: 12px; }
     .set-tab .ic { width: 14px; height: 14px; }
     .name-grid { grid-template-columns: 1fr; }
   }

@@ -271,6 +271,31 @@ in vec2 vT;
 uniform sampler2D uTex;
 out vec4 o;
 void main() { o = texture(uTex, vT); }`;
+        // Gizmos are real shaded geometry: arrows, rings and handles built in world space every frame. They are
+        // drawn last against the scene depth buffer, so they turn and hide like solid objects instead of flat overlays.
+        const GIZMO_VS = `
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
+layout(location = 2) in vec3 aColor;
+out vec3 vW;
+out vec3 vN;
+out vec3 vC;
+void main() {
+    vW = aPos; vN = aNormal; vC = aColor;
+    gl_Position = project(aPos);
+}`;
+        const GIZMO_FS = `
+in vec3 vW;
+in vec3 vN;
+in vec3 vC;
+out vec4 o;
+void main() {
+    vec3 N = normalize(vN);
+    vec3 L = normalize(vec3(0.42, 0.86, 0.38));
+    float d = 0.58 + 0.42 * max(dot(N, L), 0.0);
+    float rim = pow(1.0 - max(dot(N, normalize(uCam - vW)), 0.0), 3.0) * 0.14;
+    o = vec4(clamp(vC * d + rim, 0.0, 1.0), 1.0);
+}`;
 
         function glProgram(gl, vs, fs, names, raw) {
             const mk = (type, src) => {
@@ -593,6 +618,12 @@ void main() { o = texture(uTex, vT); }`;
                 gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
                 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
                 gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+                const gizmo = glProgram(gl, GIZMO_VS, GIZMO_FS, []);
+                gizmo.vao = gl.createVertexArray(); gl.bindVertexArray(gizmo.vao);
+                gizmo.buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, gizmo.buf);
+                [[0, 3, 0], [1, 3, 3], [2, 3, 6]].forEach(([loc, size, off]) => {
+                    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 36, off * 4);
+                });
                 gl.bindVertexArray(null);
 
                 const tex = [makeLabelAtlas('#ffffff', true), makeLabelAtlas('#0f172a', false)].map(c => {
@@ -607,7 +638,7 @@ void main() { o = texture(uTex, vT); }`;
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                     return t;
                 });
-                GL = { gl, prism, axis, label, tex, shadow, ball: ballP, sphere, mesh, sm: null, dummy: makeShadowMap(gl, 1) };
+                GL = { gl, prism, axis, label, gizmo, tex, shadow, ball: ballP, sphere, mesh, sm: null, dummy: makeShadowMap(gl, 1) };
                 resize();
             } catch (err) {
                 console.warn('WebGL 2 unavailable, using the 2D renderer instead:', err);
@@ -1031,6 +1062,152 @@ void main() { o = texture(uTex, vT); }`;
             return visible;
         }
 
+        // ───────── 3D gizmos ─────────
+        // The editor builds a small, shaded arrow/ring/handle mesh every frame from the same handle data the hit test
+        // uses. Drawing it in the scene means it turns with the camera and reads as a solid object, not a screen decal.
+        function gzSub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+        function gzAdd(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+        function gzScale(a, s) { return [a[0] * s, a[1] * s, a[2] * s]; }
+        function gzCross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+        function gzNorm(a) { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
+        function gzTri(out, a, b, c, color, outward) {
+            let n = gzCross(gzSub(b, a), gzSub(c, a));
+            const l = Math.hypot(n[0], n[1], n[2]);
+            if (l < 1e-9) return;
+            n = [n[0] / l, n[1] / l, n[2] / l];
+            if (outward && n[0] * outward[0] + n[1] * outward[1] + n[2] * outward[2] < 0) {
+                const t = b; b = c; c = t; n = [-n[0], -n[1], -n[2]];
+            }
+            for (const p of [a, b, c]) out.push(p[0], p[1], p[2], n[0], n[1], n[2], color[0], color[1], color[2]);
+        }
+        function gzQuad(out, a, b, c, d, color, outward) { gzTri(out, a, b, c, color, outward); gzTri(out, a, c, d, color, outward); }
+        function gzBasis(d) {
+            const ref = Math.abs(d[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+            const u = gzNorm(gzCross(ref, d));
+            return [u, gzCross(d, u)];
+        }
+        function gzRing(center, u, v, r, angle) {
+            const c = Math.cos(angle) * r, s = Math.sin(angle) * r;
+            return [center[0] + u[0] * c + v[0] * s, center[1] + u[1] * c + v[1] * s, center[2] + u[2] * c + v[2] * s];
+        }
+        function gzCylinder(out, a, b, r, color, seg = 12) {
+            const d = gzSub(b, a), len = Math.hypot(d[0], d[1], d[2]);
+            if (len < 1e-6) return;
+            const dir = gzScale(d, 1 / len), [u, v] = gzBasis(dir);
+            const A = [], B = [];
+            for (let i = 0; i < seg; i++) { const t = i / seg * Math.PI * 2; A.push(gzRing(a, u, v, r, t)); B.push(gzRing(b, u, v, r, t)); }
+            for (let i = 0; i < seg; i++) {
+                const j = (i + 1) % seg, mid = gzScale(gzAdd(gzAdd(A[i], B[i]), gzAdd(A[j], B[j])), 0.25);
+                const axis = gzAdd(a, gzScale(dir, (mid[0] - a[0]) * dir[0] + (mid[1] - a[1]) * dir[1] + (mid[2] - a[2]) * dir[2]));
+                gzQuad(out, A[i], A[j], B[j], B[i], color, gzSub(mid, axis));
+            }
+            for (let i = 0; i < seg; i++) {
+                const j = (i + 1) % seg;
+                gzTri(out, a, A[j], A[i], color, [-dir[0], -dir[1], -dir[2]]);
+                gzTri(out, b, B[i], B[j], color, dir);
+            }
+        }
+        function gzCone(out, base, tip, r, color, seg = 12) {
+            const d = gzSub(tip, base), len = Math.hypot(d[0], d[1], d[2]);
+            if (len < 1e-6) return;
+            const dir = gzScale(d, 1 / len), [u, v] = gzBasis(dir), ring = [];
+            for (let i = 0; i < seg; i++) ring.push(gzRing(base, u, v, r, i / seg * Math.PI * 2));
+            for (let i = 0; i < seg; i++) {
+                const j = (i + 1) % seg;
+                const mid = gzScale(gzAdd(gzAdd(ring[i], ring[j]), tip), 1 / 3);
+                gzTri(out, ring[i], ring[j], tip, color, gzSub(mid, base));
+            }
+            for (let i = 0; i < seg; i++) {
+                const j = (i + 1) % seg;
+                gzTri(out, base, ring[j], ring[i], color, [-dir[0], -dir[1], -dir[2]]);
+            }
+        }
+        function gzSphere(out, center, r, color, seg = 10, rings = 7) {
+            const P = (lat, lon) => [
+                center[0] + r * Math.cos(lat) * Math.cos(lon),
+                center[1] + r * Math.sin(lat),
+                center[2] + r * Math.cos(lat) * Math.sin(lon)
+            ];
+            for (let i = 0; i < rings; i++) {
+                const la = -Math.PI / 2 + Math.PI * i / rings, lb = -Math.PI / 2 + Math.PI * (i + 1) / rings;
+                for (let j = 0; j < seg; j++) {
+                    const oa = Math.PI * 2 * j / seg, ob = Math.PI * 2 * (j + 1) / seg;
+                    const a = P(la, oa), b = P(la, ob), c = P(lb, ob), d = P(lb, oa);
+                    const mid = gzScale(gzAdd(gzAdd(a, b), gzAdd(c, d)), 0.25);
+                    gzQuad(out, a, b, c, d, color, gzSub(mid, center));
+                }
+            }
+        }
+        function gzTube(out, pts, planeN, r, color, seg = 8) {
+            if (pts.length < 2) return;
+            const n = gzNorm(planeN), rings = [], tangents = [];
+            for (let i = 0; i < pts.length; i++) {
+                const prev = pts[Math.max(0, i - 1)], next = pts[Math.min(pts.length - 1, i + 1)];
+                const t = gzNorm(gzSub(next, prev)); tangents.push(t);
+                const u = gzNorm(gzCross(n, t)), v = n, ring = [];
+                for (let j = 0; j < seg; j++) ring.push(gzRing(pts[i], u, v, r, j / seg * Math.PI * 2));
+                rings.push(ring);
+            }
+            for (let i = 0; i + 1 < pts.length; i++) for (let j = 0; j < seg; j++) {
+                const k = (j + 1) % seg;
+                const mid = gzScale(gzAdd(gzAdd(rings[i][j], rings[i][k]), gzAdd(rings[i + 1][k], rings[i + 1][j])), 0.25);
+                const core = gzScale(gzAdd(pts[i], pts[i + 1]), 0.5);
+                gzQuad(out, rings[i][j], rings[i][k], rings[i + 1][k], rings[i + 1][j], color, gzSub(mid, core));
+            }
+            for (let j = 0; j < seg; j++) {
+                const k = (j + 1) % seg;
+                gzTri(out, pts[0], rings[0][k], rings[0][j], color, gzScale(tangents[0], -1));
+                const last = pts.length - 1;
+                gzTri(out, pts[last], rings[last][j], rings[last][k], color, tangents[last]);
+            }
+        }
+        function gzColor(h) {
+            const c = [parseInt(h.color.slice(1, 3), 16) / 255, parseInt(h.color.slice(3, 5), 16) / 255, parseInt(h.color.slice(5, 7), 16) / 255];
+            const hot = (manip && manip.h.key === h.key) || hoverKey === h.key;
+            return hot ? c.map(v => v + (1 - v) * 0.55) : c;
+        }
+        function drawGizmosGL(handles) {
+            if (!GL || !GL.gizmo || !handles || !handles.length) return;
+            const out = [];
+            for (const h of handles.slice().sort((a, b) => b.z - a.z)) {
+                const color = gzColor(h);
+                if (h.type === 'rotate' && Array.isArray(h.worldPts) && h.worldPts.length > 1) {
+                    gzTube(out, h.worldPts, h.n, h.bodyR, color, 8);
+                    const last = h.worldPts.length - 1, p0 = h.worldPts[0], p1 = h.worldPts[1], pn = h.worldPts[last], pb = h.worldPts[last - 1];
+                    const t0 = gzNorm(gzSub(p0, p1)), tn = gzNorm(gzSub(pn, pb));
+                    gzCone(out, p0, gzAdd(p0, gzScale(t0, h.headLen)), h.headR, color, 10);
+                    gzCone(out, pn, gzAdd(pn, gzScale(tn, h.headLen)), h.headR, color, 10);
+                } else if (h.type === 'move' && h.worldA && h.worldB) {
+                    const d = gzSub(h.worldB, h.worldA), len = Math.hypot(d[0], d[1], d[2]);
+                    if (len < 1e-5) continue;
+                    const dir = gzScale(d, 1 / len), head = Math.min(h.headLen, len * 0.72);
+                    const base = gzSub(h.worldB, gzScale(dir, head));
+                    gzCylinder(out, h.worldA, base, h.bodyR, color, 10);
+                    gzCone(out, base, h.worldB, h.headR, color, 12);
+                } else if (h.type === 'scale' && h.worldA && h.worldB) {
+                    gzCylinder(out, h.worldA, h.worldB, h.bodyR, color, 10);
+                    gzSphere(out, h.worldB, h.tipR, color, 10, 7);
+                }
+            }
+            if (!out.length) return;
+            const gl = GL.gl, G = GL.gizmo;
+            gl.useProgram(G.prog);
+            gl.uniform3f(G.u.uCam, camPosX, camPosY, camPosZ);
+            gl.uniform3f(G.u.uR, rgtX, 0, rgtZ);
+            gl.uniform3f(G.u.uU, upX, upY, upZ);
+            gl.uniform3f(G.u.uF, fwdX, fwdY, fwdZ);
+            gl.uniform2f(G.u.uView, width, height);
+            gl.uniform1f(G.u.uFov, FOV);
+            gl.bindVertexArray(G.vao); gl.bindBuffer(gl.ARRAY_BUFFER, G.buf);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(out), gl.DYNAMIC_DRAW);
+            gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+            gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
+            gl.drawArrays(gl.TRIANGLES, 0, out.length / 9);
+            gl.disable(gl.CULL_FACE); gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.enable(gl.BLEND);
+            gl.bindVertexArray(null);
+            glDrawCalls++;
+        }
+
         function drawFallback(prisms, balls) {
             // Axes
             if (settings.showAxes !== false) {
@@ -1196,11 +1373,20 @@ void main() { o = texture(uTex, vT); }`;
                 else if (o.type === 'wedge' || o.type === 'cylinder') meshes.push([id, o]);
                 else if (o.type === 'union') unions.push([id, o]);
             }
+            const handleTarget = (selectedObjectId && sceneObjects[selectedObjectId] && sceneObjects[selectedObjectId].type === 'model')
+                ? getModelBounds(selectedObjectId)
+                : (selectedObjectId ? sceneObjects[selectedObjectId] : null);
+            lastHandles = canEditHandles() && handleTarget ? buildHandles(handleTarget) : [];
+            if (hoverKey && !lastHandles.some(h => h.key === hoverKey)) hoverKey = null;
+            const ordered = lastHandles.slice().sort((a, b) => b.z - a.z);
+            ordered.sort((a, b) => (a.key === hoverKey) - (b.key === hoverKey));
+
             // Without WebGL 2 the flat renderer draws wedges, cylinders and unions as their boxes.
             glDrawCalls = 0;
             const visibleCount = GL ? drawGL(prisms, balls, meshes, unions, highlights) : drawFallback(prisms.concat(meshes, unions), balls);
+            // WebGL draws the gizmos as solid, shaded geometry. The flat fallback keeps its 2D handles below.
+            if (GL) drawGizmosGL(ordered);
 
-            // Handles are drawn last so they sit above every shape (only the UI is above them)
             // Model bounding box in 3D
             if (selectedObjectId && sceneObjects[selectedObjectId] && sceneObjects[selectedObjectId].type === 'model') {
                 const b = getModelBounds(selectedObjectId);
@@ -1218,14 +1404,7 @@ void main() { o = texture(uTex, vT); }`;
                 }
             }
 
-            const handleTarget = (selectedObjectId && sceneObjects[selectedObjectId] && sceneObjects[selectedObjectId].type === 'model')
-                ? getModelBounds(selectedObjectId)
-                : (selectedObjectId ? sceneObjects[selectedObjectId] : null);
-            lastHandles = canEditHandles() && handleTarget ? buildHandles(handleTarget) : [];
-            if (hoverKey && !lastHandles.some(h => h.key === hoverKey)) hoverKey = null;
-            const ordered = lastHandles.slice().sort((a, b) => b.z - a.z);
-            ordered.sort((a, b) => (a.key === hoverKey) - (b.key === hoverKey));
-            for (const h of ordered) drawHandle(h);
+            if (!GL) for (const h of ordered) drawHandle(h);
 
             uiSyncLayer();
 

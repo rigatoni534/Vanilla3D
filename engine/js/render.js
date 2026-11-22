@@ -307,12 +307,30 @@
             return false;
         }
 
+        // A handle on the far side of the object is hidden by the depth buffer, so it must not catch clicks there.
+        // Test a point at the tip of each handle against the same ray picker that selects instances.
+        function handleHidden(h) {
+            const p = h.type === 'rotate'
+                ? (h.worldPts && h.worldPts[Math.floor(h.worldPts.length / 2)])
+                : h.worldB;
+            if (!p) return false;
+            const s = project(new Vec3(p[0], p[1], p[2]));
+            if (s.z < 0.1) return true;
+            const hit = pickInstanceAt(s.x, s.y);
+            if (!hit) return false;
+            const dist = Math.hypot(p[0] - camPosX, p[1] - camPosY, p[2] - camPosZ);
+            return hit.t < dist - 0.06;
+        }
+        function markHiddenHandles(out) {
+            if (GL) for (const h of out) h.hidden = handleHidden(h);
+            return out;
+        }
         function buildHandles(o) {
-            if (mode === 'rotate') return buildRotateHandles(o);
+            if (mode === 'rotate') return markHiddenHandles(buildRotateHandles(o));
             const out = [];
             const R = rotMat(o), ex = shapeHalfExt(o), half = [o.width, o.height, o.length];
-            // Handle size is a third of the shape's average full size, never smaller than ~34px on screen
-            const base = ((ex[0] + ex[1] + ex[2]) * 2 / 3) / 3;
+            // Handle size is a share of the shape's average full size, never smaller than ~34px on screen
+            const base = ((ex[0] + ex[1] + ex[2]) * 2 / 3) / 2.5;
             ['x', 'y', 'z'].forEach((axis, ai) => {
                 for (const sign of [1, -1]) {
                     const e = [axis === 'x' ? sign : 0, axis === 'y' ? sign : 0, axis === 'z' ? sign : 0];
@@ -325,21 +343,28 @@
                     if (pc.z < 0.3) continue;
                     const sw = Math.max(base, 34 * pc.z / FOV);
                     const g = sw * 0.1;
-                    let a, b, r = 0;
+                    let a, b, r = 0, wa, wb;
                     if (mode === 'move') {
-                        a = project(new Vec3(center.x + d.x * g, center.y + d.y * g, center.z + d.z * g));
-                        b = project(new Vec3(center.x + d.x * (g + sw), center.y + d.y * (g + sw), center.z + d.z * (g + sw)));
+                        wa = new Vec3(center.x + d.x * g, center.y + d.y * g, center.z + d.z * g);
+                        wb = new Vec3(center.x + d.x * (g + sw), center.y + d.y * (g + sw), center.z + d.z * (g + sw));
+                        a = project(wa); b = project(wb);
                     } else {
-                        a = pc;
+                        a = pc; wa = center;
                         const k = g + sw * 0.65;
-                        b = project(new Vec3(center.x + d.x * k, center.y + d.y * k, center.z + d.z * k));
+                        wb = new Vec3(center.x + d.x * k, center.y + d.y * k, center.z + d.z * k);
+                        b = project(wb);
                         r = Math.max(7, sw * 0.2 * FOV / b.z);
                     }
                     if (a.z < 0.1 || b.z < 0.1) continue;
-                    out.push({ key: axis + sign, type: mode, axis, sign, d, center, a, b, r, z: pc.z, color: AXIS_COLOR[axis] });
+                    out.push({
+                        key: axis + sign, type: mode, axis, sign, d, center, a, b, r, z: pc.z, color: AXIS_COLOR[axis],
+                        worldA: [wa.x, wa.y, wa.z], worldB: [wb.x, wb.y, wb.z],
+                        bodyR: Math.max(0.008, sw * 0.018), tipR: Math.max(0.03, sw * 0.2),
+                        headR: Math.max(0.035, sw * 0.095), headLen: Math.max(0.06, sw * 0.3)
+                    });
                 }
             });
-            return out;
+            return markHiddenHandles(out);
         }
 
         // Rotate gizmo: one double-headed curved arrow per axis. The rings follow the same order the angles are applied in
@@ -359,16 +384,20 @@
                 const v = [n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2], n[0] * u[1] - n[1] * u[0]];
                 const cd = [cam[0] - c[0], cam[1] - c[1], cam[2] - c[2]];
                 const phi = Math.atan2(cd[0] * v[0] + cd[1] * v[1] + cd[2] * v[2], cd[0] * u[0] + cd[1] * u[1] + cd[2] * u[2]);
-                const pts = []; let ok = true;
-                const N = 18, span = 0.66;
+                const pts = [], worldPts = []; let ok = true;
+                const N = 22, span = 0.66;
                 for (let i = 0; i <= N; i++) {
                     const ang = phi + (i / N * 2 - 1) * span, cs = Math.cos(ang), sn = Math.sin(ang);
-                    const p = project(new Vec3(c[0] + rr * (cs * u[0] + sn * v[0]), c[1] + rr * (cs * u[1] + sn * v[1]), c[2] + rr * (cs * u[2] + sn * v[2])));
+                    const w = new Vec3(c[0] + rr * (cs * u[0] + sn * v[0]), c[1] + rr * (cs * u[1] + sn * v[1]), c[2] + rr * (cs * u[2] + sn * v[2]));
+                    const p = project(w);
                     if (p.z < 0.1) { ok = false; break; }
-                    pts.push(p);
+                    pts.push(p); worldPts.push([w.x, w.y, w.z]);
                 }
                 if (!ok) continue;
-                out.push({ key: 'rot-' + axis, type: 'rotate', axis, n, u, v, center: c, pts, z: pc0.z, color: AXIS_COLOR[axis] });
+                out.push({
+                    key: 'rot-' + axis, type: 'rotate', axis, n, u, v, center: c, pts, worldPts, z: pc0.z, color: AXIS_COLOR[axis],
+                    bodyR: Math.max(0.01, rr * 0.028), headR: Math.max(0.025, rr * 0.075), headLen: Math.max(0.05, rr * 0.16)
+                });
             }
             return out;
         }
@@ -383,6 +412,7 @@
         function findHandleAt(x, y) {
             let best = null;
             for (const h of lastHandles) {
+                if (h.hidden) continue;
                 let hit;
                 if (h.type === 'rotate') { hit = false; for (let i = 0; i + 1 < h.pts.length && !hit; i++) hit = distSeg(x, y, h.pts[i], h.pts[i + 1]) <= 9; }
                 else hit = h.type === 'move'

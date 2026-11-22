@@ -51,6 +51,86 @@
         function makeHighlight(name, parent) {
             return { type: 'highlight', name, parent, color: '#ffd23f', overObjects: true };
         }
+        // ───────── World versions and migrations ─────────
+        // A world remembers the version it was created in and the version its content has been migrated to. The
+        // engine version it is opened or saved with is kept only as the file's last-writer version, so an old world
+        // cannot silently look migrated just because it was saved by a newer editor.
+        let loadedWorldMeta = { currentVersion: '', createdVersion: '', engineVersion: '' };
+        const WORLD_VERSION_RE = /^(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?$/;
+        function normalizeWorldVersion(v) {
+            const m = WORLD_VERSION_RE.exec(String(v == null ? '' : v).trim());
+            return m ? `${+m[1]}.${+m[2]}.${+m[3]}.${m[4] ? +m[4] : 0}` : '';
+        }
+        function currentEngineVersion() {
+            return typeof ENGINE_VERSION === 'string' ? normalizeWorldVersion(ENGINE_VERSION) || ENGINE_VERSION : '0.0.0.0';
+        }
+        function worldVersionCompare(a, b) {
+            const A = (normalizeWorldVersion(a) || '0.0.0.0').split('.').map(Number);
+            const B = (normalizeWorldVersion(b) || '0.0.0.0').split('.').map(Number);
+            for (let i = 0; i < Math.max(A.length, B.length); i++) {
+                const d = (A[i] || 0) - (B[i] || 0);
+                if (d) return d > 0 ? 1 : -1;
+            }
+            return 0;
+        }
+        function worldVersionLabel(v) { return normalizeWorldVersion(v) || 'Unknown'; }
+        // Each entry upgrades a world one content version. Add a new entry here when a release adds something that
+        // existing worlds should gain; migrations never remove an instance or overwrite a script that already exists.
+        const WORLD_MIGRATIONS = [
+            {
+                version: '3.13.0.0',
+                title: 'Player sockets and rebuilt union surfaces',
+                notes: [
+                    'Adds the Networking script, and PlayerManagement when a DefaultPlayer model exists without it.',
+                    'Rebuilds old unions from their collision cells into real surfaces.',
+                    'Fills in player defaults and uploaded-asset details where an older file lacks them.'
+                ],
+                apply(ws) {
+                    const changes = [];
+                    const scripts = Object.values(sceneObjects).filter(o => o && o.type === 'script');
+                    const hasScript = (name) => scripts.some(o => o.name === name);
+                    const hasPlayerSetup = Object.values(sceneObjects).some(o => o && o.type === 'model' && o.name === 'DefaultPlayer' && spaceOf(o) === 'storage') || hasScript('PlayerManagement');
+                    if (hasPlayerSetup) {
+                        if (!hasScript('PlayerManagement')) {
+                            if (typeof makePlayerScript !== 'function') throw new Error('PlayerManagement script is unavailable');
+                            const [id, s] = makePlayerScript(newId);
+                            sceneObjects[id] = s; changes.push('PlayerManagement script');
+                        }
+                        if (!hasScript('Networking')) {
+                            if (typeof makeNetworkingScript !== 'function') throw new Error('Networking script is unavailable');
+                            const [id, s] = makeNetworkingScript(newId);
+                            sceneObjects[id] = s; changes.push('Networking script');
+                        }
+                    }
+                    let unions = 0;
+                    for (const o of Object.values(sceneObjects)) if (o && o.type === 'union') { ensureUnionMesh(o); unions++; }
+                    if (unions) changes.push(unions + ' union surface' + (unions === 1 ? '' : 's'));
+                    if (!ws.defaults || !ws.defaults.player) {
+                        applyDefaultPlayerStats(ws); changes.push('player defaults');
+                    }
+                    return changes;
+                }
+            }
+        ];
+        function pendingWorldMigrations(ws) {
+            const current = normalizeWorldVersion(ws && ws.currentVersion) || '0.0.0.0';
+            const latest = currentEngineVersion();
+            return WORLD_MIGRATIONS.filter(m => worldVersionCompare(m.version, current) > 0 && worldVersionCompare(m.version, latest) <= 0);
+        }
+        function applyWorldMigrations(ws) {
+            if (!ws) return [];
+            const changes = [];
+            for (const m of pendingWorldMigrations(ws)) {
+                // Only claim the version once its migration finished; a failure leaves the world at the prior version
+                // so the Migrate action stays available.
+                try { const done = m.apply(ws); ws.currentVersion = m.version; if (Array.isArray(done)) changes.push(...done); }
+                catch (err) { console.warn('World migration ' + m.version + ' failed:', err); break; }
+            }
+            normalizeWorldSettings(ws);
+            applyDefaultPlayerStats(ws);
+            if (typeof recountTypes === 'function') recountTypes();
+            return changes;
+        }
         // The stats a DefaultPlayer Human starts with, also shown in World Settings > Defaults.
         const DEFAULT_PLAYER_STATS = Object.freeze({
             health: 100, maxHealth: 100, walkSpeed: 3.5, runSpeed: 6, stamina: 100, maxStamina: 100,
@@ -60,6 +140,7 @@
             return Object.assign({
                 type: 'worldsettings', name, parent, timeOfDay: 14, gravity: 9.8, killY: -5000,
                 worldName: 'My World', creator: '', description: '', maxPlayers: DEFAULT_MAX_PLAYERS, assets: [],
+                createdVersion: currentEngineVersion(), currentVersion: currentEngineVersion(),
                 defaults: { player: Object.assign({}, DEFAULT_PLAYER_STATS) }
             }, props);
         }
@@ -140,6 +221,12 @@
                     size: Number.isFinite(+a.size) && +a.size > 0 ? Math.round(+a.size) : 0
                 }))
                 : [];
+            // A world knows when it was created and which content version it has reached. Files from before this
+            // setting use their last engineVersion, so an old world starts out correctly marked as needing migration.
+            const meta = loadedWorldMeta || {};
+            const importedCurrent = normalizeWorldVersion(meta.currentVersion) || normalizeWorldVersion(meta.engineVersion);
+            o.currentVersion = normalizeWorldVersion(o.currentVersion) || importedCurrent || '';
+            o.createdVersion = normalizeWorldVersion(o.createdVersion) || normalizeWorldVersion(meta.createdVersion) || importedCurrent || o.currentVersion || '';
             o.defaults = o.defaults && typeof o.defaults === 'object' ? o.defaults : {};
             // Left unset when the file predates this setting; applyDefaultPlayerStats then copies the DefaultPlayer
             // Human's own values into it, so an old world keeps its character.

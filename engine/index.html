@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=3.12.0.0">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.13.0.0">
   
 </head>
 <body>
@@ -92,7 +92,7 @@
         <button id="world-btn" class="btn" type="button" aria-haspopup="menu" aria-expanded="false" title="World settings">World <span aria-hidden="true">▾</span></button>
         <div id="world-menu" class="menu file-menu" role="menu" aria-label="World" hidden>
           <div class="menu-title">World</div>
-          <button class="menu-item" role="menuitem" data-world-act="settings"><svg class="ic"><use href="#i-sliders"/></svg>Settings<span class="menu-meta">Name, players, assets</span></button>
+          <button class="menu-item" role="menuitem" data-world-act="settings"><svg class="ic"><use href="#i-sliders"/></svg>Settings<span class="menu-meta">Name, version, players, assets</span></button>
         </div>
       </div>
       <div class="file-menu-wrap">
@@ -446,6 +446,7 @@
       <div class="settings-body">
         <nav class="set-nav" role="tablist" aria-label="World settings sections">
           <button class="set-tab" role="tab" data-pane="world-general" aria-selected="true"><svg class="ic"><use href="#i-world"/></svg>General</button>
+          <button class="set-tab" role="tab" data-pane="world-version" aria-selected="false"><svg class="ic"><use href="#i-engine"/></svg>Version</button>
           <button class="set-tab" role="tab" data-pane="world-environment" aria-selected="false"><svg class="ic"><use href="#i-sun"/></svg>Environment</button>
           <button class="set-tab" role="tab" data-pane="world-defaults" aria-selected="false"><svg class="ic"><use href="#i-human"/></svg>Defaults</button>
           <button class="set-tab" role="tab" data-pane="world-assets-tab" aria-selected="false"><svg class="ic"><use href="#i-image"/></svg>Assets</button>
@@ -469,6 +470,17 @@
               <div><div class="setting-title">Max player count</div><div class="setting-desc">The most players a server will let into this world at once. A new ServerSocket starts with this number.</div></div>
               <label class="num grav" title="Max player count"><input type="number" id="world-maxplayers" min="1" max="100" step="1" aria-label="Max player count"><span class="tag">players</span></label>
             </div>
+          </section>
+          <section class="set-pane" id="set-world-version" hidden>
+            <h3 class="set-h">World version</h3>
+            <div class="setting-desc set-note">Every world records the engine version it was created in and the content version it has reached. Migrating adds the features introduced since then without removing anything.</div>
+            <div class="version-list">
+              <div class="version-row"><span>Created</span><code id="world-created-version">Unknown</code></div>
+              <div class="version-row"><span>Current</span><code id="world-current-version">Unknown</code></div>
+              <div class="version-row"><span>Latest</span><code id="world-latest-version">3.13.0.0</code></div>
+            </div>
+            <button class="btn btn-primary" id="world-migrate" type="button" style="width:100%;justify-content:center;margin-top:10px">Up to date</button>
+            <div class="field-note" id="world-version-note"></div>
           </section>
           <section class="set-pane" id="set-world-environment" hidden>
             <h3 class="set-h">Environment</h3>
@@ -535,7 +547,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.12.0.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.13.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -597,6 +609,7 @@
           <tr><td><code>Assets</code></td><td>Files uploaded from your computer. Each one is stored inside the <code>.vnw</code> file, so the world carries its assets with it. A preview and file size are shown for each, and you can rename or remove them.</td></tr>
         </tbody></table>
         <p>The <b>Defaults</b> tab edits the Human inside <code>DefaultPlayer</code>: Health, MaxHealth, WalkSpeed, RunSpeed, JumpHeight, Stamina, MaxStamina, RunStaminaLoss, JumpStaminaLoss and StaminaGain. New Humans and the DefaultPlayer template start with these values, and changing a value on the DefaultPlayer's Human updates the same default.</p>
+        <p>The <b>Version</b> tab shows the version the world was <b>Created</b> in, the <b>Current</b> content version, and the <b>Latest</b> engine version. When the world is older, <b>Migrate</b> upgrades its content to the latest version: it adds new built-in scripts such as Networking, rebuilds older union surfaces, and fills in newer fields such as player defaults. Migration never removes instances or overwrites a script that already exists, and it records the new current version in the <code>.vnw</code> file. Worlds created before version tracking show their last saved engine version as the starting point.</p>
         <p>The <b>Environment</b> tab sets the time of day, gravity and the kill layer.</p>
         <table class="docs-table"><thead><tr><th>Property</th><th>Range</th><th>Default</th></tr></thead><tbody>
           <tr><td><code>TimeOfDay</code></td><td>0 to 24 hours, drives the sky</td><td>14</td></tr>
@@ -1037,22 +1050,22 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=3.12.0.0"></script>
-  <script>const ENGINE_VERSION = '3.12.0.0';</script>
+  <script src="../vanillalua.js?v=3.13.0.0"></script>
+  <script>const ENGINE_VERSION = '3.13.0.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/scene.js?v=3.12.0.0"></script>
-  <script defer src="js/csg.js?v=3.12.0.0"></script>
-  <script defer src="js/version-history.js?v=3.12.0.0"></script>
-  <script defer src="js/player.js?v=3.12.0.0"></script>
-  <script defer src="js/sounds.js?v=3.12.0.0"></script>
-  <script defer src="js/scripting.js?v=3.12.0.0"></script>
-  <script defer src="js/shell.js?v=3.12.0.0"></script>
-  <script defer src="js/files.js?v=3.12.0.0"></script>
-  <script defer src="js/offline.js?v=3.12.0.0"></script>
-  <script defer src="js/explorer.js?v=3.12.0.0"></script>
-  <script defer src="js/properties.js?v=3.12.0.0"></script>
-  <script defer src="js/render.js?v=3.12.0.0"></script>
-  <script defer src="js/gl.js?v=3.12.0.0"></script>
-  <script defer src="js/main.js?v=3.12.0.0"></script>
+  <script defer src="js/scene.js?v=3.13.0.0"></script>
+  <script defer src="js/csg.js?v=3.13.0.0"></script>
+  <script defer src="js/version-history.js?v=3.13.0.0"></script>
+  <script defer src="js/player.js?v=3.13.0.0"></script>
+  <script defer src="js/sounds.js?v=3.13.0.0"></script>
+  <script defer src="js/scripting.js?v=3.13.0.0"></script>
+  <script defer src="js/shell.js?v=3.13.0.0"></script>
+  <script defer src="js/files.js?v=3.13.0.0"></script>
+  <script defer src="js/offline.js?v=3.13.0.0"></script>
+  <script defer src="js/explorer.js?v=3.13.0.0"></script>
+  <script defer src="js/properties.js?v=3.13.0.0"></script>
+  <script defer src="js/render.js?v=3.13.0.0"></script>
+  <script defer src="js/gl.js?v=3.13.0.0"></script>
+  <script defer src="js/main.js?v=3.13.0.0"></script>
 </body>
 </html>

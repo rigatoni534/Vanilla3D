@@ -12,7 +12,7 @@
             }
             return inside;
         }
-        function pickInstance(x, y) {
+        function pickInstanceAt(x, y) {
             const r = rayDir(x, y), len = Math.hypot(r.x, r.y, r.z) || 1;
             const d = [r.x / len, r.y / len, r.z / len], o = [camPosX, camPosY, camPosZ];
             let best = null, bestT = Infinity;
@@ -39,8 +39,9 @@
                 }
                 if (ok && tmax >= tmin && tmax > 0) { const t = Math.max(tmin, 0); if (t < bestT) { bestT = t; best = id; } }
             }
-            return best;
+            return best ? { id: best, t: bestT } : null;
         }
+        function pickInstance(x, y) { const hit = pickInstanceAt(x, y); return hit ? hit.id : null; }
 
         // Angle of the mouse around a rotate ring, measured in the ring's plane (null when the ring is edge-on)
         function ringAngle(h, m) {

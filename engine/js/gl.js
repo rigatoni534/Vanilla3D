@@ -332,7 +332,10 @@ out vec4 o;
 void main() {
     vec3 c = texture(uSrc, vUV).rgb;
     float l = max(max(c.r, c.g), c.b);
-    o = vec4(c * smoothstep(uThreshold, uThreshold + 0.3, l), 1.0);
+    // Soft knee, and only the energy above the threshold is fed to the bloom. Adding the whole pixel made every
+    // bright surface glow at full strength, which read as a haze over the frame instead of a highlight.
+    float k = smoothstep(uThreshold, uThreshold + 0.4, l);
+    o = vec4(c * k * (max(l - uThreshold, 0.0) / max(l, 1e-4)), 1.0);
 }`;
         const BLUR_FS = `
 in vec2 vUV;
@@ -348,6 +351,7 @@ void main() {
         const RAYS_FS = `
 in vec2 vUV;
 uniform sampler2D uSrc;
+uniform sampler2D uMask;
 uniform vec2 uSun;
 uniform vec3 uCol;
 uniform float uVis, uAspect;
@@ -371,7 +375,13 @@ void main() {
     float core = exp(-r * r * 900.0);
     float spokes = 0.5 + 0.5 * sin(ang * 7.0 + r * 5.0) * sin(ang * 13.0 - r * 2.5);
     float shafts = spokes * exp(-r * 2.2) * smoothstep(0.015, 0.12, r);
-    o = vec4((sum / total * 0.7 + uCol * (core * 0.6 + shafts * 0.45)) * uVis, 1.0);
+    // Nothing is drawn on the scene's sky, so its alpha is a sky mask. Shafts and the sun core only exist there:
+    // a wall, a union or any other solid hides them instead of being painted over. The four taps soften silhouettes.
+    vec2 tx = 1.5 / vec2(textureSize(uMask, 0));
+    float cover = (texture(uMask, vUV + vec2(tx.x, 0.0)).a + texture(uMask, vUV - vec2(tx.x, 0.0)).a
+                 + texture(uMask, vUV + vec2(0.0, tx.y)).a + texture(uMask, vUV - vec2(0.0, tx.y)).a) * 0.25;
+    float sky = 1.0 - smoothstep(0.02, 0.85, cover);
+    o = vec4((sum / total * 0.7 + uCol * (core * 0.6 + shafts * 0.45)) * uVis * sky, 1.0);
 }`;
         const COMP_FS = `
 in vec2 vUV;
@@ -380,10 +390,15 @@ uniform float uBloomAmt, uRayAmt;
 out vec4 o;
 void main() {
     vec4 s = texture(uScene, vUV);
-    vec3 glow = texture(uBloom, vUV).rgb * uBloomAmt + texture(uRays, vUV).rgb * uRayAmt;
-    float ga = clamp(max(max(glow.r, glow.g), glow.b), 0.0, 1.0);
+    vec3 b = clamp(texture(uBloom, vUV).rgb * uBloomAmt, 0.0, 1.0);
+    // Screen blend lifts the scene toward white instead of adding past it, so bloom keeps its shape and the
+    // surface's own contrast. Rays are already masked to the sky by the shaft pass.
+    vec3 bloomed = 1.0 - (1.0 - s.rgb) * (1.0 - b);
+    vec3 rays = texture(uRays, vUV).rgb * uRayAmt;
+    vec3 col = bloomed + rays;
+    float ga = clamp(max(max(col.r, col.g), col.b), 0.0, 1.0);
     // The canvas is premultiplied, so glow that reaches the transparent sky raises its alpha too.
-    o = vec4(s.rgb + glow, max(s.a, ga));
+    o = vec4(col, max(s.a, ga));
 }`;
 
         function glProgram(gl, vs, fs, names, raw) {
@@ -731,7 +746,7 @@ void main() {
                     vao: postVao, black,
                     bright: glProgram(gl, POST_VS, BRIGHT_FS, ['uSrc', 'uThreshold']),
                     blur: glProgram(gl, POST_VS, BLUR_FS, ['uSrc', 'uStep']),
-                    rays: glProgram(gl, POST_VS, RAYS_FS, ['uSrc', 'uSun', 'uCol', 'uVis', 'uAspect']),
+                    rays: glProgram(gl, POST_VS, RAYS_FS, ['uSrc', 'uMask', 'uSun', 'uCol', 'uVis', 'uAspect']),
                     comp: glProgram(gl, POST_VS, COMP_FS, ['uScene', 'uBloom', 'uRays', 'uBloomAmt', 'uRayAmt']),
                     scene: null, a: null, b: null, active: false, failed: false,
                     wantSamples: 0, wantDiv: 2, bloomAmt: 0, rayAmt: 0, sunUV: [0.5, 0.5], sunVis: 0, sunCol: [1, 1, 1]
@@ -974,7 +989,7 @@ void main() {
             gl.useProgram(post.bright.prog);
             gl.bindTexture(gl.TEXTURE_2D, S.tex);
             gl.uniform1i(post.bright.u.uSrc, 0);
-            gl.uniform1f(post.bright.u.uThreshold, 0.8);
+            gl.uniform1f(post.bright.u.uThreshold, 0.85);
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
             const blur = (src, dst, dx, dy) => {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fbo);
@@ -996,6 +1011,10 @@ void main() {
                 gl.useProgram(post.rays.prog);
                 gl.bindTexture(gl.TEXTURE_2D, A.tex);
                 gl.uniform1i(post.rays.u.uSrc, 0);
+                gl.activeTexture(gl.TEXTURE1);
+                gl.bindTexture(gl.TEXTURE_2D, S.tex);
+                gl.uniform1i(post.rays.u.uMask, 1);
+                gl.activeTexture(gl.TEXTURE0);
                 gl.uniform2f(post.rays.u.uSun, post.sunUV[0], post.sunUV[1]);
                 gl.uniform1f(post.rays.u.uVis, post.sunVis);
                 gl.uniform1f(post.rays.u.uAspect, B.w / B.h);

@@ -571,9 +571,10 @@ function shapeOutlineEdges(o) {
             out.push({
                 a: csgShapePoint(o, e.a), b: csgShapePoint(o, e.b),
                 normals: e.normals.map(n => csgShapeNormal(o, n)),
-                // A cut boundary has no matching face on the other side to supply a normal, so it must be drawn on
-                // whichever side the camera sees. Depth testing still hides the parts behind the surface.
-                alwaysVisible: !!e.boundary
+                // A cut boundary has one face, but that face still has a side. Draw it only when the camera is on
+                // that side: marking every boundary edge always-visible made the far side of a hole draw through
+                // the union's own front surface.
+                alwaysVisible: false
             });
         }
         return out;

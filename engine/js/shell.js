@@ -25,7 +25,7 @@
             leftDrag: true, rightClick: false, gizmoOffset: 0.5, rotOffset: 45, camSpeed: 0.1, axisLength: 8,
             lookSens: 1, invertY: false, fov: 75, lighting: 'enhanced', shadows: 'medium', haze: true, renderDistance: 0,
             // Graphics preset and the values it writes. See GRAPHICS_PRESETS.
-            quality: 'standard', texDetail: 2, msaa: 2, renderScale: 1, dprCap: 1.5, bloom: 0.45, rays: 0.42, bloomDiv: 4,
+            quality: 'standard', texDetail: 2, msaa: 2, renderScale: 1, dprCap: 1.5, bloom: 0.3, rays: 0.38, bloomDiv: 4,
             showAxes: true, showViewfinder: true, hintMode: 'auto', showStatus: true, alwaysShowUI: false, uiGrid: 1,
             seFont: 13, autosave: 3, saveWhat: {}, accent: 'vanilla', light: false, showUid: false, syntax: true,
             defaultNames: {}, preinclude: {}
@@ -37,10 +37,10 @@
         const GRAPHICS_PRESETS = {
             low:       { name: 'Low',        shadows: 'off',    texDetail: 0, msaa: 0, renderScale: 0.7,  dprCap: 1,   bloom: 0,    rays: 0,    bloomDiv: 4 },
             medium:    { name: 'Medium',     shadows: 'low',    texDetail: 1, msaa: 0, renderScale: 0.85, dprCap: 1,   bloom: 0,    rays: 0,    bloomDiv: 4 },
-            standard:  { name: 'Standard',   shadows: 'medium', texDetail: 2, msaa: 2, renderScale: 1,    dprCap: 1.5, bloom: 0.45, rays: 0.42, bloomDiv: 4 },
-            high:      { name: 'High',       shadows: 'high',   texDetail: 3, msaa: 4, renderScale: 1,    dprCap: 2,   bloom: 0.75, rays: 0.65, bloomDiv: 2 },
-            extra:     { name: 'Extra High', shadows: 'high',   texDetail: 4, msaa: 4, renderScale: 1.25, dprCap: 2,   bloom: 0.9,  rays: 0.8,  bloomDiv: 2 },
-            unlimited: { name: 'Unlimited',  shadows: 'high',   texDetail: 4, msaa: 8, renderScale: 1.5,  dprCap: 2,   bloom: 1.05, rays: 0.95, bloomDiv: 1 }
+            standard:  { name: 'Standard',   shadows: 'medium', texDetail: 2, msaa: 2, renderScale: 1,    dprCap: 1.5, bloom: 0.3,  rays: 0.38, bloomDiv: 4 },
+            high:      { name: 'High',       shadows: 'high',   texDetail: 3, msaa: 4, renderScale: 1,    dprCap: 2,   bloom: 0.4,  rays: 0.48, bloomDiv: 2 },
+            extra:     { name: 'Extra High', shadows: 'high',   texDetail: 4, msaa: 4, renderScale: 1.25, dprCap: 2,   bloom: 0.48, rays: 0.55, bloomDiv: 2 },
+            unlimited: { name: 'Unlimited',  shadows: 'high',   texDetail: 4, msaa: 8, renderScale: 1.5,  dprCap: 2,   bloom: 0.56, rays: 0.62, bloomDiv: 1 }
         };
         const GRAPHICS_KEYS = ['shadows', 'texDetail', 'msaa', 'renderScale', 'dprCap', 'bloom', 'rays', 'bloomDiv'];
         function applyGraphicsPreset(id) {

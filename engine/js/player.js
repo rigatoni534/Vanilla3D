@@ -2,7 +2,7 @@
         // ───────── Player control ─────────
         // While the simulation runs, the player the editor joined as (the lowest-numbered Player) is driven with WASD, Space and Shift.
         // A model is a set of parts, so the whole model moves as one box that is stopped by every collidable block.
-        const pc = { modelId: null, vy: 0, onGround: false, last: 0, zoom: 6, theta: 0, exhausted: false, hideId: null, headId: null, parts: [], pos: { x: 0, y: 0, z: 0 }, hr: 0.5, hh: 2, phase: 0, gait: 0 };
+        const pc = { modelId: null, vy: 0, onGround: false, last: 0, zoom: 6, theta: 0, exhausted: false, hideId: null, headId: null, parts: [], pos: { x: 0, y: 0, z: 0 }, hr: 0.5, hw: 0.5, hd: 0.5, hh: 2, phase: 0, gait: 0 };
         const PLAYER_ZOOM_MAX = 20, PLAYER_ZOOM_SPEED = 8, FIRST_PERSON_ZOOM = 1.2, PLAYER_TURN_RATE = 14;
         const STAMINA_PENALTY_GAIN = 4;   // per second, while exhausted
         // A person is about 80 kg and falls feet first at roughly 55 Vm/s in Earth air.
@@ -53,6 +53,7 @@
                 }
                 const turned = !!rotInfo(o);
                 if (!turned && o.type === 'cylinder') { cols.push({ k: 1, x: o.x, z: o.z, w: o.width, l: o.length, y0: o.y - o.height, y1: o.y + o.height }); continue; }
+                if (!turned && o.type === 'ball') { cols.push({ k: 3, x: o.x, z: o.z, w: o.width, l: o.length, y: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height }); continue; }
                 if (!turned && o.type === 'wedge') { cols.push({ k: 2, x: o.x, z: o.z, w: o.width, l: o.length, ym: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height }); continue; }
                 const e = shapeHalfExt(o), obb = obbFromShape(o);     // a turned shape keeps its real angle
                 cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], obb });
@@ -64,6 +65,7 @@
             const dx = px - c.x, dz = pz - c.z;
             if (c.k === 1) { const rx = dx / (c.w || 1), rz = dz / (c.l || 1); return rx * rx + rz * rz <= 1 ? c.y1 : -Infinity; }
             if (c.k === 2) { if (Math.abs(dx) > c.w || Math.abs(dz) > c.l) return -Infinity; return c.ym + (c.l ? c.h * dz / c.l : 0); }
+            if (c.k === 3) { const rx = dx / (c.w || 1), rz = dz / (c.l || 1), q = rx * rx + rz * rz; return q <= 1 ? c.y + c.h * Math.sqrt(1 - q) : -Infinity; }
             // A box, a union cell and a turned shape all read their real top surface, so a tilted box supports the
             // player at the height it actually is instead of at the top of the axis-aligned box around it.
             if (c.obb) return obbTopAt(c.obb, px, pz);
@@ -80,7 +82,7 @@
         // Whether the player's square stands over a collider. A cylinder is round, so the corners of its box are empty
         // air: the nearest point of the player's square to the column's axis is what has to be over the disc.
         const pcOverFoot = (b, c) => {
-            if (c.k === 1) {
+            if (c.k === 1 || c.k === 3) {
                 const nx = Math.max(b.minX, Math.min(b.maxX, c.x)), nz = Math.max(b.minZ, Math.min(b.maxZ, c.z));
                 const dx = (nx - c.x) / (c.w || 1), dz = (nz - c.z) / (c.l || 1);
                 return dx * dx + dz * dz <= 1;
@@ -112,13 +114,31 @@
                 const height = b.maxY - b.minY;
                 for (const c of cols) {
                     if (c.y0 >= b.maxY - PC_EPS) continue;                      // above the player's head
+                    if (c.k === 3) {
+                        if (b.minY >= c.y1 - PC_EPS) continue;                  // standing above it
+                        // The ball is an ellipsoid, not the square around it. Use the widest slice of it that the
+                        // player's body actually overlaps, then push along the ellipse surface.
+                        const sy = Math.max(b.minY, Math.min(b.maxY, c.y));
+                        const vy = (sy - c.y) / (c.h || 1), scale = Math.sqrt(Math.max(0, 1 - vy * vy));
+                        if (scale < 1e-3) continue;
+                        const cx = (b.minX + b.maxX) / 2, cz = (b.minZ + b.maxZ) / 2;
+                        const disc = columnAgainstFoot({ x: c.x, z: c.z, width: c.w * scale, length: c.l * scale }, { x: cx, z: cz }, (b.maxX - b.minX) / 2, (b.maxZ - b.minZ) / 2);
+                        if (!disc) continue;
+                        b.minX += disc.nx * (disc.pen + PC_EPS); b.maxX += disc.nx * (disc.pen + PC_EPS);
+                        b.minZ += disc.nz * (disc.pen + PC_EPS); b.maxZ += disc.nz * (disc.pen + PC_EPS);
+                        hit = true;
+                        continue;
+                    }
                     if (c.k === 0 && c.obb) {
                         if (b.minY >= c.y1 - PC_EPS) continue;                  // standing above it
                         if (c.y1 <= b.minY + PC_STEP + PC_EPS) continue;        // low enough to step onto
-                        // The capsule is pushed out along the true side normal. This is what lets the player slide
-                        // around a rotated wall or a corner instead of stopping on the square around it.
+                        // The player is a vertical box matching the body, not a capsule as wide as the arms. Push it out
+                        // along the true side normal, so a rotated wall or corner stops the body where it looks.
                         const cx = (b.minX + b.maxX) / 2, cz = (b.minZ + b.maxZ) / 2;
-                        const contact = capsuleOBB(cx, b.minY, cz, pc.hr, height, c.obb);
+                        const cy = (b.minY + b.maxY) / 2, ct = Math.cos(pc.theta), sn = Math.sin(pc.theta);
+                        const pm = new Float32Array([ct, 0, sn, 0, 1, 0, -sn, 0, ct]);
+                        const body = { x: cx, y: cy, z: cz, hx: pc.hw, hy: height / 2, hz: pc.hd, m: pm };
+                        const contact = obbManifold(body, c.obb);
                         if (!contact || Math.abs(contact.n[1]) >= 0.72) continue;    // a floor or ceiling is vertical work
                         const nl = Math.hypot(contact.n[0], contact.n[2]);
                         if (nl < 1e-4) continue;
@@ -172,8 +192,11 @@
         function setupPlayerBody(m) {
             const b = partsBox(m.parts);
             pc.pos = { x: (b.minX + b.maxX) / 2, y: b.minY, z: (b.minZ + b.maxZ) / 2 };
-            // The collision box is a square so it does not change when the model turns.
-            pc.hr = Math.max((b.maxX - b.minX) / 2, (b.maxZ - b.minZ) / 2);
+            // Keep the body's own width and depth; a square made from the arm span leaves a large empty strip in
+            // front of and behind the player that a ball or wall would collide with first.
+            pc.hw = Math.max(0.05, (b.maxX - b.minX) / 2);
+            pc.hd = Math.max(0.05, (b.maxZ - b.minZ) / 2);
+            pc.hr = Math.max(pc.hw, pc.hd);
             pc.hh = b.maxY - b.minY;
             pc.parts = m.parts.map(id => {
                 const o = sceneObjects[id], pose = limbPose(o.name);
@@ -220,7 +243,11 @@
                 const maxSt = num(hv.maxStamina, 100), runLoss = num(hv.runStaminaLoss, 3), jumpLoss = num(hv.jumpStaminaLoss, 20), gain = num(hv.staminaGain, 6.5);
                 let st = Math.min(maxSt, num(hv.stamina, maxSt));
                 const g = currentGravity(), rho = airDensityFor(g);
-                const b = { minX: pc.pos.x - pc.hr, maxX: pc.pos.x + pc.hr, minY: pc.pos.y, maxY: pc.pos.y + pc.hh, minZ: pc.pos.z - pc.hr, maxZ: pc.pos.z + pc.hr };
+                // The model turns to face its movement, so its world-axis footprint is the box around the turned body,
+                // not a square made from the arm span. This keeps the empty strip in front of a turned player small.
+                const cAbs = Math.abs(Math.cos(pc.theta)), sAbs = Math.abs(Math.sin(pc.theta));
+                const ex = cAbs * pc.hw + sAbs * pc.hd, ez = sAbs * pc.hw + cAbs * pc.hd;
+                const b = { minX: pc.pos.x - ex, maxX: pc.pos.x + ex, minY: pc.pos.y, maxY: pc.pos.y + pc.hh, minZ: pc.pos.z - ez, maxZ: pc.pos.z + ez };
                 const cols = playerColliders(new Set(m.parts));
                 // Walking is relative to where the camera looks.
                 const f = (keyState['w'] ? 1 : 0) - (keyState['s'] ? 1 : 0), r = (keyState['d'] ? 1 : 0) - (keyState['a'] ? 1 : 0);
@@ -258,7 +285,7 @@
                     pc.onGround = hit === 1;
                     if (hit) pc.vy = 0;
                 }
-                pc.pos = { x: b.minX + pc.hr, y: b.minY, z: b.minZ + pc.hr };
+                pc.pos = { x: (b.minX + b.maxX) / 2, y: b.minY, z: (b.minZ + b.maxZ) / 2 };
                 // Stamina comes back while standing on something and not sprinting. Once emptied it comes back slower, until it is full.
                 if (!sprinting && pc.onGround && !jumped) st += (pc.exhausted ? Math.min(STAMINA_PENALTY_GAIN, gain) : gain) * dt;
                 if (st <= 0) { st = 0; pc.exhausted = true; }

@@ -39,21 +39,23 @@
                 if (o.type === 'union') {      // a union blocks with its cells, so a hole cut through it is a hole
                     const cells = Array.isArray(o.cells) ? o.cells : [];
                     if (cells.length) {
+                        const m = rotMat(o);
                         for (const c of cells) {
                             const p = unionCellWorld(o, c);
-                            cols.push({ k: 0, x: p.x, z: p.z, w: p.width, l: p.length, y0: p.y - p.height, y1: p.y + p.height });
+                            cols.push({ k: 0, x: p.x, z: p.z, w: p.width, l: p.length, y0: p.y - p.height, y1: p.y + p.height,
+                                obb: { x: p.x, y: p.y, z: p.z, hx: p.width, hy: p.height, hz: p.length, m } });
                         }
                     } else {
-                        const e = shapeHalfExt(o);
-                        cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1] });
+                        const e = shapeHalfExt(o), obb = obbFromShape(o);
+                        cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], obb });
                     }
                     continue;
                 }
                 const turned = !!rotInfo(o);
                 if (!turned && o.type === 'cylinder') { cols.push({ k: 1, x: o.x, z: o.z, w: o.width, l: o.length, y0: o.y - o.height, y1: o.y + o.height }); continue; }
                 if (!turned && o.type === 'wedge') { cols.push({ k: 2, x: o.x, z: o.z, w: o.width, l: o.length, ym: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height }); continue; }
-                const e = shapeHalfExt(o);     // a turned shape is solid as the box around it
-                cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1] });
+                const e = shapeHalfExt(o), obb = obbFromShape(o);     // a turned shape keeps its real angle
+                cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], obb });
             }
             return cols;
         }
@@ -62,6 +64,9 @@
             const dx = px - c.x, dz = pz - c.z;
             if (c.k === 1) { const rx = dx / (c.w || 1), rz = dz / (c.l || 1); return rx * rx + rz * rz <= 1 ? c.y1 : -Infinity; }
             if (c.k === 2) { if (Math.abs(dx) > c.w || Math.abs(dz) > c.l) return -Infinity; return c.ym + (c.l ? c.h * dz / c.l : 0); }
+            // A box, a union cell and a turned shape all read their real top surface, so a tilted box supports the
+            // player at the height it actually is instead of at the top of the axis-aligned box around it.
+            if (c.obb) return obbTopAt(c.obb, px, pz);
             return Math.abs(dx) <= c.w && Math.abs(dz) <= c.l ? c.y1 : -Infinity;
         }
         // The highest part of a collider under the player's box. A slope is read under its middle, so a ramp is climbed
@@ -96,20 +101,43 @@
         function pcMoveAxis(b, cols, axis, d) {
             if (d === 0) return false;
             const lo = axis === 0 ? 'minX' : 'minZ', hi = axis === 0 ? 'maxX' : 'maxZ';
-            const wasLo = b[lo], size = b[hi] - b[lo];
-            b[lo] += d; b[hi] += d;
+            const size = b[hi] - b[lo];
+            // A fast step must not jump over a thin wall before the capsule can feel it. Moving in small slices also
+            // keeps a push out of one corner from putting the capsule through the next one.
+            const slices = Math.max(1, Math.ceil(Math.abs(d) / 0.08)), inc = d / slices;
             let hit = false;
-            for (const c of cols) {
-                if (!pcOverFoot(b, c)) continue;
-                if (c.y0 >= b.maxY - PC_EPS) continue;                          // above the player's head
-                if (colTopUnder(c, b) <= b.minY + PC_STEP + PC_EPS) continue;    // low enough to walk up
-                hit = true;
-                if (c.k === 0) {                                                 // a square stops it at its face
-                    const face = axis === 0 ? c.x + (d > 0 ? -c.w : c.w) : c.z + (d > 0 ? -c.l : c.l);
-                    const over = d > 0 ? b[hi] - face : face - b[lo];
-                    const sgn = d > 0 ? -1 : 1;
-                    b[lo] += sgn * over; b[hi] += sgn * over;
-                } else { b[lo] = wasLo; b[hi] = wasLo + size; }                  // round or sloped: keep the last good spot
+            for (let s = 0; s < slices; s++) {
+                const wasLo = b[lo];
+                b[lo] += inc; b[hi] += inc;
+                const height = b.maxY - b.minY;
+                for (const c of cols) {
+                    if (c.y0 >= b.maxY - PC_EPS) continue;                      // above the player's head
+                    if (c.k === 0 && c.obb) {
+                        if (b.minY >= c.y1 - PC_EPS) continue;                  // standing above it
+                        if (c.y1 <= b.minY + PC_STEP + PC_EPS) continue;        // low enough to step onto
+                        // The capsule is pushed out along the true side normal. This is what lets the player slide
+                        // around a rotated wall or a corner instead of stopping on the square around it.
+                        const cx = (b.minX + b.maxX) / 2, cz = (b.minZ + b.maxZ) / 2;
+                        const contact = capsuleOBB(cx, b.minY, cz, pc.hr, height, c.obb);
+                        if (!contact || Math.abs(contact.n[1]) >= 0.72) continue;    // a floor or ceiling is vertical work
+                        const nl = Math.hypot(contact.n[0], contact.n[2]);
+                        if (nl < 1e-4) continue;
+                        const push = contact.depth + PC_EPS;
+                        b.minX += contact.n[0] / nl * push; b.maxX += contact.n[0] / nl * push;
+                        b.minZ += contact.n[2] / nl * push; b.maxZ += contact.n[2] / nl * push;
+                        hit = true;
+                        continue;
+                    }
+                    if (!pcOverFoot(b, c)) continue;
+                    if (colTopUnder(c, b) <= b.minY + PC_STEP + PC_EPS) continue;    // low enough to walk up
+                    hit = true;
+                    if (c.k === 0) {                                             // fallback for a collider without an OBB
+                        const face = axis === 0 ? c.x + (inc > 0 ? -c.w : c.w) : c.z + (inc > 0 ? -c.l : c.l);
+                        const over = inc > 0 ? b[hi] - face : face - b[lo];
+                        const sgn = inc > 0 ? -1 : 1;
+                        b[lo] += sgn * over; b[hi] += sgn * over;
+                    } else { b[lo] = wasLo; b[hi] = wasLo + size; }              // round or sloped: keep the last good spot
+                }
             }
             return hit;
         }

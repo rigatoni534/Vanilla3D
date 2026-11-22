@@ -629,7 +629,7 @@
                     ${numField('prop-width', 'W', 'x', 'Width (X)', obj.width, sizeDis)}
                     ${numField('prop-height', 'H', 'y', 'Height (Y)', obj.height, sizeDis)}
                 </div>${obj.type === 'union' ? '<div class="field-note">A union keeps the size of the parts it was built from.</div>' : ''}`)}
-                ${obj.type === 'union' ? section('Union', `<div class="field-note">One real surface: its outline follows the creases of the shape, and cut-out parts stay hollow. Its ${(obj.cells || []).length} collision cell${(obj.cells || []).length === 1 ? '' : 's'} only decide where the player is blocked. To change it, select parts in World and choose Union Selected or Intersect Selected.</div>`) : ''}
+                ${obj.type === 'union' ? section('Union', `<div class="field-note">One real surface: its outline follows the creases of the shape, and cut-out parts stay hollow. Its ${(obj.cells || []).length} collision cell${(obj.cells || []).length === 1 ? '' : 's'} decide where the player and falling bodies are blocked, so a hole through it is a hole for both. To change it, select parts in World and choose Union Selected or Intersect Selected.</div>`) : ''}
                 ${section('Rotation', `<div class="field-row">
                     ${numField('prop-rx', 'X', 'x', 'Rotation X in degrees', obj.rotX || 0, dis)}
                     ${numField('prop-ry', 'Y', 'y', 'Rotation Y in degrees', obj.rotY || 0, dis)}

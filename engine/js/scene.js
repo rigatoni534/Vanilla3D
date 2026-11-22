@@ -765,7 +765,18 @@
             } else {
                 const ball = a.type === 'ball' ? a : b, box = ball === a ? b : a, r = ballRadius(ball);
                 // A cylinder is round and a wedge is sloped, so measure to the real surface instead of the box around it.
-                const hit = (!rotInfo(box) && (box.type === 'cylinder' || box.type === 'wedge')) ? ballAgainstShape(ball, box, r) : ballAgainstBox(ball, box, r);
+                // A union is measured against its cells, so a ball can fall through a hole cut in it.
+                let hit = null;
+                if (box.type === 'union' && Array.isArray(box.cells) && box.cells.length) {
+                    for (const piece of shapeColliderParts(box)) {
+                        const h = ballOBB(ball.x, ball.y, ball.z, r, piece);
+                        if (h && (!hit || h.pen > hit.pen)) hit = h;
+                    }
+                } else if (!rotInfo(box) && (box.type === 'cylinder' || box.type === 'wedge')) {
+                    hit = ballAgainstShape(ball, box, r);
+                } else {
+                    hit = ballAgainstBox(ball, box, r);
+                }
                 if (!hit) return;
                 n = ball === a ? hit.n : [-hit.n[0], -hit.n[1], -hit.n[2]];
                 pen = hit.pen;
@@ -778,6 +789,24 @@
             applyContactImpulse(av, bv, n, invA, invB, BALL_RESTITUTION, false);
             if (a.type === 'ball' && aMoves) ballContacts.set(idA, { nx: n[0], ny: n[1], nz: n[2], ovx: bv.x, ovy: bv.y, ovz: bv.z });
             if (b.type === 'ball' && bMoves) ballContacts.set(idB, { nx: -n[0], ny: -n[1], nz: -n[2], ovx: av.x, ovy: av.y, ovz: av.z });
+        }
+
+        // A pair that involves a turned shape, or a union (a compound of cells), is solved against the real oriented
+        // surfaces. A union moves as one body, but it is tested cell by cell, so a hole cut through it is not solid.
+        function resolveOBBPair(idA, a, idB, b, aMoves, bMoves) {
+            const piecesA = shapeColliderParts(a), piecesB = shapeColliderParts(b);
+            let best = null;
+            for (const A of piecesA) for (const B of piecesB) {
+                const hit = obbManifold(A, B);
+                if (hit && (!best || hit.depth > best.depth)) best = hit;
+            }
+            if (!best) return;
+            const n = best.n, pen = best.depth;
+            const invA = aMoves ? 1 / bodyMass(a) : 0, invB = bMoves ? 1 / bodyMass(b) : 0;
+            const shareA = invA / (invA + invB), shareB = invB / (invA + invB);
+            a.x += n[0] * pen * shareA; a.y += n[1] * pen * shareA; a.z += n[2] * pen * shareA;
+            b.x -= n[0] * pen * shareB; b.y -= n[1] * pen * shareB; b.z -= n[2] * pen * shareB;
+            applyContactImpulse(physicsVelocityFor(idA), physicsVelocityFor(idB), n, invA, invB, BOX_RESTITUTION, true);
         }
 
         // Bodies resting on bodies: a stack settles from the bottom up so it never jitters.
@@ -838,9 +867,18 @@
                     const aMoves = movable[i] === 1, bMoves = movable[j] === 1;
                     if (!aMoves && !bMoves) return;
                     if (a.type === 'ball' || b.type === 'ball') { resolveBallPair(idA, a, idB, b); return; }
+                    // Turned shapes and unions use oriented surfaces. Plain, upright boxes keep the cheaper axis-aligned
+                    // path, which is exact for them and settles stacks more quietly.
+                    if (rotInfo(a) || rotInfo(b) ||
+                        (a.type === 'union' && Array.isArray(a.cells) && a.cells.length) ||
+                        (b.type === 'union' && Array.isArray(b.cells) && b.cells.length)) {
+                        resolveOBBPair(idA, a, idB, b, aMoves, bMoves);
+                        return;
+                    }
 
                     // Overlap is measured against the real surface of each shape, so the corners of the square around a
-                    // round column and the air above a wedge's slope are not solid. A turned shape is the box around it.
+                    // round column and the air above a wedge's slope are not solid. Turned shapes and unions were sent
+                    // to the oriented path above, so this path only sees upright boxes, columns and slopes.
                     const dy = (EY[i] + EY[j]) - Math.abs(a.y - b.y);
                     if (dy <= 0) return;
                     const roundA = !rotInfo(a) && a.type === 'cylinder', roundB = !rotInfo(b) && b.type === 'cylinder';

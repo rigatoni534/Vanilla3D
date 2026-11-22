@@ -242,6 +242,7 @@ layout(location = 1) in vec3 aP1;
 layout(location = 2) in vec2 aSE;
 layout(location = 3) in vec4 aCol;
 layout(location = 4) in float aW;
+uniform float uZBias;
 out vec4 vCol;
 void main() {
     vec4 c0 = project(aP0), c1 = project(aP1);
@@ -250,6 +251,9 @@ void main() {
     dir = length(dir) > 1e-4 ? normalize(dir) : vec2(1.0, 0.0);
     vec4 c = aSE.y > 0.5 ? c1 : c0;
     c.xy += (vec2(-dir.y, dir.x) * aSE.x * aW / (uView * 0.5)) * c.w;
+    // Pull outline lines a hair toward the camera. They sit exactly on the surface they trace, and the surfaces are
+    // drawn pushed forward too, so without this the depth test eats an edge that lies inside a face (a cut hole's rim).
+    c.z -= uZBias * c.w;
     gl_Position = c;
     vCol = aCol;
 }`;
@@ -543,7 +547,7 @@ void main() {
 
         function initGL() {
             try {
-                const gl = glCanvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true });
+                const gl = glCanvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true, stencil: true });
                 if (!gl) return;
                 // Count draw calls without changing what the renderer does.
                 const drawArrays = gl.drawArrays.bind(gl), drawElements = gl.drawElements.bind(gl);
@@ -588,7 +592,7 @@ void main() {
                     return vao;
                 };
                 const sphere = { vaoTri: mkSphereVao(tri), nTri: tri.length, vaoLine: mkSphereVao(lin), nLine: lin.length };
-                const axis = glProgram(gl, AXIS_VS, AXIS_FS, []);
+                const axis = glProgram(gl, AXIS_VS, AXIS_FS, ['uZBias']);
                 const label = glProgram(gl, LABEL_VS, LABEL_FS, ['uLC', 'uLR', 'uLU', 'uCell', 'uTex']);
 
                 // unit cube, 6 faces x 2 triangles: position, normal, face-uv, face index
@@ -753,7 +757,9 @@ void main() {
             if (shSize > 0 && shStr > 0.01) { const sm = ensureShadowMaps(gl, shSize); if (sm) shadowSet = renderShadows(gl, prisms, sm, balls, meshes, unions); }
             gl.viewport(0, 0, glCanvas.width, glCanvas.height);
             gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.clearStencil(0);
+            gl.stencilMask(0xFF);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
             gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
             gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -809,6 +815,7 @@ void main() {
                 gl.useProgram(A.prog); setCam(A); gl.bindVertexArray(A.vao);
                 gl.bindBuffer(gl.ARRAY_BUFFER, A.buf);
                 gl.bufferData(gl.ARRAY_BUFFER, verts.subarray(0, i), gl.DYNAMIC_DRAW);
+                gl.uniform1f(A.u.uZBias, 2e-5);
                 if (!depthTest) gl.disable(gl.DEPTH_TEST);
                 gl.drawArrays(gl.TRIANGLES, 0, i / 13);
                 if (!depthTest) gl.enable(gl.DEPTH_TEST);
@@ -928,6 +935,72 @@ void main() {
                 gl.disable(gl.CULL_FACE);
             }
 
+            // Highlights that appear over objects must still hide their own far side: an edge on the back of a shape
+            // would otherwise float across its front. Mark where each highlighted shape's own visible surface is, so
+            // the outline can be drawn through walls without being drawn through the shape it belongs to.
+            const highlightedIds = new Set();
+            for (const [, h] of highlights) for (const [id] of highlightTargets(h)) highlightedIds.add(id);
+            if (highlightedIds.size && highlights.some(([, h]) => h.overObjects)) {
+                gl.enable(gl.STENCIL_TEST);
+                gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
+                gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+                gl.stencilMask(0xFF);
+                gl.colorMask(false, false, false, false);
+                gl.depthMask(false);
+                gl.enable(gl.POLYGON_OFFSET_FILL);
+                gl.useProgram(P.prog); setCam(P); gl.bindVertexArray(P.vao);
+                prisms.forEach(([id, o], i) => {
+                    if (!highlightedIds.has(id) || !onScreen(o)) return;
+                    gl.polygonOffset(0, -(i + 1));
+                    gl.uniform3f(P.u.uCenter, o.x, o.y, o.z);
+                    gl.uniform3f(P.u.uHalf, o.width, o.height, o.length);
+                    gl.uniformMatrix3fv(P.u.uRot, false, rotGL(o));
+                    gl.drawArrays(gl.TRIANGLES, 0, 36);
+                });
+                const M = GL.mesh;
+                if (meshes.length) {
+                    gl.useProgram(M.prog); setCam(M);
+                    meshes.forEach(([id, o], i) => {
+                        if (!highlightedIds.has(id) || !onScreen(o)) return;
+                        gl.polygonOffset(0, -(i + 1));
+                        gl.uniform3f(M.u.uCenter, o.x, o.y, o.z);
+                        gl.uniform3f(M.u.uHalf, o.width, o.height, o.length);
+                        gl.uniformMatrix3fv(M.u.uRot, false, rotGL(o));
+                        gl.bindVertexArray(o.type === 'wedge' ? M.wedge.vao : M.cylinder.vao);
+                        gl.drawArrays(gl.TRIANGLES, 0, (o.type === 'wedge' ? M.wedge : M.cylinder).count);
+                    });
+                }
+                gl.useProgram(P.prog); gl.bindVertexArray(P.vao);
+                unions.forEach(([id, u], i) => {
+                    if (!highlightedIds.has(id) || !onScreen(u)) return;
+                    const g = unionGL(id, u);
+                    if (!g) return;
+                    gl.polygonOffset(0, -(i + 1));
+                    gl.uniform3f(P.u.uCenter, u.x, u.y, u.z);
+                    gl.uniform3f(P.u.uHalf, u.width, u.height, u.length);
+                    gl.uniformMatrix3fv(P.u.uRot, false, rotGL(u));
+                    gl.bindVertexArray(g.vao);
+                    gl.drawArrays(gl.TRIANGLES, 0, g.count);
+                });
+                gl.disable(gl.POLYGON_OFFSET_FILL);
+                if (balls.length) {
+                    const B = GL.ball, SP = GL.sphere;
+                    gl.useProgram(B.prog); setCam(B);
+                    gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
+                    gl.bindVertexArray(SP.vaoTri);
+                    for (const [id, o] of balls) {
+                        if (!highlightedIds.has(id) || !onScreen(o)) continue;
+                        gl.uniform3f(B.u.uCenter, o.x, o.y, o.z);
+                        gl.uniform3f(B.u.uHalf, o.width, o.height, o.length);
+                        gl.uniformMatrix3fv(B.u.uRot, false, rotGL(o));
+                        gl.drawElements(gl.TRIANGLES, SP.nTri, gl.UNSIGNED_SHORT, 0);
+                    }
+                    gl.disable(gl.CULL_FACE);
+                }
+                gl.colorMask(true, true, true, true);
+                gl.disable(gl.STENCIL_TEST);
+            }
+
             // 1d. union outlines: the creases of the surface only, never the seams of its triangles. Edges on the
             // far side are dropped, and the depth buffer hides the ones behind walls.
             gl.depthMask(false);
@@ -961,7 +1034,20 @@ void main() {
                 if (!edges.length) continue;
                 const hc = prismColor(h);
                 const color = [parseInt(hc.slice(1, 3), 16) / 255, parseInt(hc.slice(3, 5), 16) / 255, parseInt(hc.slice(5, 7), 16) / 255];
-                drawOutlineLines(edges.map(e => ({ a: e.a, b: e.b, color, alpha: 1, width: 1.8 })), !h.overObjects);
+                const segs = edges.map(e => ({ a: e.a, b: e.b, color, alpha: 1, width: 1.8 }));
+                drawOutlineLines(segs, true);
+                if (h.overObjects) {
+                    // Second pass: parts of the outline that are behind something else, but never behind the highlighted
+                    // shape itself. GREATER also keeps an edge on the far side of a shape from appearing against empty
+                    // sky, where there is no surface for it to be seen through.
+                    gl.enable(gl.STENCIL_TEST);
+                    gl.stencilFunc(gl.EQUAL, 0, 0xFF);
+                    gl.stencilMask(0x00);
+                    gl.depthFunc(gl.GREATER);
+                    drawOutlineLines(segs, true);
+                    gl.depthFunc(gl.LEQUAL);
+                    gl.disable(gl.STENCIL_TEST);
+                }
             }
             gl.depthMask(true);
             gl.depthMask(false);
@@ -995,6 +1081,7 @@ void main() {
             }
             if (settings.showAxes === false) verts.length = 0;
             gl.useProgram(A.prog); setCam(A); gl.bindVertexArray(A.vao);
+            gl.uniform1f(A.u.uZBias, 0);
             gl.bindBuffer(gl.ARRAY_BUFFER, A.buf);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.DYNAMIC_DRAW);
             gl.drawArrays(gl.TRIANGLES, 0, verts.length / 13);

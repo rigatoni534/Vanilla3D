@@ -45,16 +45,31 @@
             const ink = lumOf(rgb) > (light ? 0.3 : 0.35) ? rgbToHex(mixRgb(rgb, [0, 0, 0], 0.85)) : '#ffffff';
             return '--accent:' + rgbToHex(rgb) + ';--accent-hover:' + rgbToHex(hover) + ';--accent-ink:' + ink + ';--accent-soft:rgba(' + rgb.map(Math.round).join(',') + ',' + (light ? 0.12 : 0.15) + ');';
         }
+        // The favicon is the Vanilla3D mark, drawn here so it uses the current accent and panel colours.
+        function updateFavicon() {
+            const cs = getComputedStyle(document.body);
+            const accent = (cs.getPropertyValue('--accent') || '#f2b134').trim();
+            const panel = (cs.getPropertyValue('--panel') || '#1d212a').trim();
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="13" fill="' + panel + '"/><path d="M11 13h8l13 29 13-29h8L39 51H25z" fill="' + accent + '"/><rect x="11" y="55" width="42" height="4" rx="2" fill="' + accent + '"/></svg>';
+            let link = document.getElementById('favicon');
+            if (!link) {
+                link = document.createElement('link');
+                link.id = 'favicon'; link.rel = 'icon'; link.type = 'image/svg+xml';
+                document.head.appendChild(link);
+            }
+            link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+        }
         function applyAccent() {
             let el = document.getElementById('accent-style');
             const preset = ACCENT_PRESETS.find(p => p.id === settings.accent);
             if (!preset && !hexOk(settings.accent)) settings.accent = 'vanilla';
-            if (settings.accent === 'vanilla') { if (el) el.remove(); return; }
+            if (settings.accent === 'vanilla') { if (el) el.remove(); updateFavicon(); return; }
             let dark, light;
             if (preset) { dark = hexToRgb(preset.dark); light = hexToRgb(preset.light); }
             else { dark = hexToRgb(settings.accent); light = lumOf(dark) > 0.25 ? mixRgb(dark, [0, 0, 0], 0.3) : dark; }
             if (!el) { el = document.createElement('style'); el.id = 'accent-style'; document.head.appendChild(el); }
             el.textContent = ':root{' + accentVars(dark, false) + '}body.light-theme{' + accentVars(light, true) + '}';
+            updateFavicon();
         }
         try { Object.assign(settings, JSON.parse(localStorage.getItem('vanilla-editor-settings') || '{}')); } catch (e) {}
         const AXIS_MIN = 0.1, AXIS_MAX = 100;

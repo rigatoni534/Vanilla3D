@@ -397,6 +397,19 @@ function csgMeshTriangles(polys) {
     }
     return tris;
 }
+// Whether a flat polygon covers a point on its own plane (used to tell a real cut boundary from a seam).
+function csgPolyCovers(poly, p, n) {
+    const ax = Math.abs(n[0]), ay = Math.abs(n[1]), az = Math.abs(n[2]);
+    const skip = ax >= ay && ax >= az ? 0 : ay >= az ? 1 : 2;
+    const i = (skip + 1) % 3, j = (skip + 2) % 3;
+    const v = poly.v;
+    let inside = false;
+    for (let a = 0, b = v.length - 1; a < v.length; b = a++) {
+        if ((v[a][j] > p[j]) !== (v[b][j] > p[j]) &&
+            p[i] < (v[b][i] - v[a][i]) * (p[j] - v[a][j]) / (v[b][j] - v[a][j]) + v[a][i]) inside = !inside;
+    }
+    return inside;
+}
 // Every polygon edge, with the normals of the faces that meet there.
 function csgEdgeData(polys) {
     const map = new Map();
@@ -411,7 +424,10 @@ function csgEdgeData(polys) {
             const key = ka < kb ? ka + '|' + kb : kb + '|' + ka;
             let e = map.get(key);
             if (!e) {
-                e = { a: ka < kb ? a : b, b: ka < kb ? b : a, normals: [] };
+                // A point inside the polygon that owns the edge, used to tell which side its flat face is on.
+                let cx = 0, cy = 0, cz = 0;
+                for (const p of v) { cx += p[0]; cy += p[1]; cz += p[2]; }
+                e = { a: ka < kb ? a : b, b: ka < kb ? b : a, normals: [], centroid: [cx / v.length, cy / v.length, cz / v.length] };
                 map.set(key, e);
             }
             if (!e.normals.some(m => m[0] * n[0] + m[1] * n[1] + m[2] * n[2] > 0.9999)) e.normals.push(n);
@@ -419,15 +435,40 @@ function csgEdgeData(polys) {
     }
     const all = [...map.values()], creases = [];
     for (const e of all) {
-        // A closed surface has two faces on every edge. An edge with only one is a T-junction: a long edge on one side
-        // that was split into several on the other. Those are flat seams, not outlines, so they are left out.
-        if (e.normals.length < 2) continue;
         let sharp = false;
         for (let i = 0; i < e.normals.length && !sharp; i++) for (let j = i + 1; j < e.normals.length; j++) {
             const a = e.normals[i], b = e.normals[j];
             if (a[0] * b[0] + a[1] * b[1] + a[2] * b[2] < CSG_CREASE_COS) { sharp = true; break; }
         }
-        if (sharp) creases.push(e);
+        // A cut can leave the two surfaces at different resolutions, so the edge of a hole carries only one face.
+        // Such an edge is a real outline when the flat surface does not carry on past it; a seam inside a face is
+        // covered by the next polygon over. Test a point just off the edge, on the far side from the polygon that
+        // owns it, and keep the edge when nothing covers that side.
+        let boundary = false;
+        if (!sharp && e.normals.length === 1) {
+            const n = e.normals[0];
+            const ex = e.b[0] - e.a[0], ey = e.b[1] - e.a[1], ez = e.b[2] - e.a[2];
+            const elen = Math.hypot(ex, ey, ez);
+            const mx = (e.a[0] + e.b[0]) / 2, my = (e.a[1] + e.b[1]) / 2, mz = (e.a[2] + e.b[2]) / 2;
+            let ax = (ey * n[2] - ez * n[1]) / (elen || 1), ay = (ez * n[0] - ex * n[2]) / (elen || 1), az = (ex * n[1] - ey * n[0]) / (elen || 1);
+            const alen = Math.hypot(ax, ay, az);
+            if (alen > 1e-9) {
+                ax /= alen; ay /= alen; az /= alen;
+                const side = (e.centroid[0] - mx) * ax + (e.centroid[1] - my) * ay + (e.centroid[2] - mz) * az;
+                const dir = side > 0 ? -1 : 1;
+                const eps = Math.min(0.01, Math.max(0.0005, elen * 0.02));
+                const q = [mx + ax * dir * eps, my + ay * dir * eps, mz + az * dir * eps];
+                let covered = false;
+                for (const poly of polys) {
+                    const pn = poly.plane.n;
+                    if (Math.abs(pn[0] * n[0] + pn[1] * n[1] + pn[2] * n[2]) < 0.9999) continue;
+                    if (csgPolyCovers(poly, q, pn)) { covered = true; break; }
+                }
+                boundary = !covered;
+            }
+        }
+        e.boundary = boundary;
+        if (sharp || boundary) creases.push(e);
     }
     return { all, creases };
 }
@@ -529,7 +570,10 @@ function shapeOutlineEdges(o) {
         for (const e of data.edges.creases) {
             out.push({
                 a: csgShapePoint(o, e.a), b: csgShapePoint(o, e.b),
-                normals: e.normals.map(n => csgShapeNormal(o, n))
+                normals: e.normals.map(n => csgShapeNormal(o, n)),
+                // A cut boundary has no matching face on the other side to supply a normal, so it must be drawn on
+                // whichever side the camera sees. Depth testing still hides the parts behind the surface.
+                alwaysVisible: !!e.boundary
             });
         }
         return out;
@@ -548,6 +592,7 @@ function shapeOutlineEdges(o) {
 function visibleOutlineEdges(o) {
     const cam = [camPosX, camPosY, camPosZ], out = [];
     for (const e of shapeOutlineEdges(o)) {
+        if (e.alwaysVisible) { out.push(e); continue; }
         const mx = (e.a[0] + e.b[0]) / 2, my = (e.a[1] + e.b[1]) / 2, mz = (e.a[2] + e.b[2]) / 2;
         const front = e.normals.some(n => n[0] * (mx - cam[0]) + n[1] * (my - cam[1]) + n[2] * (mz - cam[2]) < 1e-4);
         if (front) out.push(e);

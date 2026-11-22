@@ -7,8 +7,31 @@
     <meta name="description" content="Learn about Vanilla3D, a browser-based 3D game engine and world-building playground.">
     <title>Vanilla3D</title>
     <link rel="stylesheet" href="https://rigatoni534.github.io/style.css">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" id="favicon">
+    <style>
+      .name-logo { display: block; width: 191px; height: 100px; color: var(--accent, #fc8116); }
+      @media (max-width: 640px) { .name-logo { width: 138px; height: 72px; } }
+    </style>
+    <script>
+      addEventListener('load', function () {
+        const root = getComputedStyle(document.documentElement);
+        const accent = (root.getPropertyValue('--accent') || '#fc8116').trim();
+        const panel = (root.getPropertyValue('--panel') || '#1d212a').trim();
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="13" fill="' + panel + '"/><path d="M11 13h8l13 29 13-29h8L39 51H25z" fill="' + accent + '"/><rect x="11" y="55" width="42" height="4" rx="2" fill="' + accent + '"/></svg>';
+        document.getElementById('favicon').href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+      });
+    </script>
   </head>
   <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="vanilla-logo" viewBox="0 0 900 470">
+        <path d="M24 24h78l88 296 88-296h78L232 400h-84z" fill="currentColor"/>
+        <text x="380" y="140" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="104" font-weight="750" letter-spacing="-3" fill="currentColor">anilla</text>
+        <text x="380" y="392" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="236" font-weight="800" letter-spacing="-8" fill="currentColor">3D</text>
+        <rect x="24" y="414" width="780" height="22" rx="4" fill="currentColor"/>
+        <text x="816" y="466" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="84" font-weight="700" fill="currentColor">4</text>
+      </symbol>
+    </svg>
     <header class="site-header" id="home">
       <nav class="site-nav" aria-label="Vanilla3D">
         <a class="nav-brand" href="#home">Vanilla3D</a>
@@ -20,7 +43,7 @@
           <a class="nav-launch" href="https://rigatoni534.github.io/Vanilla3D/engine/" target="_blank" rel="noopener noreferrer">Launch editor <span aria-hidden="true">↗</span></a>
         </div>
       </nav>
-      <p class="name">Vanilla3D</p>
+      <p class="name"><svg class="name-logo" role="img" aria-label="Vanilla3D"><use href="#vanilla-logo"/></svg></p>
       <h1>The Web Based 3D Game Engine<span class="period">.</span></h1>
       <p class="header-copy">A lightweight, open-source 3D game engine that runs right in your browser.</p>
     </header>

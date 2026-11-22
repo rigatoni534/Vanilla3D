@@ -5,12 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=3.13.0.0">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.13.0.1">
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
   
 </head>
 <body>
   <!-- Icon sprite -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-vanilla-mark" viewBox="0 0 64 64"><path d="M10 12h9l13 30 13-30h9L40 54H24z"/><rect x="10" y="57" width="44" height="4" rx="2"/></symbol>
+    <symbol id="i-vanilla-logo" viewBox="0 0 900 470">
+      <path d="M24 24h78l88 296 88-296h78L232 400h-84z" fill="currentColor" stroke="none"/>
+      <text x="380" y="140" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="104" font-weight="750" letter-spacing="-3" fill="currentColor" stroke="none">anilla</text>
+      <text x="380" y="392" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="236" font-weight="800" letter-spacing="-8" fill="currentColor" stroke="none">3D</text>
+      <rect x="24" y="414" width="780" height="22" rx="4" fill="currentColor" stroke="none"/>
+      <text x="816" y="466" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="84" font-weight="700" fill="currentColor" stroke="none">4</text>
+    </symbol>
     <symbol id="i-save" viewBox="0 0 16 16"><path d="M3 2.5h8l2.5 2.5v8.5a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5z"/><path d="M5 2.5v3.5h5V2.5M5 13.5v-4h6v4"/></symbol>
     <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.5v7.5M4.75 7.25 8 10.5l3.25-3.25M3 13h10"/></symbol>
     <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V3M4.75 5.75 8 2.5l3.25 3.25M3 13h10"/></symbol>
@@ -70,7 +79,7 @@
   <!-- Toolbar -->
   <header id="toolbar">
     <div class="brand">
-      <svg class="ic mark"><use href="#i-cube"/></svg>
+      <svg class="ic mark logo-mark"><use href="#i-vanilla-mark"/></svg>
       <span class="brand-name">Vanilla Engine</span>
       <span class="brand-sub">Editor</span>
     </div>
@@ -259,6 +268,7 @@
         <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
       </div>
       <div class="modal-body">
+        <svg class="about-logo" role="img" aria-label="Vanilla3D"><use href="#i-vanilla-logo"/></svg>
         <dl>
           <div class="info-row"><dt>Engine</dt><dd>Vanilla Engine</dd></div>
           <div class="info-row"><dt>Version</dt><dd id="info-version"></dd></div>
@@ -477,7 +487,7 @@
             <div class="version-list">
               <div class="version-row"><span>Created</span><code id="world-created-version">Unknown</code></div>
               <div class="version-row"><span>Current</span><code id="world-current-version">Unknown</code></div>
-              <div class="version-row"><span>Latest</span><code id="world-latest-version">3.13.0.0</code></div>
+              <div class="version-row"><span>Latest</span><code id="world-latest-version">3.13.0.1</code></div>
             </div>
             <button class="btn btn-primary" id="world-migrate" type="button" style="width:100%;justify-content:center;margin-top:10px">Up to date</button>
             <div class="field-note" id="world-version-note"></div>
@@ -541,13 +551,13 @@
   <div id="modal-script-docs" class="modal-overlay docs-overlay" role="dialog" aria-modal="true" aria-label="Vanilla Engine documentation">
     <div class="docs-app">
       <header class="docs-topbar">
-        <div class="brand"><svg class="ic mark"><use href="#i-cube"/></svg><span class="brand-name">Vanilla Engine</span><span class="brand-sub" id="docs-sub">Documentation</span></div>
+        <div class="brand"><svg class="ic mark logo-mark"><use href="#i-vanilla-mark"/></svg><span class="brand-name">Vanilla Engine</span><span class="brand-sub" id="docs-sub">Documentation</span></div>
         <button class="btn docs-return" id="docs-return-settings" type="button" title="Close the docs" aria-label="Close the docs"><svg class="ic"><use href="#i-chev"/></svg><span class="label" id="docs-return-label">Return to Settings</span></button>
       </header>
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.13.0.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.13.0.1</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -663,7 +673,7 @@
         <p>The union is a real surface built from the parts: blocks, wedges, cylinders, balls and other unions are cut and joined into one continuous mesh, with no hidden blocks and no steps along a slope. Its outline is drawn only along the real creases of that surface, so the seams where the original parts met are not visible. Cut-out parts stay hollow, and the player is blocked by the surface's cells rather than by the whole box, so a cut doorway can be walked through. The union keeps the size of the parts it was built from, and building a union again from new parts is how you change one.</p>
         <p>A <b>Sound</b> plays one of the built-in sounds: Beep, Chime, Click, Thud or Siren. They are synthesised, so a world never needs an audio file. <b>Playing</b> starts and stops it, <b>Looped</b> repeats it while it plays, and <b>Volume</b> is a slider from 0 to 1. Sounds play while the simulation runs; Stop silences them and restores the world.</p>
         <p><b>Max distance</b> makes a Sound positional and only applies when the Sound is a child of an object: it is heard within that many meters of its parent and fades out as the camera moves away, so a Sound inside a block is loud beside the block and silent further off. A Sound placed straight in a Space is heard at the same volume everywhere. Scripts can change Playing, Looped, Volume, MaxDistance and Preset while the simulation runs.</p>
-        <p>A <b>Highlight</b> draws an outline around the object it sits inside. Put one inside a model to outline a player, or inside a part to outline just that part. Only the edges the camera can see are drawn: an edge on the far side of the shape is left out, and a wall hides the part of the outline behind it. <b>Color</b> sets the outline color, and <b>Appears over objects</b> turns that hiding off and always draws the visible edges on top (on by default), so a player can be seen through a wall.</p>
+        <p>A <b>Highlight</b> draws an outline around the object it sits inside. Put one inside a model to outline a player, or inside a part to outline just that part. Only the edges the camera can see are drawn: an edge on the far side of the shape is left out, and a wall hides the part of the outline behind it. A cut hole is outlined all the way around its rim. <b>Color</b> sets the outline color, and <b>Appears over objects</b> turns off hiding by other objects and always draws the visible edges on top (on by default), so a player can be seen through a wall; the far side of the shape itself is still left out.</p>
         <h3 data-group="Editor guide">Textures</h3>
         <p>A <b>Texture</b> paints chosen faces of a Rectangular Prism. Use <b>Add Child…</b> in a prism's three-dot menu and choose <b>Texture</b>; it appears as a child of that prism and always affects its parent.</p>
         <ul>
@@ -1050,22 +1060,22 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=3.13.0.0"></script>
-  <script>const ENGINE_VERSION = '3.13.0.0';</script>
+  <script src="../vanillalua.js?v=3.13.0.1"></script>
+  <script>const ENGINE_VERSION = '3.13.0.1';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/scene.js?v=3.13.0.0"></script>
-  <script defer src="js/csg.js?v=3.13.0.0"></script>
-  <script defer src="js/version-history.js?v=3.13.0.0"></script>
-  <script defer src="js/player.js?v=3.13.0.0"></script>
-  <script defer src="js/sounds.js?v=3.13.0.0"></script>
-  <script defer src="js/scripting.js?v=3.13.0.0"></script>
-  <script defer src="js/shell.js?v=3.13.0.0"></script>
-  <script defer src="js/files.js?v=3.13.0.0"></script>
-  <script defer src="js/offline.js?v=3.13.0.0"></script>
-  <script defer src="js/explorer.js?v=3.13.0.0"></script>
-  <script defer src="js/properties.js?v=3.13.0.0"></script>
-  <script defer src="js/render.js?v=3.13.0.0"></script>
-  <script defer src="js/gl.js?v=3.13.0.0"></script>
-  <script defer src="js/main.js?v=3.13.0.0"></script>
+  <script defer src="js/scene.js?v=3.13.0.1"></script>
+  <script defer src="js/csg.js?v=3.13.0.1"></script>
+  <script defer src="js/version-history.js?v=3.13.0.1"></script>
+  <script defer src="js/player.js?v=3.13.0.1"></script>
+  <script defer src="js/sounds.js?v=3.13.0.1"></script>
+  <script defer src="js/scripting.js?v=3.13.0.1"></script>
+  <script defer src="js/shell.js?v=3.13.0.1"></script>
+  <script defer src="js/files.js?v=3.13.0.1"></script>
+  <script defer src="js/offline.js?v=3.13.0.1"></script>
+  <script defer src="js/explorer.js?v=3.13.0.1"></script>
+  <script defer src="js/properties.js?v=3.13.0.1"></script>
+  <script defer src="js/render.js?v=3.13.0.1"></script>
+  <script defer src="js/gl.js?v=3.13.0.1"></script>
+  <script defer src="js/main.js?v=3.13.0.1"></script>
 </body>
 </html>

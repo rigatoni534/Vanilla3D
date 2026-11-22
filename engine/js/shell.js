@@ -640,7 +640,7 @@
         }
         bindWorldSettings();
         document.getElementById('version-btn').addEventListener('click', () => {
-            document.getElementById('info-version').textContent = ENGINE_VERSION;
+            document.getElementById('info-version').textContent = typeof ENGINE_RELEASE === 'string' ? ENGINE_RELEASE : ENGINE_VERSION;
             openModal('modal-version');
         });
         document.getElementById('settings-btn').addEventListener('click', () => openModal('modal-settings', '#theme-toggle'));
@@ -658,8 +658,9 @@
         const docsNav = document.getElementById('docs-nav');
         const docsMain = document.querySelector('.docs-main');
         const docsHeadings = Array.from(docsArticle.querySelectorAll('h3'));
-        document.getElementById('docs-foot').textContent = 'Engine v' + ENGINE_VERSION;
-        docsArticle.querySelectorAll('.ver-chip').forEach(c => c.textContent = ENGINE_VERSION);
+        const releaseLabel = typeof ENGINE_RELEASE === 'string' ? ENGINE_RELEASE : ENGINE_VERSION;
+        document.getElementById('docs-foot').textContent = 'Engine v' + releaseLabel;
+        docsArticle.querySelectorAll('.ver-chip').forEach(c => c.textContent = releaseLabel);
         let lastGroup = null;
         docsHeadings.forEach((heading, index) => {
             heading.id = 'docs-section-' + (index + 1);
@@ -706,4 +707,4 @@
         });
         document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModals));
         document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('mousedown', (e) => { if (e.target === m) closeModals(); }));
-        document.getElementById('status-version').textContent = 'v' + ENGINE_VERSION;
+        document.getElementById('status-version').textContent = 'v' + (typeof ENGINE_RELEASE === 'string' ? ENGINE_RELEASE : ENGINE_VERSION);

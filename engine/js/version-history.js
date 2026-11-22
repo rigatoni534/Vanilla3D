@@ -1,7 +1,7 @@
 // Vanilla Engine — release history, What's new, and the version this browser last opened.
 // Add an entry here whenever ENGINE_VERSION changes. The About dialog and What's new both warn if the running version is missing.
 const VERSION_HISTORY = [
-  { version: '3.14.1.0', date: '2026-11-22', notes: ['Sun rays now belong to the scene: a wall, a union or any other solid hides them instead of being painted over. The glow of the sun is masked by what the camera can actually see.', 'Bloom is calmer. Only light above the threshold glows, the glow screens over the scene instead of being added, and every preset is weaker, so bright surfaces keep their contrast.', 'Union and highlight outlines no longer draw the far side of a cut hole through the union\'s own front surface. A boundary edge is drawn only from the side its face points toward.'] },
+  { version: '4.0.0.0', label: '4.0.0.0 pt 1', date: '2026-11-22', notes: ['Sun rays now belong to the scene: a wall, a union or any other solid hides them instead of being painted over. The glow of the sun is masked by what the camera can actually see.', 'Bloom is calmer. Only light above the threshold glows, the glow screens over the scene instead of being added, and every preset is weaker, so bright surfaces keep their contrast.', 'Union and highlight outlines no longer draw the far side of a cut hole through the union\'s own front surface. A boundary edge is drawn only from the side its face points toward.'] },
   { version: '3.14.0.0', date: '2026-11-22', notes: ['Added graphics presets: Low, Medium, Standard, High, Extra High and Unlimited. A preset sets shadows, texture detail, anti-aliasing, render resolution, bloom and sun rays together.', 'Texture quality now follows the preset. Low and Medium draw a coarser grid at a lower resolution; High and above add 0.125 and 0.0625 Vm grid lines and a fine surface grain.', 'Added bloom and sun rays. Bright surfaces glow and the sun casts soft light shafts across the viewport. Both are off below Standard and can be switched off on their own.', 'With bloom on, the scene is drawn into an antialiased offscreen target before it is composited, so the glow does not cost edge quality. Low and Medium skip the target entirely.', 'Faster frames: the status bar is refreshed once a second instead of every frame, and the sky is only repainted when the camera, time of day or size changes.'] },
   { version: '3.13.0.1', date: '2026-11-22', notes: ['Highlight and union outlines stay continuous on flat faces and all the way around a cut hole, instead of breaking into fragments.', 'A highlight no longer draws the far side of its own shape over the front. It still shows through other objects when Appears over objects is on.', 'The official Vanilla3D mark replaces the placeholder cube in the toolbar and docs, and is used as the themed favicon.'] },
   { version: '3.13.0.0', date: '2026-11-22', notes: ['Worlds now record the version they were created in and the version their content has reached, shown in World Settings > Version.', 'Added world migration: an older world can add newer features such as the Networking script and rebuilt union surfaces without losing existing instances.', 'The Move, Rotate and Scale gizmos are now shaded 3D arrows, rings and handles instead of flat overlays.'] },
@@ -32,7 +32,7 @@ const LAST_SEEN_VERSION_KEY = 'vanilla-engine-last-seen-version';
 
 function versionEntryHTML(entry, current) {
     return '<article class="version-entry' + (current ? ' current' : '') + '">' +
-        '<div class="version-head"><span class="version-tag">' + esc(entry.version) + '</span>' +
+        '<div class="version-head"><span class="version-tag">' + esc(entry.label || entry.version) + '</span>' +
         '<span class="version-date">' + esc(entry.date) + '</span>' +
         (current ? '<span class="version-current">current</span>' : '') + '</div>' +
         '<ul class="version-notes">' + entry.notes.map(note => '<li>' + esc(note) + '</li>').join('') + '</ul>' +
@@ -78,7 +78,7 @@ function maybeShowWhatsNew() {
 
 function showWhatsNew(entries, previous) {
     if (!entries.length) return;
-    document.getElementById('wn-title').textContent = "What's new in " + ENGINE_VERSION;
+    document.getElementById('wn-title').textContent = "What's new in " + (typeof ENGINE_RELEASE === 'string' ? ENGINE_RELEASE : ENGINE_VERSION);
     document.getElementById('wn-lede').textContent = previous
         ? (entries.length === 1 ? 'Updated from version ' + previous + '.' : entries.length + ' releases since version ' + previous + '.')
         : 'This copy is new to you; here is what the latest release changed.';

@@ -100,6 +100,127 @@
                 return;
             }
 
+            if (isConnection(obj)) {
+                if (!Array.isArray(obj.clients)) obj.clients = [];
+                const players = Object.entries(sceneObjects).filter(([, p]) => p.type === 'player').map(([, p]) => p.name);
+                const playerList = `<datalist id="prop-conn-players">${players.map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>`;
+                const field = (id, label, value, max, note, placeholder, list) => `
+                    <div class="field-label">${label}</div>
+                    <input class="text" type="text" id="${id}" maxlength="${max}" spellcheck="false" value="${esc(value || '')}" placeholder="${placeholder ? esc(placeholder) : ''}"${list ? ` list="${list}"` : ''} aria-label="${label}">
+                    ${note ? `<div class="field-note">${note}</div>` : ''}`;
+                const numRow = (id, label, value, min, max, step, unit) => `
+                    <div class="field-label">${label}</div>
+                    <label class="num hnum"><input type="number" id="${id}" min="${min}" max="${max}" step="${step}" value="${value}" aria-label="${label}"><span class="tag">${unit}</span></label>`;
+                // A ClientSocket may be Uncapped, stored as 0 kbps; a ServerSocket always has a limit.
+                const bandSection = (uncapped) => `
+                    <div class="field-label">Bandwidth</div>
+                    <label class="num hnum"><input type="number" id="prop-conn-bandwidth" min="${uncapped ? 0 : 1}" max="${CONNECTION_BANDWIDTH_MAX}" step="1" value="${obj.bandwidth}" aria-label="Bandwidth in kilobits per second"><span class="tag">kbps</span></label>
+                    ${uncapped ? switchRow('prop-conn-uncapped', 'Uncapped', !(obj.bandwidth > 0), '') : ''}
+                    <div class="field-note">${uncapped ? 'Uncapped means the socket is never throttled; 0 kbps is shown for it.' : 'The most this socket may send or receive. The default is 4096 kbps.'}</div>`;
+                let body;
+                if (obj.type === 'clientsocket') {
+                    body = `
+                        ${section('Editor', nameField(obj))}
+                        ${section('Socket', `
+                            ${switchRow('prop-conn-active', 'Active', obj.active !== false, '')}
+                            ${bandSection(true)}
+                        `)}
+                        ${section('Addressing', `
+                            ${field('prop-conn-client', 'Client', obj.client, 120, 'The client\u2019s IPv4 address. It is filled in when the socket connects.', '192.168.1.20')}
+                            ${field('prop-conn-player', 'Player', obj.player, 48, 'The Player in Players this socket is addressed to.', 'Player1', 'prop-conn-players')}
+                        `)}${playerList}`;
+                } else if (obj.type === 'serversocket') {
+                    body = `
+                        ${section('Editor', nameField(obj))}
+                        ${section('Socket', `
+                            ${switchRow('prop-conn-active', 'Active', obj.active !== false, '')}
+                            ${bandSection(false)}
+                            ${numRow('prop-conn-maxclients', 'Max clients', obj.maxClients, 1, 100, 1, 'clients')}
+                            <div class="field-note">Keep this at the world\u2019s max player count (${worldMaxPlayers()}).</div>
+                            <button class="btn btn-outline" id="prop-conn-usemax" type="button" style="width:100%;justify-content:center;margin-top:8px">Use the world max (${worldMaxPlayers()})</button>
+                        `)}`;
+                } else if (obj.type === 'peerconnection') {
+                    body = `
+                        ${section('Editor', nameField(obj))}
+                        ${section('Connection', `
+                            ${switchRow('prop-conn-active', 'Active', obj.active !== false, '')}
+                            ${field('prop-conn-password', 'Entry Password', obj.password, 64, 'The password the other peer needs to join this connection.', 'Password')}
+                        `)}
+                        ${section('Clients', `
+                            ${field('prop-conn-client1', 'Client 1', obj.client1, 120, '', '192.168.1.20')}
+                            ${field('prop-conn-client2', 'Client 2', obj.client2, 120, '', '192.168.1.21')}
+                        `)}
+                        ${section('Players', `
+                            ${field('prop-conn-player1', 'Player 1', obj.player1, 120, '', '192.168.1.20')}
+                            ${field('prop-conn-player2', 'Player 2', obj.player2, 120, '', '192.168.1.21')}
+                            <div class="field-note">Player 1 and Player 2 hold the IPv4 address of each player\u2019s client.</div>
+                        `)}`;
+                } else {
+                    const rows = obj.clients.map((c, i) => `
+                        <div class="asset-row conn-row">
+                            <input class="text" type="text" data-client="${i}" data-key="ip" maxlength="120" spellcheck="false" value="${esc(c.ip || '')}" placeholder="192.168.1.20" aria-label="Client ${i + 1} IPv4">
+                            <input class="text" type="text" data-client="${i}" data-key="player" maxlength="48" value="${esc(c.player || '')}" placeholder="Player1" list="prop-conn-players" aria-label="Client ${i + 1} player">
+                            <button class="btn icon-btn" type="button" data-remove-client="${i}" aria-label="Remove client ${i + 1}">${icon('i-trash')}</button>
+                        </div>`).join('');
+                    body = `
+                        ${section('Editor', nameField(obj))}
+                        ${section('Connection', `
+                            ${switchRow('prop-conn-active', 'Active', obj.active !== false, '')}
+                            ${field('prop-conn-password', 'Entry Password', obj.password, 64, 'The password every client needs to join.', 'Password')}
+                        `)}
+                        ${section('Clients', `
+                            <div class="field-note" style="margin-top:0">Anyone with the password can join. There is no client limit; add each client\u2019s IPv4 and player below.</div>
+                            <div class="asset-rows" id="prop-conn-clients">${rows || '<div class="asset-empty">No clients yet.</div>'}</div>
+                            <button class="btn btn-outline" id="prop-conn-addclient" type="button" style="width:100%;justify-content:center;margin-top:8px">Add client</button>
+                        `)}${playerList}`;
+                }
+                container.innerHTML = `${objHead(selectedObjectId, obj, typeIcon[obj.type])}${body}`;
+                bindName(obj);
+                document.getElementById('prop-conn-active').addEventListener('change', (e) => { obj.active = e.target.checked; });
+                const bindText = (id, key) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.addEventListener('input', () => { obj[key] = el.value; });
+                    el.addEventListener('change', () => { obj[key] = el.value.trim(); el.value = obj[key]; });
+                };
+                for (const key of ['client', 'player', 'client1', 'client2', 'player1', 'player2']) bindText('prop-conn-' + key, key);
+                const pw = document.getElementById('prop-conn-password');
+                if (pw) pw.addEventListener('input', () => { obj.password = pw.value; });
+                const bw = document.getElementById('prop-conn-bandwidth');
+                if (bw) {
+                    bw.addEventListener('input', () => {
+                        const v = parseFloat(bw.value);
+                        if (Number.isFinite(v)) obj.bandwidth = Math.max(0, Math.min(CONNECTION_BANDWIDTH_MAX, Math.round(v)));
+                    });
+                    bw.addEventListener('change', () => { bw.value = obj.bandwidth; });
+                }
+                const unc = document.getElementById('prop-conn-uncapped');
+                if (unc) unc.addEventListener('change', (e) => { obj.bandwidth = e.target.checked ? 0 : 4096; renderProperties(); });
+                const mc = document.getElementById('prop-conn-maxclients');
+                if (mc) {
+                    const clampClients = () => Math.max(1, Math.min(100, Math.round(parseFloat(mc.value) || 1)));
+                    mc.addEventListener('input', () => { if (Number.isFinite(parseFloat(mc.value))) obj.maxClients = clampClients(); });
+                    mc.addEventListener('change', () => { obj.maxClients = clampClients(); mc.value = obj.maxClients; });
+                    document.getElementById('prop-conn-usemax').addEventListener('click', () => { obj.maxClients = worldMaxPlayers(); renderProperties(); });
+                }
+                const clientList = document.getElementById('prop-conn-clients');
+                if (clientList) {
+                    clientList.addEventListener('input', (e) => {
+                        const input = e.target.closest('[data-client]'); if (!input) return;
+                        const c = obj.clients[Number(input.dataset.client)]; if (!c) return;
+                        c[input.dataset.key] = input.value;
+                    });
+                    clientList.addEventListener('click', (e) => {
+                        const btn = e.target.closest('[data-remove-client]'); if (!btn) return;
+                        obj.clients.splice(Number(btn.dataset.removeClient), 1);
+                        renderProperties();
+                    });
+                }
+                const addClient = document.getElementById('prop-conn-addclient');
+                if (addClient) addClient.addEventListener('click', () => { obj.clients.push({ ip: '', player: '' }); renderProperties(); });
+                return;
+            }
+
             if (isUI(obj)) {
                 const number = (key, label, tag, min, max, step) => `
                     <div class="field-label">${label}</div>

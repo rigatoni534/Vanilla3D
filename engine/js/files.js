@@ -11,7 +11,7 @@
         const VN_RELOAD_RESTORE_KEY = 'vanilla-engine-reload-restore';
         // What a save can include. Settings > What gets saved switches these off one by one.
         const SAVED_SPACES = [['world', 'World'], ['storage', 'Storage'], ['scripts', 'Scripts'], ['ui', 'UI'], ['communications', 'Communications']];
-        const SAVED_TYPES = [['prism6', 'Blocks'], ['ball', 'Balls'], ['wedge', 'Wedges'], ['cylinder', 'Cylinders'], ['union', 'Unions'], ['model', 'Models'], ['human', 'Humans'], ['script', 'Script instances'], ['worldsettings', 'World Settings'], ['texture', 'Textures'], ['sound', 'Sounds'], ['highlight', 'Highlights'], ['frame', 'UI frames'], ['text', 'UI text'], ['button', 'UI buttons'], ['image', 'UI images'], ['input', 'UI inputs'], ['progressbar', 'UI progress bars']];
+        const SAVED_TYPES = [['prism6', 'Blocks'], ['ball', 'Balls'], ['wedge', 'Wedges'], ['cylinder', 'Cylinders'], ['union', 'Unions'], ['model', 'Models'], ['human', 'Humans'], ['script', 'Script instances'], ['worldsettings', 'World Settings'], ['texture', 'Textures'], ['sound', 'Sounds'], ['highlight', 'Highlights'], ['frame', 'UI frames'], ['text', 'UI text'], ['button', 'UI buttons'], ['image', 'UI images'], ['input', 'UI inputs'], ['progressbar', 'UI progress bars'], ['clientsocket', 'Client sockets'], ['serversocket', 'Server sockets'], ['peerconnection', 'Peer connections'], ['groupconnection', 'Group connections']];
         for (const [id] of SAVED_SPACES) document.getElementById('sv-' + id).addEventListener('change', (e) => { settings.saveWhat[id] = e.target.checked; saveSettings(); });
         for (const [t] of SAVED_TYPES) document.getElementById('sv-' + t).addEventListener('change', (e) => { settings.saveWhat.types[t] = e.target.checked; saveSettings(); });
         // The single browser save older versions wrote becomes Browser Slot 1, so nothing is lost.
@@ -156,7 +156,7 @@
             for (const [old, nid] of Object.entries(remap)) { objs[nid] = objs[old]; delete objs[old]; }
             for (const o of Object.values(objs)) {
                 if (remap[o.parent]) o.parent = remap[o.parent];
-                if (o && typeof o === 'object' && !SPACE_IDS.includes(o.parent) && !objs[o.parent]) o.parent = UI_TYPES.includes(o.type) ? 'ui' : 'world'; // parent was removed: fall back to its space
+                if (o && typeof o === 'object' && !SPACE_IDS.includes(o.parent) && !objs[o.parent]) o.parent = isConnection(o) ? 'communications' : UI_TYPES.includes(o.type) ? 'ui' : 'world'; // parent was removed: fall back to its space
             }
         }
         function validateWorldFile(data) {
@@ -165,18 +165,22 @@
             { let spawnSeen = false; for (const o of Object.values(data.objects)) { if (!o || typeof o !== 'object') continue; if (o.type === 'prism6' && o.spawnpoint === true && !spawnSeen) spawnSeen = true; else if (o.spawnpoint !== undefined) delete o.spawnpoint; } }
             for (const [uid, obj] of Object.entries(data.objects)) {
                 if (!/^[A-Za-z][A-Za-z0-9]*$/.test(uid) || !obj || typeof obj !== 'object' || !(SPACE_IDS.includes(obj.parent) || (data.objects[obj.parent] && obj.parent !== uid))) throw new Error('The file contains an invalid object or UID: ' + uid);
-                if (!['prism6', 'ball', 'wedge', 'cylinder', 'union', 'model', 'worldsettings', 'script', 'texture', 'human', 'sound', 'highlight'].concat(UI_TYPES).includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
+                if (!['prism6', 'ball', 'wedge', 'cylinder', 'union', 'model', 'worldsettings', 'script', 'texture', 'human', 'sound', 'highlight'].concat(UI_TYPES, CONNECTION_TYPES).includes(obj.type)) throw new Error('Unsupported object type for UID ' + uid + '.');
                 // The interface and the 3D world are separate trees.
                 if (UI_TYPES.includes(obj.type)) {
                     const parent = data.objects[obj.parent];
                     if (obj.parent !== 'ui' && !(parent && UI_TYPES.includes(parent.type))) throw new Error('UI instance ' + uid + ' must sit in the UI space or inside another UI instance.');
                 } else if (obj.parent === 'ui') throw new Error(uid + ' is not a UI instance, so it cannot sit in the UI space.');
+                // Connections live in Communications, and nothing else does.
+                if (isConnection(obj)) {
+                    if (obj.parent !== 'communications') throw new Error('Connection ' + uid + ' must sit in the Communications space.');
+                } else if (obj.parent === 'communications') throw new Error(uid + ' is not a connection, so it cannot sit in the Communications space.');
             }
             for (const [uid, obj] of Object.entries(data.objects)) { let p = obj, n = 0; while (p && !SPACE_IDS.includes(p.parent) && n++ < 64) p = data.objects[p.parent]; if (!p) throw new Error('Object ' + uid + ' has a circular parent chain.'); }
             return data;
         }
         // The type counters decide the default names (Block, Block2, ...), so they are rebuilt whenever objects change.
-        const COUNTER_TYPES = [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball'], ['human', 'human'], ['wedge', 'wedge'], ['cylinder', 'cylinder'], ['union', 'union'], ['sound', 'sound'], ['highlight', 'highlight'], ['frame', 'frame'], ['text', 'text'], ['button', 'button'], ['image', 'image'], ['input', 'input'], ['progressbar', 'progressbar']];
+        const COUNTER_TYPES = [['prism', 'prism6'], ['model', 'model'], ['script', 'script'], ['worldsettings', 'worldsettings'], ['texture', 'texture'], ['ball', 'ball'], ['human', 'human'], ['wedge', 'wedge'], ['cylinder', 'cylinder'], ['union', 'union'], ['sound', 'sound'], ['highlight', 'highlight'], ['frame', 'frame'], ['text', 'text'], ['button', 'button'], ['image', 'image'], ['input', 'input'], ['progressbar', 'progressbar'], ['clientsocket', 'clientsocket'], ['serversocket', 'serversocket'], ['peerconnection', 'peerconnection'], ['groupconnection', 'groupconnection']];
         function recountTypes() {
             for (const [k] of COUNTER_TYPES) counters[k] = 0;
             for (const o of Object.values(sceneObjects)) { const hit = COUNTER_TYPES.find(c => c[1] === o.type); if (hit) counters[hit[0]]++; }
@@ -217,6 +221,8 @@
                     if (!HEX6.test(obj.color)) obj.color = '#ffd23f';
                     obj.overObjects = obj.overObjects !== false;
                 }
+                if (obj.type === 'worldsettings') normalizeWorldSettings(obj);
+                if (isConnection(obj)) normalizeConnection(obj);
                 if (isUI(obj)) {
                     obj.posX = uiClamp(obj.posX, 0, 100); obj.posY = uiClamp(obj.posY, 0, 100);
                     obj.sizeX = uiClamp(obj.sizeX, 1, 100); obj.sizeY = uiClamp(obj.sizeY, 1, 100);
@@ -258,10 +264,16 @@
             uiDirty = true;
             renderTabs(); renderExplorer(); renderProperties();
         }
+        function worldFileName() {
+            const ws = activeWorldSettings();
+            const raw = ws && typeof ws.worldName === 'string' ? ws.worldName : '';
+            const safe = raw.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 64);
+            return (safe || 'World') + '.vnw';
+        }
         function downloadWorldFile() {
             const blob = new Blob([JSON.stringify(buildWorldFile(), null, 2)], { type: 'application/vnd.vanilla.world+json' });
             const url = URL.createObjectURL(blob); const a = document.createElement('a');
-            a.href = url; a.download = 'World.vnw'; document.body.appendChild(a); a.click(); a.remove();
+            a.href = url; a.download = worldFileName(); document.body.appendChild(a); a.click(); a.remove();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
         function saveToSlot(id, quiet) {
@@ -291,7 +303,7 @@
             if (action === 'save-autosave') saveToSlot('autosave');
             else if (action === 'save-slot1') saveToSlot('slot1');
             else if (action === 'save-slot2') saveToSlot('slot2');
-            else if (action === 'save-file') { downloadWorldFile(); toast('Downloaded World.vnw.'); }
+            else if (action === 'save-file') { downloadWorldFile(); toast('Downloaded ' + worldFileName() + '.'); }
             else if (action === 'open-file') vnwInput.click();
             else if (action === 'add-vanilla') vanillaInput.click();
             else if (action.startsWith('open-') && slotOf(action.slice(5))) openSlot(action.slice(5));

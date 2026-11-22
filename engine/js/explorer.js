@@ -25,7 +25,7 @@
                 const kids = Object.entries(sceneObjects).filter(([, o]) => o.parent === sid);
                 const open = !collapsed.has(sid);
                 const rows = kids.length ? kids.map(([id, o]) => rowHtml(id, o, 0)).join('')
-                    : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : sid === 'ui' ? 'No interface yet' : sid === 'players' ? 'Players join when the simulation runs' : sid === 'communications' ? 'Reserved for server and client communication' : 'Empty'}</div>`;
+                    : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : sid === 'ui' ? 'No interface yet' : sid === 'players' ? 'Players join when the simulation runs' : sid === 'communications' ? 'No connections yet' : 'Empty'}</div>`;
                 return `
                     <div class="tree-space">
                         <div class="tree-row">
@@ -128,12 +128,19 @@
             addMenu.dataset.space = btn.dataset.add;
             document.getElementById('add-menu-title').textContent = spaces[btn.dataset.add] ? 'Add to ' + spaces[btn.dataset.add].name : 'Add inside ' + ((sceneObjects[btn.dataset.add] || {}).name || 'object');
             { const tgt = sceneObjects[btn.dataset.add];
-              const uiTarget = btn.dataset.add === 'ui' || isUI(tgt);
+              const spaceId = btn.dataset.add;
+              const uiTarget = spaceId === 'ui' || isUI(tgt);
+              // The Communications space offers connections, and nothing else.
+              const commsTarget = spaceId === 'communications' || isConnection(tgt);
               for (const it of addMenu.querySelectorAll('.menu-item')) {
-                  const uiKind = UI_TYPES.includes(it.dataset.kind);
+                  const kind = it.dataset.kind;
+                  const uiKind = UI_TYPES.includes(kind);
                   // Scripts are the one non-UI instance that may be added inside a UI element.
-                  let show = uiTarget ? (uiKind || (it.dataset.kind === 'script' && !!tgt && isUI(tgt))) : !uiKind;
-                  if (!uiTarget && it.dataset.kind === 'texture') show = !!tgt && tgt.type === 'prism6';
+                  let show;
+                  if (commsTarget) show = CONNECTION_TYPES.includes(kind);
+                  else if (CONNECTION_TYPES.includes(kind)) show = false;
+                  else show = uiTarget ? (uiKind || (kind === 'script' && !!tgt && isUI(tgt))) : !uiKind;
+                  if (!uiTarget && !commsTarget && kind === 'texture') show = !!tgt && tgt.type === 'prism6';
                   it.style.display = show ? '' : 'none';
               } }
             addMenu.hidden = false;
@@ -198,7 +205,8 @@
             off('paste', !clipboard);
             off('camera', !((isShape(o) || o.type === 'model') && spaceOf(o) === 'world'));
             off('ungroup', o.type !== 'model');
-            off('group', !menuTargets(id).length || menuTargets(id).some(k => isUI(sceneObjects[k])));
+            off('addchild', isConnection(o));
+            off('group', !menuTargets(id).length || menuTargets(id).some(k => isUI(sceneObjects[k]) || isConnection(sceneObjects[k])));
             { const shapes = menuTargets(id).filter(k => isShape(sceneObjects[k]) && spaceOf(sceneObjects[k]) === 'world');
               off('union', !shapes.length); off('intersect', shapes.length < 2); }
             itemMenu.hidden = false;
@@ -307,6 +315,9 @@
         function reparent(id, target) {
             const o = sceneObjects[id], t = SPACE_KEYS.includes(target) ? true : sceneObjects[target];
             if (!o || !t || o.readOnly || target === 'players' || id === target || isInside(target, id) || (sceneObjects[target] && sceneObjects[target].readOnly) || o.parent === target) return;
+            // Connections stay in the Communications space, and nothing else may join them there.
+            if (isConnection(o)) { if (target !== 'communications') return; }
+            else if (target === 'communications' || isConnection(sceneObjects[target])) return;
             // UI lives in the UI space and inside other UI; the 3D world and the interface never mix.
             if (isUI(o) ? (SPACE_KEYS.includes(target) ? target !== 'ui' : !isUI(sceneObjects[target])) : target === 'ui') return;
             o.parent = target; collapsed.delete(target); renderExplorer(); renderProperties();
@@ -315,6 +326,9 @@
             const c = clipboard;
             if (!c) return;
             if (c.multi) { const list = c.multi, cut = c.cut; for (const sub of list) { clipboard = sub; pasteInto(space); } clipboard = cut ? null : { multi: list, cut: false }; return; }
+            if (isConnection(c.data)) {
+                if (space !== 'communications') { toast('Connections can only be pasted into Communications.', 'warn'); return; }
+            } else if (space === 'communications' || isConnection(sceneObjects[space])) { toast('Only connection instances live in Communications.', 'warn'); return; }
             // Only UI elements sit at the top of the UI space; scripts belong inside one of them.
             if (space === 'ui' && !isUI(c.data)) { toast('Only UI elements can sit at the top of the UI space. Paste inside a UI element.', 'warn'); return; }
             const data = cloneData(c.data);
@@ -395,12 +409,17 @@
             const t = e.target.closest('.tree-item, .tree-group'); if (!t || !dragIds.length) return null;
             if (t.classList.contains('tree-group')) {
                 const sp = t.dataset.space;
-                if (sp === 'engine' || sp === 'communications') return null;
+                if (sp === 'engine' || sp === 'players') return null;
+                // Connections move within Communications only; nothing else goes in.
+                const draggingConnection = dragIds.some(id => isConnection(sceneObjects[id]));
+                if (draggingConnection) return sp === 'communications' ? { el: t, where: 'child', target: sp } : null;
+                if (sp === 'communications') return null;
                 // The interface stays in the UI space; a script enters it through a UI element, never at the top.
                 if (dragIds.some(id => isUI(sceneObjects[id])) ? sp !== 'ui' : sp === 'ui') return null;
                 return { el: t, where: 'child', target: sp };
             }
-            const o = sceneObjects[t.dataset.id]; if (!o || o.readOnly) return null;
+            const o = sceneObjects[t.dataset.id]; if (!o || o.readOnly || isConnection(o)) return null;
+            if (dragIds.some(id => isConnection(sceneObjects[id]))) return null;
             const r = t.getBoundingClientRect(), f = (e.clientY - r.top) / r.height;
             const where = f < 0.28 ? 'before' : f > 0.72 ? 'after' : 'child';
             const target = where === 'child' ? t.dataset.id : o.parent;

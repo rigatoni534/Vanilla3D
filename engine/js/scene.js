@@ -7,7 +7,7 @@
             storage: { name: 'Storage', icon: 'i-folder', addable: true },
             scripts: { name: 'Scripts', icon: 'i-script', addable: true },
             ui:      { name: 'UI',      icon: 'i-ui-frame', addable: true },
-            communications: { name: 'Communications', icon: 'i-comms', addable: false },
+            communications: { name: 'Communications', icon: 'i-comms', addable: true },
             players: { name: 'Players', icon: 'i-players', addable: false },
             engine:  { name: 'Engine',  icon: 'i-engine', addable: false }
         };
@@ -19,7 +19,7 @@
             let changed = true;
             while (changed) { changed = false; for (const [id, o] of Object.entries(sceneObjects)) if (o.parent !== 'engine' && !SPACE_KEYS.includes(o.parent) && !sceneObjects[o.parent]) { delete sceneObjects[id]; physicsVelocity.delete(id); vlInstCache.delete(id); if (selectedObjectId === id) selectedObjectId = null; changed = true; } }
         }
-        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player', wedge: 'Wedge', cylinder: 'Cylinder', sound: 'Sound', highlight: 'Highlight', union: 'Union', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input', progressbar: 'ProgressBar' })[type] || 'Instance'; }
+        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player', wedge: 'Wedge', cylinder: 'Cylinder', sound: 'Sound', highlight: 'Highlight', union: 'Union', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input', progressbar: 'ProgressBar', clientsocket: 'ClientSocket', serversocket: 'ServerSocket', peerconnection: 'PeerConnection', groupconnection: 'GroupConnection' })[type] || 'Instance'; }
         function preInc(n) { return typeof settings !== 'undefined' && !!(settings.preinclude && settings.preinclude[n]); }
         // Textures: a child of a prism6 that paints chosen faces. Faces use the engine's face order.
         const FACE_LABELS = ['Front', 'Back', 'Right', 'Left', 'Top', 'Bottom'];
@@ -50,7 +50,73 @@
         function makeHighlight(name, parent) {
             return { type: 'highlight', name, parent, color: '#ffd23f', overObjects: true };
         }
+        function makeWorldSettings(name, parent, props) {
+            return Object.assign({
+                type: 'worldsettings', name, parent, timeOfDay: 14, gravity: 9.8, killY: -5000,
+                worldName: 'My World', creator: '', description: '', maxPlayers: DEFAULT_MAX_PLAYERS, assets: []
+            }, props);
+        }
         const isShape = (o) => !!o && (o.type === 'prism6' || o.type === 'ball' || o.type === 'wedge' || o.type === 'cylinder' || o.type === 'union');
+
+        // ───────── Communications ─────────
+        // Connections describe how a server and its clients talk. They are data only for now: the editor can create
+        // and configure them, but no message is sent or received yet.
+        const CONNECTION_TYPES = ['clientsocket', 'serversocket', 'peerconnection', 'groupconnection'];
+        const isConnection = (o) => !!o && CONNECTION_TYPES.includes(o.type);
+        const DEFAULT_MAX_PLAYERS = 8;
+        const CONNECTION_BANDWIDTH_MAX = 1000000;   // kbps; a ClientSocket at 0 is Uncapped
+        function makeClientSocket(name, parent, props) {
+            return Object.assign({ type: 'clientsocket', name, parent, active: true, client: '', player: '', bandwidth: 0 }, props);
+        }
+        function makeServerSocket(name, parent, props) {
+            return Object.assign({ type: 'serversocket', name, parent, active: true, bandwidth: 4096, maxClients: worldMaxPlayers() }, props);
+        }
+        function makePeerConnection(name, parent, props) {
+            return Object.assign({ type: 'peerconnection', name, parent, active: true, password: '', client1: '', client2: '', player1: '', player2: '' }, props);
+        }
+        function makeGroupConnection(name, parent, props) {
+            return Object.assign({ type: 'groupconnection', name, parent, active: true, password: '', clients: [] }, props);
+        }
+        // Connections live in the Communications space, so the default name counts them like any other instance type.
+        function makeConnection(type, parent) {
+            const n = ++counters[type];
+            const name = dn(type) + (n === 1 ? '' : ' ' + n);
+            const space = parent || 'communications';
+            if (type === 'serversocket') return makeServerSocket(name, space);
+            if (type === 'peerconnection') return makePeerConnection(name, space);
+            if (type === 'groupconnection') return makeGroupConnection(name, space);
+            return makeClientSocket(name, space);
+        }
+        // The world's own details, kept on the World Settings instance so they save and load with the world.
+        function normalizeWorldSettings(o) {
+            if (typeof o.worldName !== 'string' || !o.worldName.trim()) o.worldName = 'My World';
+            if (typeof o.creator !== 'string') o.creator = '';
+            if (typeof o.description !== 'string') o.description = '';
+            o.maxPlayers = Math.max(1, Math.min(100, Math.round(Number.isFinite(+o.maxPlayers) ? +o.maxPlayers : DEFAULT_MAX_PLAYERS)));
+            o.assets = Array.isArray(o.assets)
+                ? o.assets.filter(a => a && typeof a === 'object' && typeof a.url === 'string').slice(0, 100).map(a => ({ name: typeof a.name === 'string' ? a.name : '', url: a.url }))
+                : [];
+            return o;
+        }
+        function normalizeConnection(o) {
+            const str = (v) => typeof v === 'string' ? v : '';
+            o.active = o.active !== false;
+            if (o.type === 'clientsocket') {
+                o.client = str(o.client); o.player = str(o.player);
+                o.bandwidth = Math.max(0, Math.min(CONNECTION_BANDWIDTH_MAX, Math.round(Number.isFinite(+o.bandwidth) ? +o.bandwidth : 0)));
+            } else if (o.type === 'serversocket') {
+                o.bandwidth = Math.max(1, Math.min(CONNECTION_BANDWIDTH_MAX, Math.round(Number.isFinite(+o.bandwidth) ? +o.bandwidth : 4096)));
+                o.maxClients = Math.max(1, Math.min(100, Math.round(Number.isFinite(+o.maxClients) ? +o.maxClients : DEFAULT_MAX_PLAYERS)));
+            } else if (o.type === 'peerconnection') {
+                for (const k of ['password', 'client1', 'client2', 'player1', 'player2']) o[k] = str(o[k]);
+            } else if (o.type === 'groupconnection') {
+                o.password = str(o.password);
+                o.clients = Array.isArray(o.clients)
+                    ? o.clients.filter(c => c && typeof c === 'object').slice(0, 64).map(c => ({ ip: str(c.ip), player: str(c.player) }))
+                    : [];
+            }
+            return o;
+        }
 
         // ───────── User interfaces ─────────
         // A UI instance is laid out in percentages of what it sits in: the UI space is the whole screen, and a Frame
@@ -320,9 +386,9 @@
             'Onyx004': { type: 'viewfinder', name: 'Viewfinder', parent: 'engine', readOnly: true }
         };
         sceneObjects['Linen551'] = makeTexture('Texture', 'Cobalt092', [4], 'grid');
-        sceneObjects['Amber417'] = { type: 'worldsettings', name: 'Settings', parent: 'world', timeOfDay: 14, gravity: 9.8, killY: -5000 };
-        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0, wedge: 0, cylinder: 0, union: 0, sound: 0, highlight: 0, frame: 0, text: 0, button: 0, image: 0, input: 0, progressbar: 0 };
-        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human', wedge: 'i-wedge', cylinder: 'i-cylinder', union: 'i-union', sound: 'i-sound', highlight: 'i-highlight', frame: 'i-ui-frame', text: 'i-ui-text', button: 'i-ui-button', image: 'i-ui-image', input: 'i-ui-input', progressbar: 'i-ui-progress' };
+        sceneObjects['Amber417'] = makeWorldSettings('Settings', 'world');
+        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0, wedge: 0, cylinder: 0, union: 0, sound: 0, highlight: 0, frame: 0, text: 0, button: 0, image: 0, input: 0, progressbar: 0, clientsocket: 0, serversocket: 0, peerconnection: 0, groupconnection: 0 };
+        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human', wedge: 'i-wedge', cylinder: 'i-cylinder', union: 'i-union', sound: 'i-sound', highlight: 'i-highlight', frame: 'i-ui-frame', text: 'i-ui-text', button: 'i-ui-button', image: 'i-ui-image', input: 'i-ui-input', progressbar: 'i-ui-progress', clientsocket: 'i-client-socket', serversocket: 'i-server-socket', peerconnection: 'i-peer', groupconnection: 'i-group' };
 
         let isLightMode = false;
         let accentCol = '#f2b134';
@@ -416,6 +482,11 @@
         function currentGravity() {
             const ws = activeWorldSettings();
             return -(ws && Number.isFinite(ws.gravity) ? ws.gravity : DEFAULT_GRAVITY);
+        }
+        function worldMaxPlayers() {
+            const ws = activeWorldSettings();
+            const n = ws && Number.isFinite(+ws.maxPlayers) ? Math.round(+ws.maxPlayers) : DEFAULT_MAX_PLAYERS;
+            return Math.max(1, Math.min(100, n));
         }
         function currentKillY() {
             const ws = activeWorldSettings();

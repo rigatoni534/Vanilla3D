@@ -301,9 +301,12 @@
             } else if (kind === 'human') {
                 // Nobody can join inside the editor yet, so the join number is the order Humans are created in.
                 obj = makeHuman(dn('human') + (++counters.human), space);
+            } else if (CONNECTION_TYPES.includes(kind)) {
+                // Connections belong to the Communications space, so they are always created there.
+                obj = makeConnection(kind, 'communications');
             } else if (kind === 'worldsettings') {
                 const n = ++counters.worldsettings;
-                obj = { type: 'worldsettings', name: dn('worldsettings') + ' ' + n, parent: space, timeOfDay: 14, gravity: 9.8, killY: -5000 };
+                obj = makeWorldSettings(dn('worldsettings') + ' ' + n, space);
             } else {
                 const n = ++counters.script;
                 // A script on a UI element belongs to the player's side, so it starts Local.

@@ -198,8 +198,10 @@
         ['prism6', 'ball', 'model', 'human', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el) el.addEventListener('change', () => { const v = el.value.trim().slice(0, 24); if (v) settings.defaultNames[t] = v; else delete settings.defaultNames[t]; el.value = dn(t); saveSettings(); }); });
         ['Scripts', 'Instance', 'World', 'Storage', 'Scripting', 'Players', 'GetPlayers'].forEach(n => document.getElementById('pre-' + n).addEventListener('change', (e) => { settings.preinclude[n] = e.target.checked; saveSettings(); reCheckEditor(); }));
         document.querySelectorAll('.set-tab').forEach(b => b.addEventListener('click', () => {
-            document.querySelectorAll('.set-tab').forEach(x => x.setAttribute('aria-selected', String(x === b)));
-            document.querySelectorAll('.set-pane').forEach(p => p.hidden = p.id !== 'set-' + b.dataset.pane);
+            // Each settings card has its own tabs, so Editor Settings and World Settings never hide each other's panes.
+            const card = b.closest('.modal-card') || document;
+            card.querySelectorAll('.set-tab').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+            card.querySelectorAll('.set-pane').forEach(p => p.hidden = p.id !== 'set-' + b.dataset.pane);
         }));
 
         // Offset: the step the Move and Scale gizmos snap to (Vanillameters). 0 means free movement.
@@ -260,9 +262,166 @@
         function closeModals() {
             const open = document.querySelector('.modal-overlay.active');
             if (!open) return;
+            if (open.id === 'modal-world') finalizeWorldSettings();
             open.classList.remove('active');
             if (lastFocus) lastFocus.focus();
         }
+
+        // ───────── World menu and World Settings ─────────
+        // The dialog edits the World Settings instance in the World space, so every value is saved with the world.
+        const worldBtn = document.getElementById('world-btn');
+        const worldMenu = document.getElementById('world-menu');
+        let worldSettingsId = null;
+        function toggleWorldMenu(force) {
+            const show = typeof force === 'boolean' ? force : worldMenu.hidden;
+            worldMenu.hidden = !show;
+            worldBtn.setAttribute('aria-expanded', String(show));
+            if (show) worldMenu.querySelector('.menu-item').focus();
+        }
+        worldBtn.addEventListener('click', () => toggleWorldMenu());
+        worldMenu.addEventListener('click', (e) => {
+            const it = e.target.closest('[data-world-act]');
+            if (!it) return;
+            toggleWorldMenu(false);
+            if (it.dataset.worldAct === 'settings') openWorldSettings();
+        });
+        document.addEventListener('mousedown', (e) => {
+            if (!worldMenu.hidden && !worldMenu.contains(e.target) && !worldBtn.contains(e.target)) toggleWorldMenu(false);
+        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !worldMenu.hidden) toggleWorldMenu(false); });
+        function currentWorld() { return worldSettingsId && sceneObjects[worldSettingsId] ? sceneObjects[worldSettingsId] : null; }
+        function worldSettingsTarget() {
+            let ws = activeWorldSettings();
+            if (!ws) {
+                const id = newId(), n = ++counters.worldsettings;
+                ws = makeWorldSettings(dn('worldsettings') + (n === 1 ? '' : ' ' + n), 'world');
+                sceneObjects[id] = ws;
+                renderExplorer();
+            }
+            normalizeWorldSettings(ws);
+            return ws;
+        }
+        function openWorldSettings() {
+            const ws = worldSettingsTarget();
+            worldSettingsId = Object.keys(sceneObjects).find(k => sceneObjects[k] === ws) || null;
+            fillWorldSettings(ws);
+            openModal('modal-world', '#world-name');
+        }
+        function finalizeWorldSettings() {
+            const ws = currentWorld();
+            if (!ws) return;
+            normalizeWorldSettings(ws);
+            if (selectedObjectId === worldSettingsId) renderProperties();
+            worldSettingsId = null;
+        }
+        function refreshWorldProperties() { if (selectedObjectId === worldSettingsId) renderProperties(); }
+        function syncWorldPills(ws) {
+            document.querySelectorAll('#modal-world [data-world-tod]').forEach(b => b.setAttribute('aria-pressed', String(Math.abs((ws.timeOfDay % 24) - Number(b.dataset.worldTod)) < 0.01)));
+            document.querySelectorAll('#modal-world [data-world-grav]').forEach(b => b.setAttribute('aria-pressed', String(Math.abs(ws.gravity - Number(b.dataset.worldGrav)) < 0.005)));
+        }
+        function renderWorldAssets(ws) {
+            const box = document.getElementById('world-asset-list');
+            if (!box) return;
+            box.innerHTML = ws.assets.length ? ws.assets.map((a, i) => `
+                <div class="asset-row">
+                    <input class="text" type="text" data-asset="${i}" data-key="name" maxlength="48" placeholder="Name" value="${esc(a.name || '')}" aria-label="Asset ${i + 1} name">
+                    <input class="text" type="text" data-asset="${i}" data-key="url" maxlength="400" spellcheck="false" placeholder="https://…" value="${esc(a.url || '')}" aria-label="Asset ${i + 1} URL">
+                    <button class="btn icon-btn" type="button" data-remove-asset="${i}" aria-label="Remove asset ${i + 1}">${icon('i-trash')}</button>
+                </div>`).join('') : '<div class="asset-empty">No assets yet. Add the first one below.</div>';
+        }
+        function fillWorldSettings(ws) {
+            document.getElementById('world-name').value = ws.worldName;
+            document.getElementById('world-creator').value = ws.creator;
+            document.getElementById('world-description').value = ws.description;
+            document.getElementById('world-maxplayers').value = ws.maxPlayers;
+            const tod = document.getElementById('world-tod'), time = document.getElementById('world-tod-time');
+            tod.value = ws.timeOfDay; time.value = fmtTime(ws.timeOfDay);
+            tod.style.background = 'linear-gradient(to right,' + Array.from({ length: 13 }, (_, i) => { const c = skyAt(i * 2); return rgbStr(mixRGB(c.top, c.hor, 0.5)); }).join(',') + ')';
+            const gr = document.getElementById('world-grav-range'), gn = document.getElementById('world-grav');
+            gr.value = Math.min(30, ws.gravity); gn.value = ws.gravity;
+            document.getElementById('world-kill').value = ws.killY;
+            syncWorldPills(ws);
+            renderWorldAssets(ws);
+        }
+        function bindWorldSettings() {
+            const name = document.getElementById('world-name');
+            name.addEventListener('input', () => { const ws = currentWorld(); if (ws) ws.worldName = name.value; });
+            name.addEventListener('change', () => {
+                const ws = currentWorld(); if (!ws) return;
+                ws.worldName = name.value.trim() || 'My World';
+                name.value = ws.worldName;
+            });
+            const creator = document.getElementById('world-creator');
+            creator.addEventListener('input', () => { const ws = currentWorld(); if (ws) ws.creator = creator.value; });
+            const desc = document.getElementById('world-description');
+            desc.addEventListener('input', () => { const ws = currentWorld(); if (ws) ws.description = desc.value; });
+            const max = document.getElementById('world-maxplayers');
+            const clampPlayers = () => Math.max(1, Math.min(100, Math.round(parseFloat(max.value) || DEFAULT_MAX_PLAYERS)));
+            max.addEventListener('input', () => { const ws = currentWorld(); if (ws && Number.isFinite(parseFloat(max.value))) ws.maxPlayers = clampPlayers(); });
+            max.addEventListener('change', () => { const ws = currentWorld(); if (!ws) return; ws.maxPlayers = clampPlayers(); max.value = ws.maxPlayers; });
+            const tod = document.getElementById('world-tod'), time = document.getElementById('world-tod-time');
+            const setTod = (h) => {
+                const ws = currentWorld(); if (!ws) return;
+                ws.timeOfDay = Math.max(0, Math.min(24, h));
+                if (document.activeElement !== tod) tod.value = ws.timeOfDay;
+                if (document.activeElement !== time) time.value = fmtTime(ws.timeOfDay);
+                syncWorldPills(ws);
+            };
+            tod.addEventListener('input', () => setTod(parseFloat(tod.value) || 0));
+            tod.addEventListener('change', refreshWorldProperties);
+            time.addEventListener('input', () => { const h = parseTime(time.value); if (h !== null) setTod(h); });
+            time.addEventListener('change', refreshWorldProperties);
+            document.querySelectorAll('#modal-world [data-world-tod]').forEach(b => b.addEventListener('click', () => setTod(Number(b.dataset.worldTod))));
+            const gr = document.getElementById('world-grav-range'), gn = document.getElementById('world-grav');
+            const setGrav = (g) => {
+                const ws = currentWorld(); if (!ws) return;
+                ws.gravity = Math.max(0, Math.min(GRAVITY_MAX, Math.round(g * 100) / 100));
+                if (document.activeElement !== gr) gr.value = Math.min(30, ws.gravity);
+                if (document.activeElement !== gn) gn.value = ws.gravity;
+                syncWorldPills(ws);
+            };
+            gr.addEventListener('input', () => setGrav(parseFloat(gr.value) || 0));
+            gr.addEventListener('change', refreshWorldProperties);
+            gn.addEventListener('input', () => { const g = parseFloat(gn.value); if (Number.isFinite(g)) setGrav(g); });
+            gn.addEventListener('change', () => {
+                const ws = currentWorld(); if (!ws) return;
+                setGrav(Number.isFinite(parseFloat(gn.value)) ? parseFloat(gn.value) : 9.8);
+                gn.value = ws.gravity;
+                refreshWorldProperties();
+            });
+            document.querySelectorAll('#modal-world [data-world-grav]').forEach(b => b.addEventListener('click', () => setGrav(Number(b.dataset.worldGrav))));
+            const kill = document.getElementById('world-kill');
+            kill.addEventListener('input', () => { const ws = currentWorld(); const v = parseFloat(kill.value); if (ws && Number.isFinite(v)) ws.killY = v; });
+            kill.addEventListener('change', () => {
+                const ws = currentWorld(); if (!ws) return;
+                const v = parseFloat(kill.value);
+                ws.killY = Number.isFinite(v) ? v : DEFAULT_KILL_Y;
+                kill.value = ws.killY;
+                refreshWorldProperties();
+            });
+            const assetList = document.getElementById('world-asset-list');
+            assetList.addEventListener('input', (e) => {
+                const input = e.target.closest('[data-asset]'), ws = currentWorld();
+                if (!input || !ws) return;
+                const a = ws.assets[Number(input.dataset.asset)]; if (!a) return;
+                a[input.dataset.key] = input.value;
+            });
+            assetList.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-remove-asset]'), ws = currentWorld();
+                if (!btn || !ws) return;
+                ws.assets.splice(Number(btn.dataset.removeAsset), 1);
+                renderWorldAssets(ws);
+            });
+            document.getElementById('world-asset-add').addEventListener('click', () => {
+                const ws = currentWorld(); if (!ws) return;
+                if (ws.assets.length >= 100) { toast('A world can list up to 100 assets.', 'warn'); return; }
+                ws.assets.push({ name: '', url: '' });
+                renderWorldAssets(ws);
+                const first = assetList.querySelector('.asset-row:last-child input');
+                if (first) first.focus();
+            });
+        }
+        bindWorldSettings();
         document.getElementById('version-btn').addEventListener('click', () => {
             document.getElementById('info-version').textContent = ENGINE_VERSION;
             openModal('modal-version');

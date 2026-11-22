@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=3.10.2.1">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=3.11.0.0">
   
 </head>
 <body>
@@ -61,6 +61,10 @@
     <symbol id="i-ui-input" viewBox="0 0 16 16"><rect x="2" y="4.5" width="12" height="7" rx="1.5"/><path d="M5 6.5v3M4.25 6.5h1.5M4.25 9.5h1.5"/></symbol>
     <symbol id="i-ui-progress" viewBox="0 0 16 16"><rect x="2" y="6" width="12" height="4" rx="2"/><path d="M4 8h5"/></symbol>
     <symbol id="i-comms" viewBox="0 0 16 16"><path d="M2.75 5.5h7.5M8 3.25 10.25 5.5 8 7.75"/><path d="M13.25 10.5h-7.5M8 8.25 5.75 10.5 8 12.75"/></symbol>
+    <symbol id="i-client-socket" viewBox="0 0 16 16"><rect x="2" y="3" width="8" height="7" rx="1.5"/><path d="M4.5 13h3M11.5 9.5v4M9.75 12l1.75 1.75L13.25 12"/></symbol>
+    <symbol id="i-server-socket" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="7" height="4" rx="1"/><rect x="2.5" y="9" width="7" height="4" rx="1"/><path d="M12 9.5v-4M10.25 7 12 5.25 13.75 7"/></symbol>
+    <symbol id="i-peer" viewBox="0 0 16 16"><circle cx="3.5" cy="8" r="1.75"/><circle cx="12.5" cy="8" r="1.75"/><path d="M5.25 8h5.5"/></symbol>
+    <symbol id="i-group" viewBox="0 0 16 16"><circle cx="8" cy="8" r="1.75"/><circle cx="2.75" cy="4" r="1.1"/><circle cx="13.25" cy="4" r="1.1"/><circle cx="8" cy="13.25" r="1.1"/><path d="M3.6 4.8 6.6 6.9M12.4 4.8 9.4 6.9M8 9.75v2.4"/></symbol>
   </svg>
 
   <!-- Toolbar -->
@@ -84,6 +88,13 @@
       </label>
     </div>
     <div class="toolbar-end">
+      <div class="file-menu-wrap">
+        <button id="world-btn" class="btn" type="button" aria-haspopup="menu" aria-expanded="false" title="World settings">World <span aria-hidden="true">▾</span></button>
+        <div id="world-menu" class="menu file-menu" role="menu" aria-label="World" hidden>
+          <div class="menu-title">World</div>
+          <button class="menu-item" role="menuitem" data-world-act="settings"><svg class="ic"><use href="#i-sliders"/></svg>Settings<span class="menu-meta">Name, players, assets</span></button>
+        </div>
+      </div>
       <div class="file-menu-wrap">
         <button id="file-btn" class="btn" type="button" aria-haspopup="menu" aria-expanded="false" title="Save, open or start a Vanilla World">File <span aria-hidden="true">▾</span></button>
         <div id="file-menu" class="menu file-menu" role="menu" aria-label="File" hidden>
@@ -210,6 +221,10 @@
     <button class="menu-item" role="menuitem" data-kind="human"><svg class="ic"><use href="#i-human"/></svg>Human<span class="menu-meta">human</span></button>
     <button class="menu-item" role="menuitem" data-kind="worldsettings"><svg class="ic"><use href="#i-sun"/></svg>World Settings</button>
     <button class="menu-item" role="menuitem" data-kind="script"><svg class="ic"><use href="#i-script"/></svg>Script</button>
+    <button class="menu-item" role="menuitem" data-kind="clientsocket"><svg class="ic"><use href="#i-client-socket"/></svg>ClientSocket<span class="menu-meta">clientsocket</span></button>
+    <button class="menu-item" role="menuitem" data-kind="serversocket"><svg class="ic"><use href="#i-server-socket"/></svg>ServerSocket<span class="menu-meta">serversocket</span></button>
+    <button class="menu-item" role="menuitem" data-kind="peerconnection"><svg class="ic"><use href="#i-peer"/></svg>PeerConnection<span class="menu-meta">peerconnection</span></button>
+    <button class="menu-item" role="menuitem" data-kind="groupconnection"><svg class="ic"><use href="#i-group"/></svg>GroupConnection<span class="menu-meta">groupconnection</span></button>
   </div>
 
   <!-- Explorer item menu -->
@@ -353,6 +368,10 @@
               <label for="sv-image">UI images</label><input type="checkbox" id="sv-image" class="switch">
               <label for="sv-input">UI inputs</label><input type="checkbox" id="sv-input" class="switch">
               <label for="sv-progressbar">UI progress bars</label><input type="checkbox" id="sv-progressbar" class="switch">
+              <label for="sv-clientsocket">Client sockets</label><input type="checkbox" id="sv-clientsocket" class="switch">
+              <label for="sv-serversocket">Server sockets</label><input type="checkbox" id="sv-serversocket" class="switch">
+              <label for="sv-peerconnection">Peer connections</label><input type="checkbox" id="sv-peerconnection" class="switch">
+              <label for="sv-groupconnection">Group connections</label><input type="checkbox" id="sv-groupconnection" class="switch">
             </div>
             <div class="set-sub">Reset</div>
             <div class="setting"><div><div class="setting-title">Reset all settings</div><div class="setting-desc">Puts every setting back to its default. Your world is not changed.</div></div><button class="btn btn-outline" id="reset-settings" type="button">Reset settings</button></div>
@@ -418,6 +437,72 @@
     </div>
   </div>
 
+  <div id="modal-world" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mw-title">
+    <div class="modal-card settings-card">
+      <div class="modal-head">
+        <h2 class="modal-title" id="mw-title">World Settings</h2>
+        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="settings-body">
+        <nav class="set-nav" role="tablist" aria-label="World settings sections">
+          <button class="set-tab" role="tab" data-pane="world-general" aria-selected="true"><svg class="ic"><use href="#i-world"/></svg>General</button>
+          <button class="set-tab" role="tab" data-pane="world-environment" aria-selected="false"><svg class="ic"><use href="#i-sun"/></svg>Environment</button>
+          <button class="set-tab" role="tab" data-pane="world-assets-tab" aria-selected="false"><svg class="ic"><use href="#i-image"/></svg>Assets</button>
+        </nav>
+        <div class="set-panes">
+          <section class="set-pane" id="set-world-general">
+            <h3 class="set-h">World</h3>
+            <div class="setting setting-col">
+              <div><div class="setting-title">World name</div><div class="setting-desc">The name this world is known by. Downloads use it as the file name.</div></div>
+              <input class="text" type="text" id="world-name" maxlength="48" spellcheck="false" aria-label="World name" style="width:100%">
+            </div>
+            <div class="setting setting-col">
+              <div><div class="setting-title">Creator</div><div class="setting-desc">Who made this world.</div></div>
+              <input class="text" type="text" id="world-creator" maxlength="40" spellcheck="false" aria-label="World creator" style="width:100%">
+            </div>
+            <div class="setting setting-col">
+              <div><div class="setting-title">World info</div><div class="setting-desc">A short description of the world.</div></div>
+              <textarea class="text" id="world-description" maxlength="500" rows="5" aria-label="World description" style="width:100%"></textarea>
+            </div>
+            <div class="setting">
+              <div><div class="setting-title">Max player count</div><div class="setting-desc">The most players a server will let into this world at once. A new ServerSocket starts with this number.</div></div>
+              <label class="num grav" title="Max player count"><input type="number" id="world-maxplayers" min="1" max="100" step="1" aria-label="Max player count"><span class="tag">players</span></label>
+            </div>
+          </section>
+          <section class="set-pane" id="set-world-environment" hidden>
+            <h3 class="set-h">Environment</h3>
+            <div class="setting setting-col">
+              <div><div class="setting-title">Time of day</div><div class="setting-desc">Drives the sky and the direction of the sun.</div></div>
+              <div class="tod-row" style="width:100%">
+                <input type="range" class="tod" id="world-tod" min="0" max="24" step="0.05" aria-label="Time of day">
+                <input type="time" class="time" id="world-tod-time" aria-label="Time of day (24 hour clock)">
+              </div>
+              <div class="pill-row"><button class="pill" type="button" data-world-tod="6">Dawn</button><button class="pill" type="button" data-world-tod="12">Noon</button><button class="pill" type="button" data-world-tod="18">Dusk</button><button class="pill" type="button" data-world-tod="0">Night</button></div>
+            </div>
+            <div class="setting setting-col">
+              <div><div class="setting-title">Gravity</div><div class="setting-desc">How hard the world pulls simulated objects down, in meters per second squared.</div></div>
+              <div class="tod-row" style="width:100%">
+                <input type="range" class="tod" id="world-grav-range" min="0" max="30" step="0.1" aria-label="Gravity">
+                <label class="num grav" title="Gravity in meters per second squared"><input type="number" id="world-grav" min="0" max="1000" step="0.1" aria-label="Gravity (m/s²)"><span class="tag">m/s²</span></label>
+              </div>
+              <div class="pill-row"><button class="pill" type="button" data-world-grav="9.8">Earth</button><button class="pill" type="button" data-world-grav="1.62">Moon</button><button class="pill" type="button" data-world-grav="0">Space</button><button class="pill" type="button" data-world-grav="24.8">Jupiter</button></div>
+            </div>
+            <div class="setting">
+              <div><div class="setting-title">Kill layer height</div><div class="setting-desc">Simulated objects that fall below this height are deleted from the world.</div></div>
+              <label class="num grav" title="Kill layer height (Y)"><span class="tag y">Y</span><input type="number" id="world-kill" step="100" aria-label="Kill layer height"></label>
+            </div>
+          </section>
+          <section class="set-pane" id="set-world-assets-tab" hidden>
+            <h3 class="set-h">Uploaded assets</h3>
+            <div class="setting-desc set-note">Images and other files this world uses, kept as a name and a URL. Add them here so a world carries its asset list with it.</div>
+            <div class="asset-rows" id="world-asset-list"></div>
+            <button class="btn btn-outline" id="world-asset-add" type="button" style="width:100%;justify-content:center;margin-top:8px">Add asset</button>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-script-docs" class="modal-overlay docs-overlay" role="dialog" aria-modal="true" aria-label="Vanilla Engine documentation">
     <div class="docs-app">
       <header class="docs-topbar">
@@ -427,16 +512,23 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.10.3.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">3.11.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
-          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b>, <b>Scripts</b>, <b>UI</b> and <b>Communications</b> spaces, plus <b>Players</b> and <b>Engine</b>. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Wedge, a Cylinder, a Ball, a Sound, a Highlight, a Human, a World Settings or a Script. Storage holds objects kept for scripts and never renders; only World renders. UI holds the screen interface.</td></tr>
+          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b>, <b>Scripts</b>, <b>UI</b> and <b>Communications</b> spaces, plus <b>Players</b> and <b>Engine</b>. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Wedge, a Cylinder, a Ball, a Sound, a Highlight, a Human, a World Settings or a Script; Communications offers ClientSocket, ServerSocket, PeerConnection and GroupConnection. Storage holds objects kept for scripts and never renders; only World renders. UI holds the screen interface.</td></tr>
           <tr><td>Viewport</td><td>The 3D view. Select, Move and Scale modes work here.</td></tr>
           <tr><td>Properties</td><td>Edits the selected instance: name, position, size, physics flags, script options.</td></tr>
           <tr><td>Tab bar</td><td>World is always open. Scripts open as tabs over the viewport.</td></tr>
         </tbody></table>
-        <p><b>Communications</b> is a reserved space for passing messages between the server and the client. It is empty for now: nothing can be added to it yet, and the <b>+</b> button is intentionally absent.</p>
+        <p><b>Communications</b> holds the connections a world uses. Choose <b>+</b> on the Communications space to add one. They are saved with the world, and nothing is sent or received yet: the editor sets them up, and the network side comes later.</p>
+        <table class="docs-table"><thead><tr><th>Instance</th><th>What it is for</th><th>Properties</th></tr></thead><tbody>
+          <tr><td><code>ClientSocket</code></td><td>The server's end of one player's connection, so the server can send messages to that client.</td><td><code>Active</code>, <code>Client</code> (IPv4), <code>Player</code> (a Player in Players), <code>Bandwidth</code> in kbps. <code>0</code> is <b>Uncapped</b>.</td></tr>
+          <tr><td><code>ServerSocket</code></td><td>The client's end of the connection to the server. A world has one server that the clients talk to.</td><td><code>Active</code>, <code>Bandwidth</code> in kbps (4096 by default), <code>MaxClients</code>. Keep MaxClients at the world max player count.</td></tr>
+          <tr><td><code>PeerConnection</code></td><td>A direct connection between two peers, for games that do not need a server in the middle.</td><td><code>Active</code>, <code>EntryPassword</code>, <code>Client1</code> and <code>Client2</code> (IPv4), <code>Player1</code> and <code>Player2</code> (IPv4).</td></tr>
+          <tr><td><code>GroupConnection</code></td><td>A peer connection for any number of clients. Add each client in Properties; there is no client limit.</td><td><code>Active</code>, <code>EntryPassword</code>, and a <b>Clients</b> list of IPv4 addresses and players.</td></tr>
+        </tbody></table>
+        <p>Connections cannot be given children and cannot be moved out of Communications. Drag them within the space to reorder them.</p>
         <p><b>Multi-select:</b> hold <kbd>Shift</kbd> and click to add or remove single objects. Hold <kbd>Ctrl</kbd> (<kbd>Cmd</kbd> on Mac) and click to select every object between your last click and the one you click. Copy, cut, paste, delete and dragging then apply to all selected objects.</p>
         <p>Hover an instance in the Explorer and press the three-dot button for <b>Rename, Copy, Paste, Cut, Delete</b> and <b>Move Camera To</b>.</p>
         <p>A Rectangular Prism also has a <b>Color</b> in its Render section: pick one with the color box or type a hex code such as <code>#ff8800</code>. Turning on <b>Face coloring</b> overrides it, because each face then shows its own debug color.</p>
@@ -473,7 +565,15 @@
         <p><b>Run</b> works like Roblox Studio: the world is snapshotted, physics and scripts run live, and <b>Stop</b> restores the snapshot exactly as it was. Anything scripts create or change during a run is discarded on Stop, and global variables are cleared.</p>
         <div class="callout"><b>Heads up:</b> saving, opening a world and starting a new one are blocked while a simulation runs. Stop first.</div>
         <h3 data-group="Editor guide">World Settings</h3>
-        <p>A World Settings instance controls the environment. It appears under World and is editable in Properties.</p>
+        <p>Open <b>World ▾ → Settings</b> in the top bar to edit the world itself. The dialog writes to the World Settings instance under World, so the values save with the world and the environment fields stay available in Properties.</p>
+        <table class="docs-table"><thead><tr><th>Setting</th><th>What it does</th></tr></thead><tbody>
+          <tr><td><code>WorldName</code></td><td>The name of the world. A download uses it as the file name.</td></tr>
+          <tr><td><code>Creator</code></td><td>Who made the world.</td></tr>
+          <tr><td><code>Description</code></td><td>World info: a short description of the world.</td></tr>
+          <tr><td><code>MaxPlayers</code></td><td>The most players a server lets into this world at once, 1 to 100. A new ServerSocket starts with this number as its MaxClients.</td></tr>
+          <tr><td><code>Assets</code></td><td>Uploaded assets: a list of names and URLs the world carries with it.</td></tr>
+        </tbody></table>
+        <p>The <b>Environment</b> tab sets the time of day, gravity and the kill layer.</p>
         <table class="docs-table"><thead><tr><th>Property</th><th>Range</th><th>Default</th></tr></thead><tbody>
           <tr><td><code>TimeOfDay</code></td><td>0 to 24 hours, drives the sky</td><td>14</td></tr>
           <tr><td><code>Gravity</code></td><td>0 to 1000 m/s². Presets: Earth 9.8, Moon 1.62, Space 0, Jupiter 24.8</td><td>9.8</td></tr>
@@ -486,7 +586,7 @@
         <p>The page checks every 30 seconds whether a newer version of the engine or of Vanillalua has been published. If one has, a prompt offers to save and reload; your world is saved to Autosave first and opened again in the new version.</p>
         <table class="docs-table"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
           <tr><td>Save to Autosave, Browser Slot 1 or 2 <span class="kbd">Ctrl S</span></td><td>Writes that slot in this browser's local storage. Saving again overwrites only that slot. Ctrl S writes Autosave.</td></tr>
-          <tr><td>Download as .vnw <span class="kbd">Ctrl Shift S</span></td><td>Downloads <code>World.vnw</code> to share or back up. Anything that is not one of the three browser slots is a file like this.</td></tr>
+          <tr><td>Download as .vnw <span class="kbd">Ctrl Shift S</span></td><td>Downloads the world as a <code>.vnw</code> file named after it, to share or back up. Anything that is not one of the three browser slots is a file like this.</td></tr>
           <tr><td>Open Autosave, Browser Slot 1 or 2</td><td>Replaces the current world with that slot. Empty slots are greyed out.</td></tr>
           <tr><td>Open .vnw file…</td><td>Replaces the current world with a file you choose. Invalid files are rejected with a message and nothing changes.</td></tr>
           <tr><td>Add .vanilla instance…</td><td>Adds one instance from a <code>.vanilla</code> file: a model, a script or anything else, with everything inside it. The rest of the world is left alone, and an instance whose UID is already taken is renamed.</td></tr>
@@ -873,21 +973,21 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=3.10.3.0"></script>
-  <script>const ENGINE_VERSION = '3.10.3.0';</script>
+  <script src="../vanillalua.js?v=3.11.0.0"></script>
+  <script>const ENGINE_VERSION = '3.11.0.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/scene.js?v=3.10.3.0"></script>
-  <script defer src="js/version-history.js?v=3.10.3.0"></script>
-  <script defer src="js/player.js?v=3.10.3.0"></script>
-  <script defer src="js/sounds.js?v=3.10.3.0"></script>
-  <script defer src="js/scripting.js?v=3.10.3.0"></script>
-  <script defer src="js/shell.js?v=3.10.3.0"></script>
-  <script defer src="js/files.js?v=3.10.3.0"></script>
-  <script defer src="js/offline.js?v=3.10.3.0"></script>
-  <script defer src="js/explorer.js?v=3.10.3.0"></script>
-  <script defer src="js/properties.js?v=3.10.3.0"></script>
-  <script defer src="js/render.js?v=3.10.3.0"></script>
-  <script defer src="js/gl.js?v=3.10.3.0"></script>
-  <script defer src="js/main.js?v=3.10.3.0"></script>
+  <script defer src="js/scene.js?v=3.11.0.0"></script>
+  <script defer src="js/version-history.js?v=3.11.0.0"></script>
+  <script defer src="js/player.js?v=3.11.0.0"></script>
+  <script defer src="js/sounds.js?v=3.11.0.0"></script>
+  <script defer src="js/scripting.js?v=3.11.0.0"></script>
+  <script defer src="js/shell.js?v=3.11.0.0"></script>
+  <script defer src="js/files.js?v=3.11.0.0"></script>
+  <script defer src="js/offline.js?v=3.11.0.0"></script>
+  <script defer src="js/explorer.js?v=3.11.0.0"></script>
+  <script defer src="js/properties.js?v=3.11.0.0"></script>
+  <script defer src="js/render.js?v=3.11.0.0"></script>
+  <script defer src="js/gl.js?v=3.11.0.0"></script>
+  <script defer src="js/main.js?v=3.11.0.0"></script>
 </body>
 </html>

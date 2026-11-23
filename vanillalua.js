@@ -1,6 +1,6 @@
 /* Vanillalua shared interpreter core. Canonical source used by Vanilla3D and the playground. */
 // Bumped whenever this file changes: the editor polls for a newer version and offers to reload.
-const VL_VERSION = '1.9.1';
+const VL_VERSION = '1.9.2';
 (function (global) {
   const shared = {
     version: VL_VERSION,
@@ -13,7 +13,7 @@ const VL_VERSION = '1.9.1';
 // A small Lua-like language. Every script starts with `call Scripts` and `get Instance`.
 const VL_KEYWORDS = new Set(['call','get','local','while','for','in','do','end','if','then','else','elseif','and','or','not','function','return','break','continue','true','false','nil']);
 const VL_SPACES = { World: 'world', Storage: 'storage', Scripts: 'scripts', UI: 'ui', Communications: 'communications', Players: 'players' };
-const VL_MODULES = ['Instance','Scripting','Tweening','Extras','Players'];
+const VL_MODULES = ['Instance','Scripting','Tweening','Extras','Players','Chat'];
 const VL_TYPES = ['prism6', 'ball', 'wedge', 'cylinder', 'model', 'script', 'worldsettings', 'human', 'sound', 'highlight', 'light', 'simpleeffect', 'advancedeffect', 'clientsocket', 'serversocket', 'peerconnection', 'groupconnection', 'frame', 'text', 'button', 'image', 'input', 'progressbar'];
 const VL_UI_TYPES = ['frame', 'text', 'button', 'image', 'input', 'progressbar'];
 const VL_GLOBALS = ['vanilla3D','print','wait','sin','cos','tan','sqrt','abs','floor','ceil','round','min','max','random','atan2','pi','type','tostring','tonumber','table','task','warn','error','deltaTime','length','auto'];
@@ -300,7 +300,7 @@ function vlAnalyze(ast, diags) {
                     const m = f.name, n = e.args.length;
                     if (m === 'create') {
                         if (n !== 2) err(e.line, 'Instance.create needs 2 arguments: (type, space).');
-                        if (e.args[0] && e.args[0].k === 'str' && !VL_TYPES.includes(e.args[0].v)) err(e.line, 'Unknown instance type "' + e.args[0].v + '". Use prism6, ball, wedge, cylinder, model, script, worldsettings, human, sound, highlight, light, simpleeffect, advancedeffect, frame, text, button, image or input.');
+                        if (e.args[0] && e.args[0].k === 'str' && !VL_TYPES.includes(e.args[0].v)) err(e.line, 'Unknown instance type "' + e.args[0].v + '". Use ' + VL_TYPES.join(', ') + '.');
                         if (e.args[1] && (e.args[1].k === 'str' || e.args[1].k === 'num' || e.args[1].k === 'bool')) err(e.line, 'The second argument of Instance.create must be a loaded Space such as World.');
                     } else if (m === 'delete') {
                         if (n !== 1) err(e.line, 'Instance.delete needs 1 argument: (instance).');
@@ -332,7 +332,7 @@ function vlAnalyze(ast, diags) {
                 continue;
             }
             if (s.k === 'useModule') {
-                if (!VL_MODULES.includes(s.name)) err(s.line, 'Unknown module "' + s.name + '". You can get: Instance, Scripting, Tweening, Extras, Players.');
+                if (!VL_MODULES.includes(s.name)) err(s.line, 'Unknown module "' + s.name + '". You can get: ' + VL_MODULES.join(', ') + '.');
                 else {
                     if (got.has(s.name)) warn(s.line, '"get ' + s.name + '" is already in this script.');
                     got.add(s.name);
@@ -438,7 +438,11 @@ class VLConnection { constructor(ev, h) { this.ev = ev; this.h = h; } }
 const VL_AXES = { X: 0, Y: 1, Z: 2 };
 class VLVec {
     constructor(x, y, z, bind) { this.v = [x, y, z]; this.bind = bind || null; }
-    target() { const o = sceneObjects[this.bind.id]; if (!o) throw new VLError('This instance was deleted.'); return this.bind.vel ? physicsVelocityFor(this.bind.id) : o; }
+    target() {
+        if (this.bind && this.bind.make) return this.bind.make();
+        const o = sceneObjects[this.bind.id]; if (!o) throw new VLError('This instance was deleted.');
+        return this.bind.vel ? physicsVelocityFor(this.bind.id) : o;
+    }
     get(i) { if (this.bind) return this.target()[this.bind.keys[i]]; return this.v[i]; }
     set(i, n) { if (this.bind) this.target()[this.bind.keys[i]] = n; else this.v[i] = n; }
 }
@@ -486,7 +490,7 @@ const VL_PROPS = {
     model: {},
     prism6: {
         Locked: ['locked', 'bool'], Anchored: ['anchored', 'bool'], ReactsToPhysics: ['reactsToPhysics', 'bool'], Collidable: ['collidable', 'bool'],
-        Wireframe: ['wireframe', 'bool'], FaceColoring: ['faceColoring', 'bool'], Color: ['color', 'str'], ShowLabels: ['showLabels', 'bool'], Spawnpoint: ['spawnpoint', 'bool']
+        Wireframe: ['wireframe', 'bool'], FaceColoring: ['faceColoring', 'bool'], Color: ['color', 'str'], Material: ['material', 'str'], ShowLabels: ['showLabels', 'bool'], Spawnpoint: ['spawnpoint', 'bool']
     },
     ball: {
         Locked: ['locked', 'bool'], Anchored: ['anchored', 'bool'], ReactsToPhysics: ['reactsToPhysics', 'bool'], Collidable: ['collidable', 'bool'],
@@ -502,7 +506,7 @@ const VL_PROPS = {
         Stamina: ['stamina', 'num'], MaxStamina: ['maxStamina', 'num'], RunStaminaLoss: ['runStaminaLoss', 'num'],
         JumpHeight: ['jumpHeight', 'num'], JumpStaminaLoss: ['jumpStaminaLoss', 'num'], StaminaGain: ['staminaGain', 'num'], PlayerName: ['playerName', 'str']
     },
-    player: {},
+    player: { SkinColor: ['skinColor', 'str'], ShirtColor: ['shirtColor', 'str'], PantsColor: ['pantsColor', 'str'] },
     script: {}
 };
 
@@ -559,6 +563,74 @@ function vlWatchHumans() {
     }
     for (const id of vlHumanWatch.keys()) if (!sceneObjects[id]) vlHumanWatch.delete(id);
 }
+// ── Touch state and contact events ──
+// scene.js records the contacts it solved each step. This layer turns those pairs into the properties and events
+// scripts use, including contacts seen by a part's model and its Human.
+const vlTouchEvents = new Map();
+let vlTouchWatch = new Map();
+function vlTouchEvent(id, name) {
+    let m = vlTouchEvents.get(id);
+    if (!m) { m = {}; vlTouchEvents.set(id, m); }
+    if (!m[name]) m[name] = new VLEvent(name);
+    return m[name];
+}
+function vlTopModelOf(id) {
+    let o = sceneObjects[id], model = o && o.type === 'model' ? id : null, n = 0;
+    while (o && !SPACE_KEYS.includes(o.parent) && n++ < 64) {
+        const parent = sceneObjects[o.parent];
+        if (parent && parent.type === 'model') model = o.parent;
+        o = parent;
+    }
+    return model;
+}
+function vlTouchTargets(id) {
+    const o = sceneObjects[id];
+    if (!o) return [];
+    const out = new Set([id]);
+    let model = o.type === 'model' ? id : vlTopModelOf(id);
+    if (model && sceneObjects[model]) {
+        out.add(model);
+        for (const [cid, c] of Object.entries(sceneObjects)) if (c.parent === model && c.type === 'human') out.add(cid);
+    }
+    return [...out];
+}
+function vlSyncTouch(entries) {
+    const state = new Map();
+    const add = (target, other, impact) => {
+        let m = state.get(target);
+        if (!m) { m = new Map(); state.set(target, m); }
+        if (!m.has(other) || impact > m.get(other)) m.set(other, impact || 0);
+    };
+    for (const pair of entries || []) {
+        if (!pair || !sceneObjects[pair.a] || !sceneObjects[pair.b]) continue;
+        const ta = vlTouchTargets(pair.a), tb = vlTouchTargets(pair.b);
+        for (const a of ta) for (const b of tb) if (a !== b) { add(a, b, pair.impact); add(b, a, pair.impact); }
+    }
+    for (const id of new Set([...vlTouchWatch.keys(), ...state.keys()])) {
+        const prev = vlTouchWatch.get(id) || new Map(), next = state.get(id) || new Map();
+        for (const [other, impact] of next) if (!prev.has(other)) vlFire(vlTouchEvent(id, 'Touched'), [vlInst(other), impact]);
+        for (const other of prev.keys()) if (!next.has(other)) vlFire(vlTouchEvent(id, 'TouchEnded'), [vlInst(other)]);
+    }
+    vlTouchWatch = state;
+}
+function vlResetTouch() {
+    if (vlTouchWatch.size) vlSyncTouch([]);
+    vlTouchWatch.clear();
+}
+function vlTouchFor(id) { return vlTouchWatch.get(id) || null; }
+function vlVelocityTarget(id) {
+    const o = sceneObjects[id];
+    if (!o) return { x: 0, y: 0, z: 0 };
+    if (o.type === 'human') return vlVelocityTarget(o.parent);
+    if (o.type !== 'model') return physicsVelocityFor(id);
+    const parts = typeof getModelPrisms === 'function' ? getModelPrisms(id).map(([pid]) => pid) : [];
+    const proxy = {};
+    for (const axis of ['x', 'y', 'z']) Object.defineProperty(proxy, axis, {
+        get() { return parts.length ? parts.reduce((sum, pid) => sum + physicsVelocityFor(pid)[axis], 0) / parts.length : 0; },
+        set(n) { for (const pid of parts) physicsVelocityFor(pid)[axis] = n; }
+    });
+    return proxy;
+}
 // A dot also reads a direct child by display name: frame.hp. A name that is both a property and a child is ambiguous.
 function vlChildNamed(id, name, line) {
     let found = null;
@@ -599,6 +671,22 @@ function vlGetProp(inst, name, line) {
 function vlGetOwnProp(inst, name, line) {
     const o = vlObj(inst, line);
     if (name === 'WaitForChild') return new VLFn('WaitForChild', (args, line, ctx) => vlWaitForChild(inst, args, line, ctx));
+    if (isShape(o) || o.type === 'model' || o.type === 'human') {
+        const touch = vlTouchFor(inst.id);
+        if (name === 'IsTouching') return !!touch && touch.size > 0;
+        if (name === 'Touching') {
+            let best = null, bestImpact = -Infinity;
+            if (touch) for (const [other, impact] of touch) if (impact > bestImpact) { best = other; bestImpact = impact; }
+            return best && sceneObjects[best] ? vlInst(best) : null;
+        }
+        if (name === 'TouchingAll') {
+            const t = new VLTable();
+            if (touch) [...touch.keys()].filter(id => sceneObjects[id]).forEach((id, i) => t.set(i + 1, vlInst(id)));
+            return t;
+        }
+        if (name === 'Touched') return vlTouchEvent(inst.id, 'Touched');
+        if (name === 'TouchEnded') return vlTouchEvent(inst.id, 'TouchEnded');
+    }
     if (o.type === 'human' && (name === 'HealthChanged' || name === 'StaminaChanged')) return vlHumanEvent(inst.id, name);
     if (o.type === 'button' && name === 'Clicked') return vlUIEvent(inst.id, 'Clicked');
     if (o.type === 'input' && name === 'Submitted') return vlUIEvent(inst.id, 'Submitted');
@@ -638,6 +726,7 @@ function vlGetOwnProp(inst, name, line) {
     if (o.type === 'player' && name === 'ModelAdded') return vlPlayerEvent(inst.id, 'ModelAdded');
     if (o.type === 'player' && name === 'Character') return o.currentModel && sceneObjects[o.currentModel] ? vlInst(o.currentModel) : null;
     if (o.type === 'script' && name === 'Run') return new VLFn('Run', (args, ln) => { vlRunScript(inst.id, ln); return null; });
+    if (name === 'Velocity' && (o.type === 'model' || o.type === 'human')) return new VLVec(0, 0, 0, { id: inst.id, keys: ['x', 'y', 'z'], make: () => vlVelocityTarget(inst.id) });
     const def = VL_PROPS.common[name] || (VL_PROPS[o.type] || {})[name];
     if (!def) throw new VLError('"' + name + '" is not a property of ' + o.type + '.', line);
     if (def[0] === 'collidable') return o.collidable !== false;
@@ -654,7 +743,7 @@ function vlSetProp(inst, name, v, line) {
             : '"' + name + '" is a child of "' + o.name + '", not a property. Change a property on that child instead.', line);
     }
     if (name === 'Type') throw new VLError('Type is read-only.', line);
-    if (o.type === 'player') throw new VLError(name === 'Character' ? 'Character can only be changed with Players.AssignModelToPlayer.' : 'A Player is read-only.', line);
+    if (o.type === 'player' && !['SkinColor', 'ShirtColor', 'PantsColor'].includes(name)) throw new VLError(name === 'Character' ? 'Character can only be changed with Players.AssignModelToPlayer.' : 'A Player is read-only.', line);
     if (o.type === 'human' && name === 'Name') throw new VLError('A Human is always named Human. Set PlayerName instead.', line);
     if (name === 'Parent') {
         if (v instanceof VLSpace) o.parent = v.id;
@@ -662,9 +751,9 @@ function vlSetProp(inst, name, v, line) {
         else throw new VLError('Parent needs an instance or a Space such as World.', line);
         host.markUIDirty(); return;
     }
-    if (isShape(o) && name === 'Velocity') {
+    if ((isShape(o) || o.type === 'model' || o.type === 'human') && name === 'Velocity') {
         if (!(v instanceof VLVec)) throw new VLError('Velocity needs a vector, for example vanilla3D.Position(0, 5, 0).', line);
-        const vel = physicsVelocityFor(inst.id);
+        const vel = (o.type === 'model' || o.type === 'human') ? vlVelocityTarget(inst.id) : physicsVelocityFor(inst.id);
         vel.x = v.get(0); vel.y = v.get(1); vel.z = v.get(2);
         return;
     }
@@ -686,7 +775,14 @@ function vlSetProp(inst, name, v, line) {
     if (kind === 'bool' && typeof v !== 'boolean') throw new VLError(name + ' needs True or False.', line);
     if (kind === 'num' && (typeof v !== 'number' || !Number.isFinite(v))) throw new VLError(name + ' needs a number.', line);
     if (kind === 'str' && typeof v !== 'string') throw new VLError(name + ' needs a string.', line);
-    if (name === 'Color' || name === 'ColorStart' || name === 'ColorEnd' || name === 'TextColor' || name === 'BorderColor' || name === 'FillColor') {
+    if (name === 'Material') {
+        const key = String(v).toLowerCase();
+        if (typeof MATERIAL_KEYS === 'undefined' || !MATERIAL_KEYS.has(key === 'default' ? 'plastic' : key)) {
+            throw new VLError('Material needs a material name such as "plastic", "brick", "glass" or "metal".', line);
+        }
+        v = key === 'default' ? 'plastic' : key;
+    }
+    if (name === 'Color' || name === 'ColorStart' || name === 'ColorEnd' || name === 'TextColor' || name === 'BorderColor' || name === 'FillColor' || name === 'SkinColor' || name === 'ShirtColor' || name === 'PantsColor') {
         let h = v.trim().replace(/^#/, '');
         if (/^[0-9a-f]{3}$/i.test(h)) h = h.split('').map(c => c + c).join('');
         if (!/^[0-9a-f]{6}$/i.test(h)) throw new VLError(name + ' needs a hex string such as "#ff8800".', line);
@@ -714,6 +810,7 @@ function vlSetProp(inst, name, v, line) {
         if (other) { logOutput('warning', 'Spawnpoint skipped: "' + other.name + '" is already the spawnpoint. Only one is allowed for now.'); return; }
     }
     o[def[0]] = v;
+    if (o.type === 'player' && ['SkinColor', 'ShirtColor', 'PantsColor'].includes(name)) vlApplyPlayerColors(inst.id);
     if (o.type === 'sound' && name === 'Preset') o.source = 'preset:' + v;
     if (o.type === 'simpleeffect' && name === 'Preset' && host.effectPlay) host.effectPlay(inst.id);
     if (name === 'Anchored' && v) physicsVelocity.set(inst.id, { x: 0, y: 0, z: 0 });
@@ -841,6 +938,39 @@ const vlEvents = {};
 for (const n of ['OnPlayerJoin', 'OnPlayerSpawn', 'OnPlayerLeave', 'OnPlayerDeath']) vlEvents[n] = new VLEvent(n);
 // A Player's own events. They are kept apart from the player data, which is what gets saved.
 const vlPlayerEvents = new Map();
+function vlApplyPlayerColors(pid) {
+    const p = sceneObjects[pid];
+    const model = p && p.currentModel && sceneObjects[p.currentModel];
+    if (!p || !model) return;
+    const skin = p.skinColor || '#ffcc85', shirt = p.shirtColor || '#0d69ac', pants = p.pantsColor || '#4b974b';
+    const ids = new Set(vlDescendants(p.currentModel)); ids.add(p.currentModel);
+    for (const [id, o] of Object.entries(sceneObjects)) {
+        if (!isShape(o) || !ids.has(id)) continue;
+        const n = String(o.name).toLowerCase();
+        if (n === 'head' || n.endsWith('arm')) o.color = skin;
+        else if (n === 'torso' || n === 'body') o.color = shirt;
+        else if (n.endsWith('leg')) o.color = pants;
+    }
+}
+const vlChatEvents = new Map(), vlChatHistory = [], vlChatStyle = { color: '#ffffff', background: '#111827', size: 14 };
+const vlChatState = { enabled: true };
+function vlChatEvent(name) {
+    let e = vlChatEvents.get(name);
+    if (!e) { e = new VLEvent(name); vlChatEvents.set(name, e); }
+    return e;
+}
+function vlChatTable(from, text, system) {
+    const t = new VLTable();
+    t.set('Text', text); t.set('From', from); t.set('System', !!system); t.set('Time', Date.now() / 1000);
+    return t;
+}
+function vlChatPush(from, text, system) {
+    const msg = vlChatTable(from, text, system);
+    vlChatHistory.push(msg);
+    if (vlChatHistory.length > 200) vlChatHistory.shift();
+    vlFire(vlChatEvent('MessageAdded'), [msg]);
+    return msg;
+}
 function vlPlayerEvent(id, name) {
     let m = vlPlayerEvents.get(id);
     if (!m) { m = {}; vlPlayerEvents.set(id, m); }
@@ -877,11 +1007,13 @@ function vlResetPlayers() {
     vlHumanEvents.clear(); vlHumanWatch.clear();
     vlThreadIds.Server.clear(); vlThreadIds.Local.clear();
     vlPendingJoinId = null; vlPlayerJoinCounter = 0;
+    vlTouchWatch = new Map(); vlTouchEvents.clear();
+    vlChatHistory.length = 0; vlChatState.enabled = true;
 }
 function vlCreatePlayer() {
     const order = ++vlPlayerJoinCounter;
     const id = newId();
-    sceneObjects[id] = { type: 'player', name: dn('human') + order, parent: 'players', readOnly: true, currentModel: null, dead: false, order };
+    sceneObjects[id] = { type: 'player', name: dn('human') + order, parent: 'players', readOnly: true, currentModel: null, dead: false, order, skinColor: '#ffcc85', shirtColor: '#0d69ac', pantsColor: '#4b974b' };
     host.markUIDirty();
     return id;
 }
@@ -951,6 +1083,7 @@ function vlAssignModel(modelId, pid, line) {
     const hid = vlFindHuman(modelId);
     if (hid) sceneObjects[hid].playerName = p.name;
     p.currentModel = modelId; p.dead = false;
+    vlApplyPlayerColors(pid);
     host.markUIDirty();
     vlFire(vlPlayerEvent(pid, 'ModelAdded'), [vlInst(modelId)]);
     vlFire(vlEvents.OnPlayerSpawn, [vlInst(pid)]);
@@ -1153,6 +1286,37 @@ function makePlayerSetup(newIdFn) {
     return makePlayerModel(uid).concat([makePlayerScript(uid), makeNetworkingScript(uid)]);
 }
 
+const vlChatModule = new VLModule('Chat', {
+    Send: new VLFn('Chat.Send', (args, line, ctx) => {
+        if (!vlChatState.enabled) throw new VLError('Chat is disabled in this world.', line);
+        if (args.length !== 1 || typeof args[0] !== 'string' || !args[0].trim()) throw new VLError('Chat.Send needs one non-empty message string.', line);
+        const from = ctx && sceneObjects[ctx.id] ? sceneObjects[ctx.id].name : 'Script';
+        const msg = vlChatPush(from, args[0].slice(0, 500), false);
+        logOutput('info', '[Chat] ' + from + ': ' + args[0]);
+        return msg;
+    }),
+    System: new VLFn('Chat.System', (args, line) => {
+        if (args.length !== 1 || typeof args[0] !== 'string' || !args[0].trim()) throw new VLError('Chat.System needs one non-empty message string.', line);
+        const msg = vlChatPush('System', args[0].slice(0, 500), true);
+        logOutput('info', '[Chat] ' + args[0]);
+        return msg;
+    }),
+    MessageAdded: vlChatEvent('MessageAdded'),
+    SetEnabled: new VLFn('Chat.SetEnabled', (args, line) => {
+        if (args.length !== 1 || typeof args[0] !== 'boolean') throw new VLError('Chat.SetEnabled needs True or False.', line);
+        vlChatState.enabled = args[0];
+        return null;
+    }),
+    IsEnabled: new VLFn('Chat.IsEnabled', () => vlChatState.enabled),
+    Clear: new VLFn('Chat.Clear', () => { vlChatHistory.length = 0; return null; }),
+    SetStyle: new VLFn('Chat.SetStyle', (args, line) => {
+        if (args.length !== 2 || typeof args[0] !== 'string' || typeof args[1] !== 'string') throw new VLError('Chat.SetStyle needs a style name and a value.', line);
+        const key = args[0].toLowerCase();
+        if (!['color', 'background', 'size', 'font'].includes(key)) throw new VLError('Chat.SetStyle supports color, background, size and font.', line);
+        vlChatStyle[key] = args[1];
+        return null;
+    })
+});
 const vlScriptingModule = new VLModule('Scripting', { GetUID: vlGetUIDFn, SetUID: vlSetUIDFn, NewThread: vlNewThread });
 const vlTweeningModule = new VLModule('Tweening',{linear:new VLFn('Tweening.linear',(a,l)=>{if(a.length!==3||a.some(v=>typeof v!=='number'))throw new VLError('linear(start,target,alpha) needs three numbers.',l);return a[0]+(a[1]-a[0])*Math.max(0,Math.min(1,a[2]));}),easeInOut:new VLFn('Tweening.easeInOut',(a,l)=>{if(a.length!==3||a.some(v=>typeof v!=='number'))throw new VLError('easeInOut(start,target,alpha) needs three numbers.',l);const t=Math.max(0,Math.min(1,a[2])),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;return a[0]+(a[1]-a[0])*e;})});
 const vlExtrasModule = new VLModule('Extras',{clamp:new VLFn('Extras.clamp',(a,l)=>{if(a.length!==3||a.some(v=>typeof v!=='number'))throw new VLError('clamp(value,min,max) needs three numbers.',l);return Math.max(a[1],Math.min(a[2],a[0]));}),lerp:new VLFn('Extras.lerp',(a,l)=>{if(a.length!==3||a.some(v=>typeof v!=='number'))throw new VLError('lerp(a,b,alpha) needs three numbers.',l);return a[0]+(a[1]-a[0])*a[2];})});
@@ -1161,7 +1325,7 @@ const vlInstanceModule = new VLModule('Instance', {
     SetUID: vlSetUIDFn,
     create: new VLFn('Instance.create', (args, line) => {
         const [type, space] = args;
-        if (typeof type !== 'string' || !VL_TYPES.includes(type)) throw new VLError('Unknown instance type "' + vlStr(type) + '". Use prism6, ball, wedge, cylinder, model, script, worldsettings, human, sound, highlight, light, simpleeffect, advancedeffect, clientsocket, serversocket, peerconnection, groupconnection, frame, text, button, image, input or progressbar.', line);
+        if (typeof type !== 'string' || !VL_TYPES.includes(type)) throw new VLError('Unknown instance type "' + vlStr(type) + '". Use ' + VL_TYPES.join(', ') + '.', line);
         if (space instanceof VLPlayersObj) throw new VLError('The Players space is read-only. Players join on their own.', line);
         if (!(space instanceof VLSpace)) throw new VLError('Instance.create needs a loaded Space as its second argument, for example World.', line);
         if (VL_UI_TYPES.includes(type) && space.id !== 'ui') throw new VLError('UI instances can only be created in the UI space.', line);
@@ -1295,7 +1459,7 @@ function* vlExec(stmts, env, ctx) {
 function* vlExecOne(s, env, ctx) {
         switch (s.k) {
             case 'useSpace': env.vars.set(s.name, vlSpaces[VL_SPACES[s.name]]); break;
-            case 'useModule': env.vars.set(s.name, ({Scripting:vlScriptingModule,Instance:vlInstanceModule,Tweening:vlTweeningModule,Extras:vlExtrasModule,Players:vlSpaces.players})[s.name] || vlInstanceModule); break;
+            case 'useModule': env.vars.set(s.name, ({Scripting:vlScriptingModule,Instance:vlInstanceModule,Tweening:vlTweeningModule,Extras:vlExtrasModule,Players:vlSpaces.players,Chat:vlChatModule})[s.name] || vlInstanceModule); break;
             case 'local': env.vars.set(s.name, vlEval(s.expr, env, ctx)); break;
             case 'function': env.vars.set(s.name,new VLUserFn(s.name,s.params,s.body,env)); break;
             case 'return': throw new VLControl('return',s.expr?vlEval(s.expr,env,ctx):null);
@@ -1437,7 +1601,7 @@ function stopScripts() {
     vlInstCache.clear();
     host.markUIDirty();
 }
-      const api = {VL_KEYWORDS, VL_SPACES, VL_MODULES, VL_TYPES, VL_UI_TYPES, VL_GLOBALS, VLParseError, VLError, vlLex, vlParse, vlAnalyze, jsonDiagnostics, SCRIPT_TEMPLATE, newScriptData, makeHuman, HUMAN_DEFAULTS, makePlayerSetup, makePlayerModel, makePlayerScript, PLAYER_MANAGEMENT_SOURCE, NETWORKING_SOURCE, makeNetworkingScript, ensureScript, computeDiagnostics, VLFn, VLWait, VLModule, VLSpace, VLInst, VLVec, VLScope, vlInstCache, vlSpaces, vlInst, vlObj, vlRound, vlTypeName, vlStr, vlTruthy, VL_PROPS, vlGetProp, vlSetProp, vlGetMember, vlSetMember, vlCreate, vlDeleteInst, vlGetUID, vlSetUID, vlGetUIDFn, vlSetUIDFn, vlScriptingModule, vlInstanceModule, vlVanilla3D, vlVecFrom, vlRootScope, vlEq, vlBinary, vlEval, vlExec, vlMain, scriptTasks, outputLog, logOutput, vlStartTask, vlRunScript, startSimulationScripts, stepScripts, stopScripts, vlFireUI, fireUIEvent: vlFireUI, vlFireHuman, fireHumanEvent: vlFireHuman};
+      const api = {VL_KEYWORDS, VL_SPACES, VL_MODULES, VL_TYPES, VL_UI_TYPES, VL_GLOBALS, VLParseError, VLError, vlLex, vlParse, vlAnalyze, jsonDiagnostics, SCRIPT_TEMPLATE, newScriptData, makeHuman, HUMAN_DEFAULTS, makePlayerSetup, makePlayerModel, makePlayerScript, PLAYER_MANAGEMENT_SOURCE, NETWORKING_SOURCE, makeNetworkingScript, ensureScript, computeDiagnostics, VLFn, VLWait, VLModule, VLSpace, VLInst, VLVec, VLScope, vlInstCache, vlSpaces, vlInst, vlObj, vlRound, vlTypeName, vlStr, vlTruthy, VL_PROPS, vlGetProp, vlSetProp, vlGetMember, vlSetMember, vlCreate, vlDeleteInst, vlGetUID, vlSetUID, vlGetUIDFn, vlSetUIDFn, vlScriptingModule, vlInstanceModule, vlVanilla3D, vlVecFrom, vlRootScope, vlEq, vlBinary, vlEval, vlExec, vlMain, scriptTasks, outputLog, logOutput, vlStartTask, vlRunScript, startSimulationScripts, stepScripts, stopScripts, vlFireUI, fireUIEvent: vlFireUI, vlFireHuman, fireHumanEvent: vlFireHuman, vlChatModule, syncTouch: vlSyncTouch, resetTouch: vlResetTouch, velocityTarget: vlVelocityTarget};
       Object.defineProperty(api, 'sharedGlobals', { get: () => vlSharedGlobals, set: value => { vlSharedGlobals = value; } });
       return api;
     }

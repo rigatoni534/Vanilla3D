@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.9.1">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.10.1">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
   
 </head>
@@ -592,7 +592,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 9</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 10</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -906,8 +906,9 @@ print(block)</code></pre>
           <tr><td>Every instance</td><td><code>Name</code> (string), <code>Type</code> (read-only), <code>Parent</code> (a Space or an instance)</td></tr>
           <tr><td>Balls</td><td>A <code>"ball"</code> has every prism property below. Its <code>Size</code> is the radius on each axis, so the default <code>Size</code> of 0.5 makes a ball 1 Vm wide. Physics treats it as a sphere with the average of its three sizes.</td></tr>
           <tr><td>Rotation</td><td>For prisms and balls: a vector of degrees about X, Y and Z, for example <code>block.Rotation = vanilla3D.Position(0, 45, 0)</code>. The turn about Y is applied first, then the tilt about X, then the roll about Z.</td></tr>
-          <tr><td>Velocity</td><td>For prisms and balls: a vector you can read or set while the simulation runs, for example <code>ball.Velocity = vanilla3D.Position(4, 0, 0)</code> rolls a ball along +X.</td></tr>
-          <tr><td>Prism blocks</td><td><code>Position</code>, <code>Size</code> (vectors, each axis at least 0.05 for Size), <code>Locked</code>, <code>Anchored</code>, <code>ReactsToPhysics</code>, <code>Collidable</code>, <code>Wireframe</code>, <code>FaceColoring</code>, <code>ShowLabels</code> (True or False), <code>Color</code> (a hex string such as <code>"#ff8800"</code>; <code>FaceColoring</code> overrides it)</td></tr>
+          <tr><td>Velocity</td><td>Every shape, union, model and Human: a vector you can read or set while the simulation runs. On a model it is the average of its parts; setting it sets every part. For example <code>ball.Velocity = vanilla3D.Position(4, 0, 0)</code> rolls a ball along +X.</td></tr>
+          <tr><td>Touching</td><td>Every shape, union, model and Human has <code>IsTouching</code> (True or False), <code>Touching</code> (the other instance with the strongest current contact, or <code>nil</code>) and <code>TouchingAll</code> (a table of every touching instance). <code>Touched</code> and <code>TouchEnded</code> are events: <code>block.Touched:Connect(function(other, impactSpeed) ... end)</code>.</td></tr>
+          <tr><td>Prism blocks</td><td><code>Position</code>, <code>Size</code> (vectors, each axis at least 0.05 for Size), <code>Locked</code>, <code>Anchored</code>, <code>ReactsToPhysics</code>, <code>Collidable</code>, <code>Wireframe</code>, <code>FaceColoring</code>, <code>ShowLabels</code> (True or False), <code>Color</code> (a hex string such as <code>"#ff8800"</code>; <code>FaceColoring</code> overrides it) and <code>Material</code> (a name such as <code>"plastic"</code>, <code>"brick"</code>, <code>"glass"</code> or <code>"metal"</code>).</td></tr>
           <tr><td>World Settings</td><td><code>TimeOfDay</code> (0 to 24), <code>Gravity</code> (0 to 1000), <code>KillLayer</code> (number)</td></tr>
           <tr><td>Humans</td><td><code>Health</code>, <code>MaxHealth</code>, <code>WalkSpeed</code>, <code>RunSpeed</code>, <code>Stamina</code>, <code>MaxStamina</code>, <code>RunStaminaLoss</code>, <code>JumpHeight</code>, <code>JumpStaminaLoss</code>, <code>StaminaGain</code> (numbers, never below 0) and <code>PlayerName</code> (text). All of these except MaxHealth are used by the player you control, and at 0 Health the player dies.</td></tr>
           <tr><td>Wedges, cylinders and unions</td><td>The same properties as a prism, except <code>Spawnpoint</code>.</td></tr>
@@ -917,8 +918,17 @@ print(block)</code></pre>
           <tr><td>Effects</td><td><code>SimpleEffect</code> and <code>AdvancedEffect</code> have <code>Emitting</code> (True or False), <code>Position</code> (the offset from a parent or a world position), <code>Rate</code>, <code>Speed</code>, and the Advanced settings <code>Burst</code>, <code>Lifetime</code>, <code>SizeStart</code>, <code>SizeEnd</code>, <code>Spread</code>, <code>Gravity</code>, <code>Drag</code>, <code>Rotation</code>, <code>ColorStart</code>, <code>ColorEnd</code>, <code>FadeIn</code>, <code>FadeOut</code>, <code>Blend</code>, <code>Sprite</code>, <code>Image</code>, <code>Frames</code>, <code>FPS</code>, <code>Shape</code>, <code>Space</code> and <code>Radius</code>. Call <code>Play()</code>, <code>Stop()</code> or <code>Emit(count)</code> on an effect. SimpleEffect also exposes its <code>Preset</code> and <code>Color</code>; <code>Size</code> scales the preset.</td></tr>
           <tr><td>Connections</td><td><code>Active</code> (True or False). ClientSocket adds <code>Client</code>, <code>Player</code> and <code>Bandwidth</code>; ServerSocket adds <code>Bandwidth</code> and <code>MaxClients</code>; PeerConnection adds <code>Password</code>, <code>Client1</code>, <code>Client2</code>, <code>Player1</code> and <code>Player2</code>; GroupConnection adds <code>Password</code>.</td></tr>
           <tr><td>Blocks</td><td><code>Spawnpoint</code> (true or false). Only one block can be the spawnpoint.</td></tr>
-          <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr><tr><td>Players</td><td><code>Character</code> (the player's current model, read-only) and <code>ModelAdded</code> (an event; passes the new model). Use <code>Players.AssignModelToPlayer</code> to give a player a model.</td></tr>
+          <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr>          <tr><td>Players</td><td><code>Character</code> (the player's current model, read-only), <code>ModelAdded</code> (an event; passes the new model), and <code>SkinColor</code>, <code>ShirtColor</code> and <code>PantsColor</code> (hex strings applied to the current model). Use <code>Players.AssignModelToPlayer</code> to give a player a model.</td></tr>
         </tbody></table>
+        <p><b>Chat.</b> Load the chat API with <code>get Chat</code>. <code>Chat.Send(text)</code> posts a message from the running script and <code>Chat.System(text)</code> posts a system message; both return a message table with <code>Text</code>, <code>From</code>, <code>System</code> and <code>Time</code>. <code>Chat.MessageAdded:Connect(function(message) ... end)</code> runs for every new message. <code>Chat.SetEnabled(False)</code> stops script messages, and <code>Chat.SetStyle</code> stores color, background, size or font hints for the Player front end.</p>
+        <pre><code>call Scripts
+get Chat
+
+Chat.System("Match starting")
+Chat.Send("Hello from the server")
+Chat.MessageAdded:Connect(function(message)
+    print(message.From, message.Text)
+end)</code></pre>
         <p><code>vanilla3D.Position(x, y, z)</code> and <code>vanilla3D.Size(x, y, z)</code> create three-component vectors. Vector axes are uppercase <code>X</code>, <code>Y</code>, and <code>Z</code>. For a prism, Position maps to its world coordinates; Size maps to width, height, and length respectively.</p>
         <pre><code>call World
 get Instance
@@ -1103,24 +1113,24 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=4.0.0.0.9.1"></script>
-  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 9';</script>
+  <script src="../vanillalua.js?v=4.0.0.0.10.1"></script>
+  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 10';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/collision.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/scene.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/effects.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/csg.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/version-history.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/player.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/sounds.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/scripting.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/shell.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/files.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/offline.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/explorer.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/properties.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/render.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/gl.js?v=4.0.0.0.9.1"></script>
-  <script defer src="js/main.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/collision.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/scene.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/effects.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/csg.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/version-history.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/player.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/sounds.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/scripting.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/shell.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/files.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/offline.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/explorer.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/properties.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/render.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/gl.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/main.js?v=4.0.0.0.10.1"></script>
 </body>
 </html>

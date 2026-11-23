@@ -524,6 +524,7 @@
             simSnapshot = null;
             if (typeof clearEffectStates === 'function') clearEffectStates();
             physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear();
+            if (typeof resetTouches === 'function') resetTouches();
             manip = null;
             if (selectedObjectId && !sceneObjects[selectedObjectId]) selectedObjectId = null;
             renderExplorer();
@@ -537,6 +538,7 @@
             physicsLastTime = 0;
             if (typeof clearEffectStates === 'function') clearEffectStates();
             physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear();
+            if (typeof resetTouches === 'function') resetTouches();
             if (running) {
                 takeSnapshot();
                 outputLog.length = 0;

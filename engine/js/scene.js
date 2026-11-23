@@ -606,6 +606,25 @@
         const physicsVelocity = new Map();
         // Ball spin and orientation exist only while the simulation runs (3x3 row-major rotation, spin in rad/s)
         const ballRot = new Map(), ballSpin = new Map(), ballContacts = new Map();
+        // Contacts are collected during a physics step and handed to the scripting layer once per step. Keeping the
+        // raw pairs here means touch queries and Touched/TouchEnded events see the same resolved contacts as physics.
+        const touchPairs = new Map();
+        function recordTouch(a, b, impact) {
+            if (!a || !b || a === b) return;
+            const key = a < b ? a + '|' + b : b + '|' + a;
+            const old = touchPairs.get(key);
+            if (old) { if ((impact || 0) > old.impact) old.impact = impact || 0; }
+            else touchPairs.set(key, { a, b, impact: impact || 0 });
+        }
+        function flushTouches() {
+            const entries = [...touchPairs.values()];
+            touchPairs.clear();
+            if (typeof vlRuntime !== 'undefined' && vlRuntime.syncTouch) vlRuntime.syncTouch(entries);
+        }
+        function resetTouches() {
+            touchPairs.clear();
+            if (typeof vlRuntime !== 'undefined' && vlRuntime.syncTouch) vlRuntime.syncTouch([]);
+        }
         const IDENT3 = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
         const ballRotFor = (id) => ballRot.get(id) || IDENT3;
         const ballRadius = (o) => (o.width + o.height + o.length) / 3;
@@ -834,6 +853,7 @@
             b.x -= n[0] * pen * shareB; b.y -= n[1] * pen * shareB; b.z -= n[2] * pen * shareB;
             const av = physicsVelocityFor(idA), bv = physicsVelocityFor(idB);
             const impact = applyContactImpulse(av, bv, n, invA, invB, BALL_RESTITUTION, false);
+            recordTouch(idA, idB, impact);
             if (typeof audioImpact === 'function') audioImpact(impact, idA, idB, a, b);
             if (a.type === 'ball' && aMoves) ballContacts.set(idA, { nx: n[0], ny: n[1], nz: n[2], ovx: bv.x, ovy: bv.y, ovz: bv.z });
             if (b.type === 'ball' && bMoves) ballContacts.set(idB, { nx: -n[0], ny: -n[1], nz: -n[2], ovx: av.x, ovy: av.y, ovz: av.z });
@@ -855,6 +875,7 @@
             a.x += n[0] * pen * shareA; a.y += n[1] * pen * shareA; a.z += n[2] * pen * shareA;
             b.x -= n[0] * pen * shareB; b.y -= n[1] * pen * shareB; b.z -= n[2] * pen * shareB;
             const impact = applyContactImpulse(physicsVelocityFor(idA), physicsVelocityFor(idB), n, invA, invB, BOX_RESTITUTION, true);
+            recordTouch(idA, idB, impact);
             if (typeof audioImpact === 'function') audioImpact(impact, idA, idB, a, b);
         }
 
@@ -981,6 +1002,7 @@
                         n = [0, 0, signZ];
                     }
                     const impact = applyContactImpulse(av, bv, n, invA, invB, BOX_RESTITUTION, true);
+                    recordTouch(idA, idB, impact);
                     if (typeof audioImpact === 'function') audioImpact(impact, idA, idB, a, b);
                     if (n[1] !== 0) {
                         // Read the resting height again: the shape below may have given way a little in this pass.
@@ -1057,4 +1079,5 @@
                 }
             }
             if (removed) { pruneOrphans(); renderExplorer(); renderProperties(); }
+            flushTouches();
         }

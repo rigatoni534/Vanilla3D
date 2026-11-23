@@ -42,21 +42,21 @@
                         const m = rotMat(o);
                         for (const c of cells) {
                             const p = unionCellWorld(o, c);
-                            cols.push({ k: 0, x: p.x, z: p.z, w: p.width, l: p.length, y0: p.y - p.height, y1: p.y + p.height, mat: materialKey(o),
+                            cols.push({ id, k: 0, x: p.x, z: p.z, w: p.width, l: p.length, y0: p.y - p.height, y1: p.y + p.height, mat: materialKey(o),
                                 obb: { x: p.x, y: p.y, z: p.z, hx: p.width, hy: p.height, hz: p.length, m } });
                         }
                     } else {
                         const e = shapeHalfExt(o), obb = obbFromShape(o);
-                        cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], mat: materialKey(o), obb });
+                        cols.push({ id, k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], mat: materialKey(o), obb });
                     }
                     continue;
                 }
                 const turned = !!rotInfo(o);
-                if (!turned && o.type === 'cylinder') { cols.push({ k: 1, x: o.x, z: o.z, w: o.width, l: o.length, y0: o.y - o.height, y1: o.y + o.height, mat: materialKey(o) }); continue; }
-                if (!turned && o.type === 'ball') { cols.push({ k: 3, x: o.x, z: o.z, w: o.width, l: o.length, y: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height, mat: materialKey(o) }); continue; }
-                if (!turned && o.type === 'wedge') { cols.push({ k: 2, x: o.x, z: o.z, w: o.width, l: o.length, ym: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height, mat: materialKey(o) }); continue; }
+                if (!turned && o.type === 'cylinder') { cols.push({ id, k: 1, x: o.x, z: o.z, w: o.width, l: o.length, y0: o.y - o.height, y1: o.y + o.height, mat: materialKey(o) }); continue; }
+                if (!turned && o.type === 'ball') { cols.push({ id, k: 3, x: o.x, z: o.z, w: o.width, l: o.length, y: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height, mat: materialKey(o) }); continue; }
+                if (!turned && o.type === 'wedge') { cols.push({ id, k: 2, x: o.x, z: o.z, w: o.width, l: o.length, ym: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height, mat: materialKey(o) }); continue; }
                 const e = shapeHalfExt(o), obb = obbFromShape(o);     // a turned shape keeps its real angle
-                cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], mat: materialKey(o), obb });
+                cols.push({ id, k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], mat: materialKey(o), obb });
             }
             return cols;
         }
@@ -98,6 +98,16 @@
                 if (t >= lo && t <= hi && t > best) best = t;
             }
             return best;
+        }
+        // A driven player is not in the rigid-body list, so its contacts are recorded here. The model and its Human
+        // inherit these pairs through the same touch registry the physics bodies use.
+        function pcRecordTouches(modelId, b, cols) {
+            if (typeof recordTouch !== 'function') return;
+            for (const c of cols) {
+                if (!c.id) continue;
+                if (!pcOverFoot(b, c) || c.y0 > b.maxY || c.y1 < b.minY - 0.05) continue;
+                recordTouch(modelId, c.id, 0);
+            }
         }
         // Move the box along x or z (0 or 2) and stop it at anything too tall to step onto. Returns true when blocked.
         // The surface immediately under the feet supplies the footstep material. A union reports its own material,
@@ -299,6 +309,7 @@
                     if (hit) pc.vy = 0;
                 }
                 pc.pos = { x: (b.minX + b.maxX) / 2, y: b.minY, z: (b.minZ + b.maxZ) / 2 };
+                pcRecordTouches(m.modelId, b, cols);
                 // Stamina comes back while standing on something and not sprinting. Once emptied it comes back slower, until it is full.
                 if (!sprinting && pc.onGround && !jumped) st += (pc.exhausted ? Math.min(STAMINA_PENALTY_GAIN, gain) : gain) * dt;
                 if (st <= 0) { st = 0; pc.exhausted = true; }

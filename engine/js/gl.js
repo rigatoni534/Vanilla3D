@@ -55,7 +55,7 @@ uniform float uMatSpec;           // how strong this material's highlight is
 // Placeable point and spot lights. Only the nearest eight are uploaded, so a big build stays within a small uniform budget.
 uniform int uLightCount;
 uniform vec3 uLightPos[8], uLightCol[8], uLightDir[8];
-uniform vec4 uLightInfo[8];       // reach, brightness, type (0 point, 1 spot), spot shadow slot (0 none)
+uniform vec4 uLightInfo[8];       // reach, brightness, type (0 point, 1 spot), shadow slot (0 none, 1-2 spot, 3-4 point)
 uniform vec2 uLightCone[8];       // cosine of the inner and outer spot cone
 uniform vec3 uSunDir, uSunCol, uSkyCol, uGndCol, uHazeCol;
 uniform float uHaze, uFogFar, uShStr, uSpec;
@@ -65,10 +65,13 @@ uniform highp sampler2DShadow uSh1;
 uniform mat4 uLVP0, uLVP1;
 uniform vec4 uShInfo;             // texel size and depth range of both cascades
 uniform vec2 uShSize;
-// Spot lights with Cast shadows get one of two perspective shadow maps. uLightInfo.w selects the map, 0 for none.
+// Spot lights with Cast shadows get one of two perspective shadow maps. Point lights use a six-face cube map
+// instead: its depth is radial distance from the light, so the same far range works in every direction.
 uniform highp sampler2DShadow uSpotSh0, uSpotSh1;
 uniform mat4 uSpotVP0, uSpotVP1;
 uniform vec4 uSpotInfo0, uSpotInfo1;   // far plane, shadow texel in world units, map size, unused
+uniform highp samplerCubeShadow uPointSh0, uPointSh1;
+uniform vec4 uPointInfo0, uPointInfo1;   // far plane, linear-depth bias, cube face size, unused
 out vec4 o;
 uniform int uTexDetail;           // texture quality: 0 is the coarse grid, 4 adds the finest lines and surface grain
 uniform float uGrain;
@@ -150,7 +153,26 @@ float spotShadow(highp sampler2DShadow sm, mat4 vp, vec3 wp, vec3 N, float texel
     for (int i = 0; i < 8; i++) sum += texture(sm, vec3(q.xy + rm * PD[i] * rad, q.z - texel * 1.25 / far));
     return sum / 8.0;
 }
-// Placed lights add a local falloff on top of the sun and sky. Spot lights can cast shadows; point lights do not yet.
+// Point shadows look up the cube face in the direction from the light and compare the radial distance that the
+// shadow pass stored. The offsets turn the eight taps into a little round filter on the face.
+float pointShadow(highp samplerCubeShadow sm, vec3 lp, vec3 wp, float far, float bias, float size) {
+    vec3 d = wp - lp;
+    float dist = length(d);
+    if (dist < 1e-4 || far <= 1e-4) return 1.0;
+    vec3 dir = d / dist;
+    vec3 up = abs(dir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+    vec3 tx = normalize(cross(up, dir));
+    vec3 ty = cross(dir, tx);
+    float ref = clamp((dist - bias) / far, 0.0, 1.0);
+    float rad = 2.0 / max(size, 1.0);
+    float sum = 0.0;
+    for (int i = 0; i < 8; i++) {
+        vec3 q = normalize(dir + (tx * PD[i].x + ty * PD[i].y) * rad);
+        sum += texture(sm, vec4(q, ref));
+    }
+    return sum / 8.0;
+}
+// Placed lights add a local falloff on top of the sun and sky. Spot lights use a cone map; point lights use a cube map.
 vec3 dynamicLight(vec3 wp, vec3 N, vec3 V, vec3 alb, float specScale) {
     vec3 sum = vec3(0.0);
     for (int i = 0; i < 8; i++) {
@@ -173,10 +195,16 @@ vec3 dynamicLight(vec3 wp, vec3 N, vec3 V, vec3 alb, float specScale) {
         }
         float shadow = 1.0;
         if (info.w > 0.5) {
-            float ang = 6.2831853 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
-            shadow = info.w < 1.5
-                ? spotShadow(uSpotSh0, uSpotVP0, wp, N, uSpotInfo0.y, uSpotInfo0.x, uSpotInfo0.z, ang)
-                : spotShadow(uSpotSh1, uSpotVP1, wp, N, uSpotInfo1.y, uSpotInfo1.x, uSpotInfo1.z, ang);
+            if (info.w > 2.5) {
+                shadow = info.w < 3.5
+                    ? pointShadow(uPointSh0, uLightPos[i], wp, uPointInfo0.x, uPointInfo0.y, uPointInfo0.z)
+                    : pointShadow(uPointSh1, uLightPos[i], wp, uPointInfo1.x, uPointInfo1.y, uPointInfo1.z);
+            } else {
+                float ang = 6.2831853 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+                shadow = info.w < 1.5
+                    ? spotShadow(uSpotSh0, uSpotVP0, wp, N, uSpotInfo0.y, uSpotInfo0.x, uSpotInfo0.z, ang)
+                    : spotShadow(uSpotSh1, uSpotVP1, wp, N, uSpotInfo1.y, uSpotInfo1.x, uSpotInfo1.z, ang);
+            }
             if (shadow <= 0.0) continue;
         }
         vec3 rad = uLightCol[i] * info.y * atten * shadow;
@@ -419,10 +447,19 @@ layout(location = 0) in vec3 aPos;
 uniform vec3 uCenter, uHalf;
 uniform mat3 uRot;
 uniform mat4 uLVP;
-void main() { gl_Position = uLVP * vec4(uCenter + uRot * (aPos * uHalf), 1.0); }`;
-        const SHADOW_FS = `#version 300 es
+out vec3 vW;
+void main() { vW = uCenter + uRot * (aPos * uHalf); gl_Position = uLVP * vec4(vW, 1.0); }`;
+const SHADOW_FS = `#version 300 es
 precision highp float;
-void main() {}`;
+in vec3 vW;
+uniform vec3 uLightPos;
+uniform float uPointFar;
+uniform int uLinear;
+void main() {
+    // Sun and spot maps keep the projected depth. A point cube stores radial distance, which no single projection
+    // gives across six faces.
+    if (uLinear != 0) gl_FragDepth = clamp(length(vW - uLightPos) / max(uPointFar, 0.001), 0.0, 1.0);
+}`;
         const AXIS_VS = `
 layout(location = 0) in vec3 aP0;
 layout(location = 1) in vec3 aP1;
@@ -649,6 +686,48 @@ void main() {
             GL.dummyShadow = d;
             return d;
         }
+        function makeCubeShadowMap(gl, size) {
+            const tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+            for (let face = 0; face < 6; face++) {
+                gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, gl.DEPTH_COMPONENT24, size, size, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
+            }
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
+            const fbo = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_CUBE_MAP_POSITIVE_X, tex, 0);
+            gl.drawBuffers([gl.NONE]); gl.readBuffer(gl.NONE);
+            const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            return { tex, fbo, size, ok };
+        }
+        function ensurePointShadowMaps(gl, size) {
+            if (GL.pointShadowFailed) return null;
+            if (GL.pointShadows && GL.pointShadows.size === size) return GL.pointShadows;
+            if (GL.pointShadows) for (const map of GL.pointShadows.maps) { gl.deleteTexture(map.tex); gl.deleteFramebuffer(map.fbo); }
+            const a = makeCubeShadowMap(gl, size), b = makeCubeShadowMap(gl, size);
+            if (!a.ok || !b.ok) { GL.pointShadowFailed = true; GL.pointShadows = null; return null; }
+            GL.pointShadows = { size, maps: [a, b] };
+            return GL.pointShadows;
+        }
+        function dummyPointShadow(gl) {
+            if (GL.dummyCubeShadow) return GL.dummyCubeShadow;
+            const d = makeCubeShadowMap(gl, 1);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, d.fbo);
+            for (let face = 0; face < 6; face++) {
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_CUBE_MAP_POSITIVE_X + face, d.tex, 0);
+                gl.clear(gl.DEPTH_BUFFER_BIT);
+            }
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            GL.dummyCubeShadow = d;
+            return d;
+        }
         const IDENTITY4 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
         function m4Mul(a, b) {
             const out = new Float32Array(16);
@@ -721,6 +800,7 @@ void main() {
             const hs = Math.min(4000, Math.max(20, (maxY - minY) / 2 + 10));
             const S = GL.shadow, P = GL.prism;
             gl.useProgram(S.prog); gl.bindVertexArray(P.vao);
+            gl.uniform1i(S.u.uLinear, 0);
             gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
             gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(2.0, 4.0);
             const out = { vp: [], info: [], sizes: [] };
@@ -818,6 +898,7 @@ void main() {
             const S = GL.shadow, P = GL.prism;
             if (!S || !P) return null;
             gl.useProgram(S.prog);
+            gl.uniform1i(S.u.uLinear, 0);
             gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
             gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(2.0, 4.0);
             const out = { maps: maps.maps, vps: [], infos: [] };
@@ -889,6 +970,106 @@ void main() {
             gl.bindVertexArray(null);
             return out;
         }
+        // Point lights get a cube map. Each face is a 90 degree view from the light, and the shadow shader stores
+        // distance from the light instead of the face's projected depth so all six faces compare the same way.
+        function renderPointShadows(gl, prisms, balls, meshes, unions, points) {
+            if (!points || !points.length) return null;
+            const preset = SHADOW_SIZES[settings.shadows] || 0;
+            if (!preset) return null;
+            const casters = [], ballCasters = [], meshCasters = [], unionCasters = [];
+            for (const [, o] of (prisms || []).concat(balls || [], meshes || [])) {
+                if (!o || o.wireframe) continue;
+                if (o.type === 'ball') ballCasters.push(o);
+                else if (o.type === 'wedge' || o.type === 'cylinder') meshCasters.push(o);
+                else casters.push(o);
+            }
+            for (const [id, o] of unions || []) {
+                if (!o || o.wireframe) continue;
+                const g = unionGL(id, o);
+                if (g) unionCasters.push({ o, g });
+            }
+            if (!casters.length && !ballCasters.length && !meshCasters.length && !unionCasters.length) return null;
+            // A cube has six faces, so a face uses a quarter of the spot map's texels to keep the memory bounded.
+            const size = Math.max(256, Math.min(1024, preset >> 2));
+            const maps = ensurePointShadowMaps(gl, size);
+            if (!maps) return null;
+            const S = GL.shadow, P = GL.prism;
+            if (!S || !P) return null;
+            gl.useProgram(S.prog);
+            gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+            gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(2.0, 4.0);
+            gl.uniform1i(S.u.uLinear, 1);
+            const faces = [
+                { dir: [1, 0, 0], up: [0, -1, 0] }, { dir: [-1, 0, 0], up: [0, -1, 0] },
+                { dir: [0, 1, 0], up: [0, 0, 1] }, { dir: [0, -1, 0], up: [0, 0, -1] },
+                { dir: [0, 0, 1], up: [0, -1, 0] }, { dir: [0, 0, -1], up: [0, -1, 0] }
+            ];
+            const out = { maps: [], infos: [] };
+            for (let pi = 0; pi < points.length && pi < 2; pi++) {
+                const o = points[pi].o || points[pi];
+                const eye = [o.x, o.y, o.z];
+                const far = Math.max(1, Math.min(100, Number.isFinite(+o.range) ? +o.range : 14));
+                const near = Math.max(0.05, far * 0.01);
+                const inRange = (c) => {
+                    const dx = c.x - eye[0], dy = c.y - eye[1], dz = c.z - eye[2];
+                    const radius = Math.hypot(c.width, c.height, c.length);
+                    return Math.hypot(dx, dy, dz) - radius <= far;
+                };
+                const map = maps.maps[pi];
+                out.maps.push(map);
+                out.infos.push([far, Math.max(0.02, far * 2 / map.size), map.size, 0]);
+                gl.uniform3f(S.u.uLightPos, eye[0], eye[1], eye[2]);
+                gl.uniform1f(S.u.uPointFar, far);
+                for (let fi = 0; fi < faces.length; fi++) {
+                    const face = faces[fi];
+                    const target = [eye[0] + face.dir[0], eye[1] + face.dir[1], eye[2] + face.dir[2]];
+                    const vp = m4Mul(perspective4(Math.PI / 2, 1, near, far), lookAt4(eye, target, face.up));
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, map.fbo);
+                    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_CUBE_MAP_POSITIVE_X + fi, map.tex, 0);
+                    gl.viewport(0, 0, map.size, map.size);
+                    gl.clear(gl.DEPTH_BUFFER_BIT);
+                    gl.uniformMatrix4fv(S.u.uLVP, false, vp);
+                    gl.bindVertexArray(P.vao);
+                    for (const c of casters) {
+                        if (!inRange(c)) continue;
+                        gl.uniform3f(S.u.uCenter, c.x, c.y, c.z);
+                        gl.uniform3f(S.u.uHalf, c.width, c.height, c.length);
+                        gl.uniformMatrix3fv(S.u.uRot, false, rotGL(c));
+                        gl.drawArrays(gl.TRIANGLES, 0, 36);
+                    }
+                    gl.bindVertexArray(GL.sphere.vaoTri);
+                    for (const c of ballCasters) {
+                        if (!inRange(c)) continue;
+                        gl.uniform3f(S.u.uCenter, c.x, c.y, c.z);
+                        gl.uniform3f(S.u.uHalf, c.width, c.height, c.length);
+                        gl.uniformMatrix3fv(S.u.uRot, false, rotGL(c));
+                        gl.drawElements(gl.TRIANGLES, GL.sphere.nTri, gl.UNSIGNED_SHORT, 0);
+                    }
+                    for (const c of meshCasters) {
+                        if (!inRange(c)) continue;
+                        const mesh = c.type === 'wedge' ? GL.mesh.wedge : GL.mesh.cylinder;
+                        gl.bindVertexArray(mesh.vao);
+                        gl.uniform3f(S.u.uCenter, c.x, c.y, c.z);
+                        gl.uniform3f(S.u.uHalf, c.width, c.height, c.length);
+                        gl.uniformMatrix3fv(S.u.uRot, false, rotGL(c));
+                        gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
+                    }
+                    for (const { o: c, g } of unionCasters) {
+                        if (!inRange(c)) continue;
+                        gl.bindVertexArray(g.vao);
+                        gl.uniform3f(S.u.uCenter, c.x, c.y, c.z);
+                        gl.uniform3f(S.u.uHalf, c.width, c.height, c.length);
+                        gl.uniformMatrix3fv(S.u.uRot, false, rotGL(c));
+                        gl.drawArrays(gl.TRIANGLES, 0, g.count);
+                    }
+                }
+            }
+            gl.uniform1i(S.u.uLinear, 0);
+            gl.disable(gl.POLYGON_OFFSET_FILL);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.bindVertexArray(null);
+            return out;
+        }
         // Colors and strengths for the enhanced lighting, in linear light
         function lightingColors() {
             const lin = (c) => c.map(v => Math.pow(Math.max(0, v / 255), 2.2));
@@ -908,7 +1089,7 @@ void main() {
         }
 
         // Uniforms shared by the prism and mesh programs, which use the same fragment shader.
-        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uMat', 'uMatTint', 'uMatSpec', 'uLightCount', 'uLightPos', 'uLightCol', 'uLightDir', 'uLightInfo', 'uLightCone', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize', 'uSpotSh0', 'uSpotSh1', 'uSpotVP0', 'uSpotVP1', 'uSpotInfo0', 'uSpotInfo1', 'uTexDetail', 'uGrain'];
+        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uMat', 'uMatTint', 'uMatSpec', 'uLightCount', 'uLightPos', 'uLightCol', 'uLightDir', 'uLightInfo', 'uLightCone', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize', 'uSpotSh0', 'uSpotSh1', 'uSpotVP0', 'uSpotVP1', 'uSpotInfo0', 'uSpotInfo1', 'uPointSh0', 'uPointSh1', 'uPointInfo0', 'uPointInfo1', 'uTexDetail', 'uGrain'];
 
         // ── Meshes for the shapes a box cannot describe ──
         // Vertices are position (3), normal (3), edge UV (2) and face index (1) in the same -1..1 space as a box, so Size
@@ -1039,7 +1220,7 @@ void main() {
                 gl.drawArrays = (...args) => { glDrawCalls++; return drawArrays(...args); };
                 gl.drawElements = (...args) => { glDrawCalls++; return drawElements(...args); };
                 const prism = glProgram(gl, PRISM_VS, PRISM_FS, SHAPE_UNIFORMS);
-                const shadow = glProgram(gl, SHADOW_VS, SHADOW_FS, ['uCenter', 'uHalf', 'uRot', 'uLVP'], true);
+                const shadow = glProgram(gl, SHADOW_VS, SHADOW_FS, ['uCenter', 'uHalf', 'uRot', 'uLVP', 'uLightPos', 'uPointFar', 'uLinear'], true);
                 const mesh = glProgram(gl, MESH_VS, PRISM_FS, SHAPE_UNIFORMS);   // returns { prog, u }, so cells below hang off it
                 const meshVao = (data) => {
                     const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
@@ -1054,7 +1235,7 @@ void main() {
                 };
                 mesh.wedge = meshVao(wedgeMesh());
                 mesh.cylinder = meshVao(cylinderMesh(48));
-                const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uMat', 'uMatTint', 'uMatSpec', 'uLightCount', 'uLightPos', 'uLightCol', 'uLightDir', 'uLightInfo', 'uLightCone', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize', 'uSpotSh0', 'uSpotSh1', 'uSpotVP0', 'uSpotVP1', 'uSpotInfo0', 'uSpotInfo1']);
+                const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uMat', 'uMatTint', 'uMatSpec', 'uLightCount', 'uLightPos', 'uLightCol', 'uLightDir', 'uLightInfo', 'uLightCone', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize', 'uSpotSh0', 'uSpotSh1', 'uSpotVP0', 'uSpotVP1', 'uSpotInfo0', 'uSpotInfo1', 'uPointSh0', 'uPointSh1', 'uPointInfo0', 'uPointInfo1']);
                 // unit sphere (32 x 20), shared by every ball: one triangle list and one wireframe list
                 const SEG = 32, RING = 20, sv = [], tri = [], lin = [];
                 for (let i = 0; i <= RING; i++) for (let j = 0; j <= SEG; j++) {
@@ -1199,7 +1380,7 @@ void main() {
             const out = {
                 count: 0, pos: new Float32Array(MAX_DYNAMIC_LIGHTS * 3), col: new Float32Array(MAX_DYNAMIC_LIGHTS * 3),
                 dir: new Float32Array(MAX_DYNAMIC_LIGHTS * 3), info: new Float32Array(MAX_DYNAMIC_LIGHTS * 4), cone: new Float32Array(MAX_DYNAMIC_LIGHTS * 2),
-                spots: []
+                spots: [], points: []
             };
             const ranked = [];
             for (const entry of lights || []) {
@@ -1228,13 +1409,20 @@ void main() {
                 const half = Math.max(2.5, Math.min(40, (Number.isFinite(+o.angle) ? +o.angle : 45) * Math.PI / 360));
                 out.cone[i * 2] = Math.cos(half * 0.7); out.cone[i * 2 + 1] = Math.cos(half);
             }
-            // Only the nearest two enabled spot lights with Cast shadows get a perspective map, so the shader budget
-            // stays small. Point lights are still unshadowed.
-            for (let i = 0; i < n && out.spots.length < 2; i++) {
+            // The nearest two shadow-casting lights get a map, whether they are spots or points, so the shader
+            // budget stays small. A spot uses slot 1 or 2; a point uses slot 3 or 4 for its cube map.
+            let shadowLights = 0;
+            for (let i = 0; i < n && shadowLights < 2; i++) {
                 const L = ranked[i];
-                if (L.o.lightType !== 'spot' || L.o.castShadows === false) continue;
-                out.info[i * 4 + 3] = out.spots.length + 1;
-                out.spots.push(L);
+                if (L.o.castShadows === false) continue;
+                if (L.o.lightType === 'spot') {
+                    out.info[i * 4 + 3] = out.spots.length + 1;
+                    out.spots.push(L);
+                } else {
+                    out.info[i * 4 + 3] = out.points.length + 3;
+                    out.points.push(L);
+                }
+                shadowLights++;
             }
             out.count = n;
             return out;
@@ -1529,9 +1717,15 @@ void main() {
             if (shSize > 0 && shStr > 0.01) { const sm = ensureShadowMaps(gl, shSize); if (sm) shadowSet = renderShadows(gl, prisms, sm, balls, meshes, unions); }
             let spotShadowSet = null;
             if (shSize > 0 && dynLights.spots.length) spotShadowSet = renderSpotShadows(gl, prisms, balls, meshes, unions, dynLights.spots);
-            // A light may have been marked for a spot map even when the shadow pass produced none (shadows off,
-            // allocation failed, or nothing to cast). Clear the slots so it is lit instead of sampled against a dummy.
-            if (!spotShadowSet) for (let i = 0; i < dynLights.count; i++) dynLights.info[i * 4 + 3] = 0;
+            let pointShadowSet = null;
+            if (shSize > 0 && dynLights.points.length) pointShadowSet = renderPointShadows(gl, prisms, balls, meshes, unions, dynLights.points);
+            // A light may have been marked for a map even when its shadow pass produced none (shadows off, allocation
+            // failed, or nothing to cast). Clear only those slots so the light is lit instead of sampled against a dummy.
+            if (!spotShadowSet) for (let i = 0; i < dynLights.count; i++) {
+                const slot = dynLights.info[i * 4 + 3];
+                if (slot === 1 || slot === 2) dynLights.info[i * 4 + 3] = 0;
+            }
+            if (!pointShadowSet) for (let i = 0; i < dynLights.count; i++) if (dynLights.info[i * 4 + 3] >= 3) dynLights.info[i * 4 + 3] = 0;
             // When bloom or rays are on, everything from here draws into the offscreen scene target instead.
             beginPost(gl);
             gl.viewport(0, 0, glCanvas.width, glCanvas.height);
@@ -1562,19 +1756,28 @@ void main() {
                 // Make the dummy before binding the sun maps: creating a texture binds it to the active unit.
                 const spot0 = spotShadowSet ? spotShadowSet.maps[0] : dummySpotShadow(gl);
                 const spot1 = spotShadowSet ? spotShadowSet.maps[1] : spot0;
+                const point0 = pointShadowSet && pointShadowSet.maps[0] ? pointShadowSet.maps[0] : dummyPointShadow(gl);
+                const point1 = pointShadowSet && pointShadowSet.maps[1] ? pointShadowSet.maps[1] : point0;
                 gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, sm ? sm.c0.tex : GL.dummy.tex);
                 gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, sm ? sm.c1.tex : GL.dummy.tex);
                 gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, spot0.tex);
                 gl.activeTexture(gl.TEXTURE7); gl.bindTexture(gl.TEXTURE_2D, spot1.tex);
+                gl.activeTexture(gl.TEXTURE8); gl.bindTexture(gl.TEXTURE_CUBE_MAP, point0.tex);
+                gl.activeTexture(gl.TEXTURE9); gl.bindTexture(gl.TEXTURE_CUBE_MAP, point1.tex);
                 gl.activeTexture(gl.TEXTURE0);
                 gl.uniform1i(P.u.uSh0, 4); gl.uniform1i(P.u.uSh1, 5);
                 gl.uniform1i(P.u.uSpotSh0, 6); gl.uniform1i(P.u.uSpotSh1, 7);
+                gl.uniform1i(P.u.uPointSh0, 8); gl.uniform1i(P.u.uPointSh1, 9);
                 gl.uniformMatrix4fv(P.u.uSpotVP0, false, spotShadowSet && spotShadowSet.vps[0] ? spotShadowSet.vps[0] : IDENTITY4);
                 gl.uniformMatrix4fv(P.u.uSpotVP1, false, spotShadowSet && spotShadowSet.vps[1] ? spotShadowSet.vps[1] : IDENTITY4);
                 const si0 = spotShadowSet && spotShadowSet.infos[0] ? spotShadowSet.infos[0] : [1, 0, 1, 0];
                 const si1 = spotShadowSet && spotShadowSet.infos[1] ? spotShadowSet.infos[1] : [1, 0, 1, 0];
                 gl.uniform4f(P.u.uSpotInfo0, si0[0], si0[1], si0[2], si0[3]);
                 gl.uniform4f(P.u.uSpotInfo1, si1[0], si1[1], si1[2], si1[3]);
+                const pi0 = pointShadowSet && pointShadowSet.infos[0] ? pointShadowSet.infos[0] : [1, 0, 1, 0];
+                const pi1 = pointShadowSet && pointShadowSet.infos[1] ? pointShadowSet.infos[1] : [1, 0, 1, 0];
+                gl.uniform4f(P.u.uPointInfo0, pi0[0], pi0[1], pi0[2], pi0[3]);
+                gl.uniform4f(P.u.uPointInfo1, pi1[0], pi1[1], pi1[2], pi1[3]);
                 if (shadowSet) {
                     gl.uniformMatrix4fv(P.u.uLVP0, false, shadowSet.vp[0]); gl.uniformMatrix4fv(P.u.uLVP1, false, shadowSet.vp[1]);
                     gl.uniform4f(P.u.uShInfo, shadowSet.info[0], shadowSet.info[1], shadowSet.info[2], shadowSet.info[3]);

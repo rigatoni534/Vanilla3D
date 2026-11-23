@@ -2,7 +2,7 @@
         // ───────── Player control ─────────
         // While the simulation runs, the player the editor joined as (the lowest-numbered Player) is driven with WASD, Space and Shift.
         // A model is a set of parts, so the whole model moves as one box that is stopped by every collidable block.
-        const pc = { modelId: null, vy: 0, onGround: false, last: 0, zoom: 6, theta: 0, exhausted: false, hideId: null, headId: null, parts: [], pos: { x: 0, y: 0, z: 0 }, hr: 0.5, hw: 0.5, hd: 0.5, hh: 2, phase: 0, gait: 0 };
+        const pc = { modelId: null, vy: 0, onGround: false, last: 0, zoom: 6, theta: 0, exhausted: false, hideId: null, headId: null, parts: [], pos: { x: 0, y: 0, z: 0 }, hr: 0.5, hw: 0.5, hd: 0.5, hh: 2, phase: 0, gait: 0, sprinting: false, surfaceMaterial: 'plastic' };
         const PLAYER_ZOOM_MAX = 20, PLAYER_ZOOM_SPEED = 8, FIRST_PERSON_ZOOM = 1.2, PLAYER_TURN_RATE = 14;
         const STAMINA_PENALTY_GAIN = 4;   // per second, while exhausted
         // A person is about 80 kg and falls feet first at roughly 55 Vm/s in Earth air.
@@ -42,21 +42,21 @@
                         const m = rotMat(o);
                         for (const c of cells) {
                             const p = unionCellWorld(o, c);
-                            cols.push({ k: 0, x: p.x, z: p.z, w: p.width, l: p.length, y0: p.y - p.height, y1: p.y + p.height,
+                            cols.push({ k: 0, x: p.x, z: p.z, w: p.width, l: p.length, y0: p.y - p.height, y1: p.y + p.height, mat: materialKey(o),
                                 obb: { x: p.x, y: p.y, z: p.z, hx: p.width, hy: p.height, hz: p.length, m } });
                         }
                     } else {
                         const e = shapeHalfExt(o), obb = obbFromShape(o);
-                        cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], obb });
+                        cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], mat: materialKey(o), obb });
                     }
                     continue;
                 }
                 const turned = !!rotInfo(o);
-                if (!turned && o.type === 'cylinder') { cols.push({ k: 1, x: o.x, z: o.z, w: o.width, l: o.length, y0: o.y - o.height, y1: o.y + o.height }); continue; }
-                if (!turned && o.type === 'ball') { cols.push({ k: 3, x: o.x, z: o.z, w: o.width, l: o.length, y: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height }); continue; }
-                if (!turned && o.type === 'wedge') { cols.push({ k: 2, x: o.x, z: o.z, w: o.width, l: o.length, ym: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height }); continue; }
+                if (!turned && o.type === 'cylinder') { cols.push({ k: 1, x: o.x, z: o.z, w: o.width, l: o.length, y0: o.y - o.height, y1: o.y + o.height, mat: materialKey(o) }); continue; }
+                if (!turned && o.type === 'ball') { cols.push({ k: 3, x: o.x, z: o.z, w: o.width, l: o.length, y: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height, mat: materialKey(o) }); continue; }
+                if (!turned && o.type === 'wedge') { cols.push({ k: 2, x: o.x, z: o.z, w: o.width, l: o.length, ym: o.y, h: o.height, y0: o.y - o.height, y1: o.y + o.height, mat: materialKey(o) }); continue; }
                 const e = shapeHalfExt(o), obb = obbFromShape(o);     // a turned shape keeps its real angle
-                cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], obb });
+                cols.push({ k: 0, x: o.x, z: o.z, w: e[0], l: e[2], y0: o.y - e[1], y1: o.y + e[1], mat: materialKey(o), obb });
             }
             return cols;
         }
@@ -100,6 +100,17 @@
             return best;
         }
         // Move the box along x or z (0 or 2) and stop it at anything too tall to step onto. Returns true when blocked.
+        // The surface immediately under the feet supplies the footstep material. A union reports its own material,
+        // and a turned block reports the same surface the physics actually supports the player on.
+        function pcSurfaceMaterial(b, cols) {
+            let best = -Infinity, mat = 'plastic';
+            for (const c of cols) {
+                if (!pcOverFoot(b, c)) continue;
+                const t = colTopUnder(c, b);
+                if (t > best && t >= b.minY - 0.18 && t <= b.minY + 0.18) { best = t; mat = c.mat || 'plastic'; }
+            }
+            return mat;
+        }
         function pcMoveAxis(b, cols, axis, d) {
             if (d === 0) return false;
             const lo = axis === 0 ? 'minX' : 'minZ', hi = axis === 0 ? 'maxX' : 'maxZ';
@@ -261,6 +272,7 @@
                 }
                 // Sprinting needs stamina and costs RunStaminaLoss every second.
                 const sprinting = len > 0 && keyState['shift'] && !pc.exhausted && st > 0;
+                pc.sprinting = sprinting;
                 const speed = sprinting ? run : walk;
                 if (sprinting) st -= runLoss * dt;
                 let jumped = false;
@@ -283,6 +295,7 @@
                     }
                     const hit = pcMoveVertical(b, cols, pc.vy * hs);
                     pc.onGround = hit === 1;
+                    if (pc.onGround) pc.surfaceMaterial = pcSurfaceMaterial(b, cols);
                     if (hit) pc.vy = 0;
                 }
                 pc.pos = { x: (b.minX + b.maxX) / 2, y: b.minY, z: (b.minZ + b.maxZ) / 2 };
@@ -313,5 +326,6 @@
             if (!head) { pc.hideId = null; return false; }
             pc.hideId = pc.zoom < FIRST_PERSON_ZOOM ? pc.headId : null;
             camPosX = head.x - fwdX * pc.zoom; camPosY = head.y - fwdY * pc.zoom; camPosZ = head.z - fwdZ * pc.zoom;
+            if (typeof audioPlayerStep === 'function') audioPlayerStep(dt);
             return true;
         }

@@ -713,38 +713,53 @@
             }
 
             if (obj.type === 'sound') {
-                if (!SOUND_PRESETS[obj.preset]) obj.preset = 'beep';
-                obj.volume = Math.max(0, Math.min(1, Number.isFinite(obj.volume) ? obj.volume : 0.6));
-                if (!Number.isFinite(obj.maxDistance)) obj.maxDistance = 20;
+                normalizeSound(obj);
                 const parent = sceneObjects[obj.parent];
                 const isChild = parent && !SPACE_KEYS.includes(obj.parent);
+                const id = selectedObjectId;
+                const sources = soundSourceOptions(obj.source);
+                const audioAssets = activeWorldSettings() && Array.isArray(activeWorldSettings().assets)
+                    ? activeWorldSettings().assets.filter(a => a && a.url && (/^audio\//i.test(a.type || '') || /^data:audio\//i.test(a.url || ''))).length : 0;
                 container.innerHTML = `
                     ${objHead(selectedObjectId, obj, 'i-sound')}
                     ${section('Editor', nameField(obj))}
                     ${section('Playback', `
                         <div class="field-label">Sound</div>
-                        <select class="text" id="prop-sound-preset" aria-label="Sound">${Object.entries(SOUND_PRESETS).map(([k, p]) => `<option value="${k}"${obj.preset === k ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+                        <select class="text" id="prop-sound-source" aria-label="Sound source">${sources.map(o => `<option value="${esc(o.value)}"${obj.source === o.value ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select>
+                        <div class="field-note">${audioAssets ? 'Uploaded audio files appear here from World Settings → Assets.' : 'Upload an audio file in World Settings → Assets to use your own sound.'}</div>
                         <div class="switch-stack">
                         ${switchRow('prop-sound-playing', 'Playing', !!obj.playing, '')}
                         ${switchRow('prop-sound-looped', 'Looped', !!obj.looped, '')}
+                        ${switchRow('prop-sound-spatial', '3D sound', obj.spatial !== false, '')}
                         </div>
                         <div class="field-label">Volume</div>
                         <div class="tod-row">
                             <input type="range" class="tod" id="prop-sound-volume" min="0" max="1" step="0.01" value="${obj.volume}" aria-label="Volume">
                             <span class="field-note" id="prop-sound-volume-note" style="margin:0;min-width:44px;text-align:right">${Math.round(obj.volume * 100)}%</span>
                         </div>
+                        <div class="field-label">Pitch</div>
+                        <div class="tod-row">
+                            <input type="range" class="tod" id="prop-sound-pitch" min="0.25" max="4" step="0.01" value="${obj.pitch}" aria-label="Pitch">
+                            <span class="field-note" id="prop-sound-pitch-note" style="margin:0;min-width:44px;text-align:right">${obj.pitch.toFixed(2)}×</span>
+                        </div>
+                        <div class="field-label">Rolloff</div>
+                        <div class="tod-row">
+                            <input type="range" class="tod" id="prop-sound-rolloff" min="0" max="4" step="0.05" value="${obj.rolloff}" aria-label="Distance rolloff">
+                            <span class="field-note" id="prop-sound-rolloff-note" style="margin:0;min-width:44px;text-align:right">${obj.rolloff.toFixed(2)}×</span>
+                        </div>
                         <div class="field-label">Max distance</div>
                         <div class="tod-row">
                             <input type="range" class="tod" id="prop-sound-distance" min="0" max="200" step="1" value="${Math.min(200, obj.maxDistance)}" aria-label="Max distance">
                             <label class="num" title="Max distance in meters"><input type="number" id="prop-sound-distance-num" min="0" step="1" value="${obj.maxDistance}" aria-label="Max distance in meters"><span class="tag">m</span></label>
                         </div>
-                        <div class="field-note">${isChild ? 'Heard within this many meters of ' + esc(parent.name) + ', fading with distance from the camera.' : 'Max distance only applies when a Sound is a child of an object. A sound straight in a Space is heard at the same volume everywhere.'}</div>
+                        <div class="field-note">${obj.spatial === false ? '3D sound is off, so this plays at the same volume everywhere.' : (isChild ? 'Heard from ' + esc(parent.name) + ', with HRTF panning and distance rolloff.' : 'Put the Sound inside an object for 3D panning. A sound straight in a Space plays at the same volume everywhere.')}</div>
                     `)}`;
                 bindName(obj);
-                const id = selectedObjectId;
-                document.getElementById('prop-sound-preset').addEventListener('change', (e) => {
-                    obj.preset = SOUND_PRESETS[e.target.value] ? e.target.value : 'beep';
-                    if (obj.playing) startSound(id);
+                const restart = () => { if (obj.playing) startSound(id); };
+                document.getElementById('prop-sound-source').addEventListener('change', (e) => {
+                    obj.source = e.target.value;
+                    normalizeSound(obj);
+                    restart();
                 });
                 document.getElementById('prop-sound-playing').addEventListener('change', (e) => {
                     obj.playing = e.target.checked;
@@ -752,13 +767,26 @@
                 });
                 document.getElementById('prop-sound-looped').addEventListener('change', (e) => {
                     obj.looped = e.target.checked;
-                    if (obj.playing) startSound(id);
+                    restart();
                 });
+                document.getElementById('prop-sound-spatial').addEventListener('change', (e) => { obj.spatial = e.target.checked; restart(); });
                 const volEl = document.getElementById('prop-sound-volume'), volNote = document.getElementById('prop-sound-volume-note');
                 volEl.addEventListener('input', () => {
                     obj.volume = Math.max(0, Math.min(1, parseFloat(volEl.value) || 0));
                     volNote.textContent = Math.round(obj.volume * 100) + '%';
                 });
+                const pitchEl = document.getElementById('prop-sound-pitch'), pitchNote = document.getElementById('prop-sound-pitch-note');
+                pitchEl.addEventListener('input', () => {
+                    obj.pitch = Math.max(0.25, Math.min(4, parseFloat(pitchEl.value) || 1));
+                    pitchNote.textContent = obj.pitch.toFixed(2) + '×';
+                });
+                pitchEl.addEventListener('change', restart);
+                const rollEl = document.getElementById('prop-sound-rolloff'), rollNote = document.getElementById('prop-sound-rolloff-note');
+                rollEl.addEventListener('input', () => {
+                    obj.rolloff = Math.max(0, Math.min(4, parseFloat(rollEl.value) || 0));
+                    rollNote.textContent = obj.rolloff.toFixed(2) + '×';
+                });
+                rollEl.addEventListener('change', restart);
                 const distR = document.getElementById('prop-sound-distance'), distN = document.getElementById('prop-sound-distance-num');
                 const setDist = (v) => {
                     obj.maxDistance = Math.max(0, Number.isFinite(v) ? v : 0);

@@ -222,13 +222,7 @@
                     obj.faces = Array.isArray(obj.faces) ? [...new Set(obj.faces.filter(i => Number.isInteger(i) && i >= 0 && i < 6))] : [4];
                     if (!TEXTURES[obj.texture]) obj.texture = 'grid';
                 }
-                if (obj.type === 'sound') {
-                    if (!SOUND_PRESETS[obj.preset]) obj.preset = 'beep';
-                    obj.playing = !!obj.playing;
-                    obj.looped = !!obj.looped;
-                    obj.volume = Math.max(0, Math.min(1, Number.isFinite(obj.volume) ? obj.volume : 0.6));
-                    obj.maxDistance = Number.isFinite(obj.maxDistance) && obj.maxDistance >= 0 ? obj.maxDistance : 20;
-                }
+                if (obj.type === 'sound') normalizeSound(obj);
                 if (obj.type === 'highlight') {
                     if (!HEX6.test(obj.color)) obj.color = '#ffd23f';
                     obj.overObjects = obj.overObjects !== false;

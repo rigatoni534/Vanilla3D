@@ -65,7 +65,10 @@
             return Object.assign(makePrism(name, parent, {}), { type: 'union', cells: [], cellBase: null, mesh: [] }, dims);
         }
         function makeSound(name, parent) {
-            return { type: 'sound', name, parent, preset: 'beep', playing: false, looped: false, volume: 0.6, maxDistance: 20 };
+            return {
+                type: 'sound', name, parent, source: 'preset:beep', preset: 'beep', playing: false, looped: false,
+                volume: 0.6, pitch: 1, spatial: true, rolloff: 1, maxDistance: 20
+            };
         }
         function makeHighlight(name, parent) {
             return { type: 'highlight', name, parent, color: '#ffd23f', overObjects: true };
@@ -170,9 +173,21 @@
             return Object.assign({
                 type: 'worldsettings', name, parent, timeOfDay: 14, gravity: 9.8, killY: -5000,
                 worldName: 'My World', creator: '', description: '', maxPlayers: DEFAULT_MAX_PLAYERS, assets: [],
+                audio: { master: 0.8, footsteps: 'procedural', impacts: 'procedural', death: 'procedural' },
                 createdVersion: currentEngineVersion(), currentVersion: currentEngineVersion(),
                 defaults: { player: Object.assign({}, DEFAULT_PLAYER_STATS) }
             }, props);
+        }
+        // Audio event choices use the same source naming as Sound instances: a procedural engine sound, a preset,
+        // an uploaded world asset, or nothing. The master volume scales every sound in the world.
+        function normalizeAudioSettings(src) {
+            const out = src && typeof src === 'object' ? src : {};
+            out.master = Math.max(0, Math.min(1, Number.isFinite(+out.master) ? +out.master : 0.8));
+            for (const key of ['footsteps', 'impacts', 'death']) {
+                const v = typeof out[key] === 'string' ? out[key].trim() : '';
+                out[key] = v && (v === 'procedural' || v === 'none' || /^(preset|asset):/i.test(v)) ? v : 'procedural';
+            }
+            return out;
         }
         function normalizeHumanStats(src) {
             const out = {};
@@ -241,6 +256,7 @@
             if (typeof o.creator !== 'string') o.creator = '';
             if (typeof o.description !== 'string') o.description = '';
             o.maxPlayers = Math.max(1, Math.min(100, Math.round(Number.isFinite(+o.maxPlayers) ? +o.maxPlayers : DEFAULT_MAX_PLAYERS)));
+            o.audio = normalizeAudioSettings(o.audio);
             // Uploaded assets are files from the picker, kept as data URLs inside the world file. Older worlds may
             // still list an ordinary URL, which is kept as it is.
             o.assets = Array.isArray(o.assets)
@@ -642,22 +658,23 @@
         // Equal and opposite impulse along the contact normal n (pointing from b to a), weighted by mass, with bounce and Coulomb friction.
         function applyContactImpulse(av, bv, n, invA, invB, restitution, friction) {
             const invSum = invA + invB;
-            if (invSum <= 0) return;
+            if (invSum <= 0) return 0;
             let rx = av.x - bv.x, ry = av.y - bv.y, rz = av.z - bv.z;
             const rel = rx * n[0] + ry * n[1] + rz * n[2];
-            if (rel >= 0) return;
+            if (rel >= 0) return 0;
             const e = -rel > BOUNCE_MIN_SPEED ? restitution : 0;
             const j = -(1 + e) * rel / invSum;
             av.x += n[0] * j * invA; av.y += n[1] * j * invA; av.z += n[2] * j * invA;
             bv.x -= n[0] * j * invB; bv.y -= n[1] * j * invB; bv.z -= n[2] * j * invB;
-            if (!friction) return;
+            if (!friction) return -rel;
             rx = av.x - bv.x; ry = av.y - bv.y; rz = av.z - bv.z;
             const rn = rx * n[0] + ry * n[1] + rz * n[2];
             const tx = rx - n[0] * rn, ty = ry - n[1] * rn, tz = rz - n[2] * rn, tl = Math.hypot(tx, ty, tz);
-            if (tl < 1e-6) return;
+            if (tl < 1e-6) return -rel;
             const k = Math.min(tl / invSum, SURFACE_FRICTION * j) / tl;
             av.x -= tx * k * invA; av.y -= ty * k * invA; av.z -= tz * k * invA;
             bv.x += tx * k * invB; bv.y += ty * k * invB; bv.z += tz * k * invB;
+            return -rel;
         }
 
         // Simulation properties live on the World Settings instance.
@@ -816,7 +833,8 @@
             a.x += n[0] * pen * shareA; a.y += n[1] * pen * shareA; a.z += n[2] * pen * shareA;
             b.x -= n[0] * pen * shareB; b.y -= n[1] * pen * shareB; b.z -= n[2] * pen * shareB;
             const av = physicsVelocityFor(idA), bv = physicsVelocityFor(idB);
-            applyContactImpulse(av, bv, n, invA, invB, BALL_RESTITUTION, false);
+            const impact = applyContactImpulse(av, bv, n, invA, invB, BALL_RESTITUTION, false);
+            if (typeof audioImpact === 'function') audioImpact(impact, idA, idB, a, b);
             if (a.type === 'ball' && aMoves) ballContacts.set(idA, { nx: n[0], ny: n[1], nz: n[2], ovx: bv.x, ovy: bv.y, ovz: bv.z });
             if (b.type === 'ball' && bMoves) ballContacts.set(idB, { nx: -n[0], ny: -n[1], nz: -n[2], ovx: av.x, ovy: av.y, ovz: av.z });
         }
@@ -836,7 +854,8 @@
             const shareA = invA / (invA + invB), shareB = invB / (invA + invB);
             a.x += n[0] * pen * shareA; a.y += n[1] * pen * shareA; a.z += n[2] * pen * shareA;
             b.x -= n[0] * pen * shareB; b.y -= n[1] * pen * shareB; b.z -= n[2] * pen * shareB;
-            applyContactImpulse(physicsVelocityFor(idA), physicsVelocityFor(idB), n, invA, invB, BOX_RESTITUTION, true);
+            const impact = applyContactImpulse(physicsVelocityFor(idA), physicsVelocityFor(idB), n, invA, invB, BOX_RESTITUTION, true);
+            if (typeof audioImpact === 'function') audioImpact(impact, idA, idB, a, b);
         }
 
         // Bodies resting on bodies: a stack settles from the bottom up so it never jitters.
@@ -961,7 +980,8 @@
                         b.z -= signZ * dz * shareB;
                         n = [0, 0, signZ];
                     }
-                    applyContactImpulse(av, bv, n, invA, invB, BOX_RESTITUTION, true);
+                    const impact = applyContactImpulse(av, bv, n, invA, invB, BOX_RESTITUTION, true);
+                    if (typeof audioImpact === 'function') audioImpact(impact, idA, idB, a, b);
                     if (n[1] !== 0) {
                         // Read the resting height again: the shape below may have given way a little in this pass.
                         const rest = shapeTopUnder(lower, upper.x, upper.z);

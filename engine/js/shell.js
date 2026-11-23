@@ -439,6 +439,29 @@
                 ? `${assets.length} asset${assets.length === 1 ? '' : 's'} \u00b7 ${assetBytes(total)}. Everything is saved inside the .vnw file.`
                 : 'Assets are saved inside the .vnw file, not linked from the web.';
         }
+        function audioEventOptions(ws, selected) {
+            const out = [{ value: 'procedural', label: 'Procedural (default)' }, { value: 'none', label: 'None' }];
+            for (const [k, p] of Object.entries(SOUND_PRESETS)) out.push({ value: 'preset:' + k, label: 'Preset · ' + p.name });
+            for (const a of (Array.isArray(ws.assets) ? ws.assets : [])) {
+                if (!a || !a.name || !a.url) continue;
+                if (!/^audio\//i.test(a.type || '') && !/^data:audio\//i.test(a.url || '')) continue;
+                out.push({ value: 'asset:' + a.name, label: 'Asset · ' + a.name });
+            }
+            if (selected && !out.some(o => o.value === selected)) out.push({ value: selected, label: 'Missing · ' + (typeof soundSourceLabel === 'function' ? soundSourceLabel(selected) : selected) });
+            return out.map(o => `<option value="${esc(o.value)}"${o.value === selected ? ' selected' : ''}>${esc(o.label)}</option>`).join('');
+        }
+        function fillWorldAudio(ws) {
+            const a = normalizeAudioSettings(ws.audio);
+            ws.audio = a;
+            const master = document.getElementById('world-audio-master');
+            const note = document.getElementById('world-audio-master-note');
+            if (master) master.value = a.master;
+            if (note) note.textContent = Math.round(a.master * 100) + '%';
+            for (const key of ['footsteps', 'impacts', 'death']) {
+                const sel = document.getElementById('world-audio-' + key);
+                if (sel) sel.innerHTML = audioEventOptions(ws, a[key]);
+            }
+        }
         function fillWorldDefaults(ws) {
             const stats = ws.defaults && ws.defaults.player ? ws.defaults.player : DEFAULT_PLAYER_STATS;
             for (const key of Object.keys(DEFAULT_PLAYER_STATS)) {
@@ -481,6 +504,7 @@
             syncWorldPills(ws);
             fillWorldDefaults(ws);
             fillWorldVersion(ws);
+            fillWorldAudio(ws);
             renderWorldAssets(ws);
         }
         function bindWorldSettings() {
@@ -603,6 +627,8 @@
                 if (!btn || !ws) return;
                 ws.assets.splice(Number(btn.dataset.removeAsset), 1);
                 renderWorldAssets(ws);
+                fillWorldAudio(ws);
+                refreshWorldProperties();
             });
             const assetFile = document.getElementById('world-asset-file');
             document.getElementById('world-asset-upload').addEventListener('click', () => {
@@ -630,13 +656,31 @@
                     } catch (err) { toast('Could not add "' + file.name + '": ' + err.message, 'bad'); }
                 }
                 renderWorldAssets(ws);
+                fillWorldAudio(ws);
+                refreshWorldProperties();
             });
             document.getElementById('world-asset-clear').addEventListener('click', () => {
                 const ws = currentWorld(); if (!ws) return;
                 if (!ws.assets.length) return;
                 ws.assets.length = 0;
                 renderWorldAssets(ws);
+                fillWorldAudio(ws);
             });
+            const audioMaster = document.getElementById('world-audio-master'), audioMasterNote = document.getElementById('world-audio-master-note');
+            audioMaster.addEventListener('input', () => {
+                const ws = currentWorld(); if (!ws) return;
+                const a = normalizeAudioSettings(ws.audio); ws.audio = a;
+                a.master = Math.max(0, Math.min(1, parseFloat(audioMaster.value) || 0));
+                audioMasterNote.textContent = Math.round(a.master * 100) + '%';
+                if (typeof audioUpdateMaster === 'function') audioUpdateMaster();
+            });
+            for (const key of ['footsteps', 'impacts', 'death']) {
+                document.getElementById('world-audio-' + key).addEventListener('change', (e) => {
+                    const ws = currentWorld(); if (!ws) return;
+                    const a = normalizeAudioSettings(ws.audio); ws.audio = a;
+                    a[key] = e.target.value;
+                });
+            }
         }
         bindWorldSettings();
         document.getElementById('version-btn').addEventListener('click', () => {

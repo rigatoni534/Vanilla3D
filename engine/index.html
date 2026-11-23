@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.6.1">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.7.1">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
   
 </head>
@@ -471,6 +471,7 @@
           <button class="set-tab" role="tab" data-pane="world-environment" aria-selected="false"><svg class="ic"><use href="#i-sun"/></svg>Environment</button>
           <button class="set-tab" role="tab" data-pane="world-defaults" aria-selected="false"><svg class="ic"><use href="#i-human"/></svg>Defaults</button>
           <button class="set-tab" role="tab" data-pane="world-assets-tab" aria-selected="false"><svg class="ic"><use href="#i-image"/></svg>Assets</button>
+          <button class="set-tab" role="tab" data-pane="world-audio" aria-selected="false"><svg class="ic"><use href="#i-sound"/></svg>Audio</button>
         </nav>
         <div class="set-panes">
           <section class="set-pane" id="set-world-general">
@@ -554,6 +555,29 @@
             <input type="file" id="world-asset-file" multiple hidden>
             <div class="field-note" id="world-asset-size"></div>
           </section>
+          <section class="set-pane" id="set-world-audio" hidden>
+            <h3 class="set-h">Audio</h3>
+            <div class="setting-desc set-note">The engine can make footsteps, impacts and a death sound without any files. Each can use a built-in preset or one of the uploaded assets instead.</div>
+            <div class="setting setting-col">
+              <div><div class="setting-title">Master volume</div><div class="setting-desc">Scales every sound in the world, including sounds made by scripts.</div></div>
+              <div class="tod-row" style="width:100%">
+                <input type="range" class="tod" id="world-audio-master" min="0" max="1" step="0.01" aria-label="Master volume">
+                <span class="field-note" id="world-audio-master-note" style="margin:0;min-width:44px;text-align:right">80%</span>
+              </div>
+            </div>
+            <div class="setting setting-col">
+              <div><div class="setting-title">Footsteps</div><div class="setting-desc">Played by the player controller. Procedural steps follow the material under the feet.</div></div>
+              <select class="text" id="world-audio-footsteps" aria-label="Footstep sound"></select>
+            </div>
+            <div class="setting setting-col">
+              <div><div class="setting-title">Impacts</div><div class="setting-desc">Played when simulated bodies hit each other hard. The default impact changes with the materials.</div></div>
+              <select class="text" id="world-audio-impacts" aria-label="Impact sound"></select>
+            </div>
+            <div class="setting setting-col">
+              <div><div class="setting-title">Death</div><div class="setting-desc">Played when the controlled player dies, before the body drops.</div></div>
+              <select class="text" id="world-audio-death" aria-label="Death sound"></select>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -568,7 +592,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 6</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 7</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -621,7 +645,7 @@
         <p><b>Run</b> works like Roblox Studio: the world is snapshotted, physics and scripts run live, and <b>Stop</b> restores the snapshot exactly as it was. Anything scripts create or change during a run is discarded on Stop, and global variables are cleared.</p>
         <div class="callout"><b>Heads up:</b> saving, opening a world and starting a new one are blocked while a simulation runs. Stop first.</div>
         <h3 data-group="Editor guide">World Settings</h3>
-        <p>Open <b>World ▾ → Settings</b> in the top bar to edit the world itself. The dialog writes to the World Settings instance under World, so the values save with the world and the environment fields stay available in Properties.</p>
+        <p>Open <b>World ▾ → Settings</b> in the top bar to edit the world itself. The dialog writes to the World Settings instance under World, so the values save with the world and the environment fields stay available in Properties. <b>Audio</b> there sets the master volume and chooses what footsteps, impacts and the player death use: procedural by default, a built-in preset, an uploaded audio asset, or silence.</p>
         <table class="docs-table"><thead><tr><th>Setting</th><th>What it does</th></tr></thead><tbody>
           <tr><td><code>WorldName</code></td><td>The name of the world. A download uses it as the file name.</td></tr>
           <tr><td><code>Creator</code></td><td>Who made the world.</td></tr>
@@ -682,8 +706,9 @@
         <p>A <b>Cylinder</b> is a round column standing on its ends, with a flat top and bottom. Its Size is a half size too: Width and Length are the radius on the X and Z axes and Height is half the column's height. Rotating it tilts the column, and physics then treats it as the box around it. Untilted, it collides as the round column it looks like: the corners of the square around it are empty air, the player stands on its round top and is stopped by its round side, and a ball rests on the top only where the top really is. Blocks are held by its round top and stopped by its round side too, rather than by the square around it, and a block pushed into the round side slides around the curve instead of stopping square on it as it would on a rectangle. A body dropped squarely onto the round top stays there rather than being shoved off the side. It also weighs by its round volume rather than the square around it.</p>
         <p>A <b>Union</b> is one solid built from other parts. Select the parts in World, then choose <b>Union Selected</b> in the three-dot menu: they are merged into a single instance and the originals are removed. Turn on <b>Negated (subtract in a union)</b> in a part's properties to cut that part away instead of adding it, and use <b>Intersect Selected</b> to keep only the space every selected part shares. That is how you cut a doorway: build the wall, put a block where the doorway belongs, make that block Negated, select both and choose Union Selected.</p>
         <p>The union is a real surface built from the parts: blocks, wedges, cylinders, balls and other unions are cut and joined into one continuous mesh, with no hidden blocks and no steps along a slope. Its outline is drawn only along the real creases of that surface, so the seams where the original parts met are not visible. Cut-out parts stay hollow, and the player is blocked by the surface's cells rather than by the whole box, so a cut doorway can be walked through. The union keeps the size of the parts it was built from, and building a union again from new parts is how you change one.</p>
-        <p>A <b>Sound</b> plays one of the built-in sounds: Beep, Chime, Click, Thud or Siren. They are synthesised, so a world never needs an audio file. <b>Playing</b> starts and stops it, <b>Looped</b> repeats it while it plays, and <b>Volume</b> is a slider from 0 to 1. Sounds play while the simulation runs; Stop silences them and restores the world.</p>
-        <p><b>Max distance</b> makes a Sound positional and only applies when the Sound is a child of an object: it is heard within that many meters of its parent and fades out as the camera moves away, so a Sound inside a block is loud beside the block and silent further off. A Sound placed straight in a Space is heard at the same volume everywhere. Scripts can change Playing, Looped, Volume, MaxDistance and Preset while the simulation runs.</p>
+        <p>A <b>Sound</b> plays a built-in preset (Beep, Chime, Click, Thud or Siren) or an audio file uploaded in <b>World Settings → Assets</b>. Presets are synthesised, so a world never needs an audio file. <b>Playing</b> starts and stops it, <b>Looped</b> repeats it, <b>Volume</b> is a slider from 0 to 1, <b>Pitch</b> changes its speed and <b>3D sound</b> turns HRTF panning on. <b>Rolloff</b> controls how quickly it fades with distance, and a looped uploaded file crossfades at the seam. Sounds play while the simulation runs; Stop silences them and restores the world.</p>
+        <p><b>Max distance</b> makes a Sound positional and only applies when the Sound is a child of an object: it is heard within that many meters of its parent and fades out as the camera moves away, so a Sound inside a block is loud beside the block and silent further off. A Sound placed straight in a Space, or one with 3D sound off, is heard at the same volume everywhere. The camera is the listener, so turning and moving changes the left/right and distance cues.</p>
+        <p>With no files, the engine also gives the controlled player footsteps that follow the material under its feet, falling air, landing whooshes and a death sound, and hard body impacts make a material-aware thud. <b>World Settings → Audio</b> can replace any of those with a preset or an uploaded asset, or turn it off. Scripts can change Playing, Looped, Volume, Pitch, Spatial, Rolloff, MaxDistance, Preset and Source while the simulation runs, and can call <code>Play()</code> and <code>Stop()</code> on a Sound.</p>
         <p>A <b>Highlight</b> draws an outline around the object it sits inside. Put one inside a model to outline a player, or inside a part to outline just that part. Only the edges the camera can see are drawn: an edge on the far side of the shape is left out, and a wall hides the part of the outline behind it. A cut hole is outlined all the way around its rim. <b>Color</b> sets the outline color, and <b>Appears over objects</b> turns off hiding by other objects and always draws the visible edges on top (on by default), so a player can be seen through a wall; the far side of the shape itself is still left out.</p>
         <p>A <b>Light</b> is a placeable point or spot light. Point lights shine in every direction; spot lights shine in a cone and use Rotation to aim, with their local +Z direction and a default rotation pointing down. <b>Enabled</b> turns a light on and off, <b>Color</b> sets its tint, <b>Brightness</b> its strength, <b>Range</b> how far it reaches in Vanillameters, and <b>Cone angle</b> the width of a spot beam. Spot lights also have <b>Cast shadows</b>; the nearest two shadow-casting spots get a shadow map, and shadow quality follows the Shadows setting. Point lights do not cast shadows yet. The nearest eight enabled lights are used in the viewport, so a large world stays fast. A small sun marker shows each light in the editor, even when it is inside a wall, and a selected light uses the normal Move and Rotate gizmos.</p>
         <h3 data-group="Editor guide">Textures</h3>
@@ -886,7 +911,7 @@ print(block)</code></pre>
           <tr><td>World Settings</td><td><code>TimeOfDay</code> (0 to 24), <code>Gravity</code> (0 to 1000), <code>KillLayer</code> (number)</td></tr>
           <tr><td>Humans</td><td><code>Health</code>, <code>MaxHealth</code>, <code>WalkSpeed</code>, <code>RunSpeed</code>, <code>Stamina</code>, <code>MaxStamina</code>, <code>RunStaminaLoss</code>, <code>JumpHeight</code>, <code>JumpStaminaLoss</code>, <code>StaminaGain</code> (numbers, never below 0) and <code>PlayerName</code> (text). All of these except MaxHealth are used by the player you control, and at 0 Health the player dies.</td></tr>
           <tr><td>Wedges, cylinders and unions</td><td>The same properties as a prism, except <code>Spawnpoint</code>.</td></tr>
-          <tr><td>Sounds</td><td><code>Playing</code> and <code>Looped</code> (True or False), <code>Volume</code> (0 to 1), <code>MaxDistance</code> (meters, 0 or more, used only when the Sound is inside an object) and <code>Preset</code> (one of <code>beep</code>, <code>chime</code>, <code>click</code>, <code>thud</code>, <code>siren</code>)</td></tr>
+          <tr><td>Sounds</td><td><code>Playing</code>, <code>Looped</code> and <code>Spatial</code> (True or False), <code>Volume</code> (0 to 1), <code>Pitch</code> (0.25 to 4), <code>Rolloff</code> (0 to 4), <code>MaxDistance</code> (meters, 0 or more, used only when the Sound is inside an object), <code>Preset</code> (one of <code>beep</code>, <code>chime</code>, <code>click</code>, <code>thud</code>, <code>siren</code>) and <code>Source</code> (<code>preset:beep</code> or <code>asset:name</code>). Sounds also have <code>Play()</code> and <code>Stop()</code>.</td></tr>
           <tr><td>Highlights</td><td><code>Color</code> (a hex string) and <code>OverObjects</code> (True or False)</td></tr>
           <tr><td>Lights</td><td>Edited in the Properties panel: point or spot, <code>Enabled</code>, <code>Color</code>, <code>Brightness</code>, <code>Range</code>, <code>Cast shadows</code> and <code>Cone angle</code> for spots. Scripts can set those fields and use <code>Position</code> and <code>Rotation</code>; <code>LightType</code> is <code>"point"</code> or <code>"spot"</code> and <code>Shadows</code> is True or False.</td></tr>
           <tr><td>Effects</td><td><code>SimpleEffect</code> and <code>AdvancedEffect</code> have <code>Emitting</code> (True or False), <code>Position</code> (the offset from a parent or a world position), <code>Rate</code>, <code>Speed</code>, and the Advanced settings <code>Burst</code>, <code>Lifetime</code>, <code>SizeStart</code>, <code>SizeEnd</code>, <code>Spread</code>, <code>Gravity</code>, <code>Drag</code>, <code>Rotation</code>, <code>ColorStart</code>, <code>ColorEnd</code>, <code>FadeIn</code>, <code>FadeOut</code>, <code>Blend</code>, <code>Sprite</code>, <code>Image</code>, <code>Frames</code>, <code>FPS</code>, <code>Shape</code>, <code>Space</code> and <code>Radius</code>. Call <code>Play()</code>, <code>Stop()</code> or <code>Emit(count)</code> on an effect. SimpleEffect also exposes its <code>Preset</code> and <code>Color</code>; <code>Size</code> scales the preset.</td></tr>
@@ -1078,24 +1103,24 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=4.0.0.0.6.1"></script>
-  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 6';</script>
+  <script src="../vanillalua.js?v=4.0.0.0.7.1"></script>
+  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 7';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/collision.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/scene.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/effects.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/csg.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/version-history.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/player.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/sounds.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/scripting.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/shell.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/files.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/offline.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/explorer.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/properties.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/render.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/gl.js?v=4.0.0.0.6.1"></script>
-  <script defer src="js/main.js?v=4.0.0.0.6.1"></script>
+  <script defer src="js/collision.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/scene.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/effects.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/csg.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/version-history.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/player.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/sounds.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/scripting.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/shell.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/files.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/offline.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/explorer.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/properties.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/render.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/gl.js?v=4.0.0.0.7.1"></script>
+  <script defer src="js/main.js?v=4.0.0.0.7.1"></script>
 </body>
 </html>

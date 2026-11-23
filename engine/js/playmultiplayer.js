@@ -353,6 +353,8 @@ async function playReceive(id, msg) {
 }
 async function playStartHost(name) {
     playNet.name = v3dCleanName(name, 'Host');
+    playShow('host', '-----');
+    playSetStatus('Opening a room…');
     let lastError = null;
     for (let attempt = 0; attempt < 3; attempt++) {
         const t = new V3DTransport();
@@ -377,7 +379,9 @@ async function playStartHost(name) {
 async function playStartGuest(room, name) {
     playNet.name = v3dCleanName(name, 'Guest');
     const code = v3dNormalizeRoomCode(room);
+    playShow('guest', code || '-----');
     if (code.length !== V3D_ROOM_CODE_LENGTH) { playSetStatus('That room code is not valid.'); return false; }
+    playSetStatus('Joining ' + code + '…');
     const t = new V3DTransport();
     try {
         await t.join(code, { name: playNet.name, color: v3dNetColor(playNet.name) });

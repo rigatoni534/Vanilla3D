@@ -137,6 +137,28 @@ vec3 matAlbedo(vec3 alb, vec3 w, vec3 n, int m, vec3 tint) {
         float n1 = matHash21(floor(p * 9.0)), n2 = matHash21(floor(p * 23.0));
         return mix(alb, tint, 0.7) * (0.86 + 0.16 * n1 + 0.04 * n2);
     }
+    if (m == 10) {                                           // sand: fine warm grains
+        float grain = matHash21(floor(p * 42.0));
+        return mix(alb, tint, 0.72) * (0.84 + 0.2 * grain);
+    }
+    if (m == 11) {                                           // rubber: soft dark pebbled surface
+        float pebble = matHash21(floor(p * 18.0));
+        return mix(alb, tint, 0.82) * (0.78 + 0.12 * pebble);
+    }
+    if (m == 12) {                                           // ice: pale fresnel and a cold sheen
+        float fres = pow(1.0 - max(dot(n, normalize(uCam - w)), 0.0), 2.4);
+        return mix(alb, tint, 0.6) + vec3(0.12, 0.2, 0.26) * fres;
+    }
+    if (m == 13) {                                           // fabric: a fine woven cross-hatch
+        float warp = 0.5 + 0.5 * sin(p.x * 96.0);
+        float weft = 0.5 + 0.5 * sin(p.y * 96.0);
+        return mix(alb, tint, 0.8) * (0.82 + 0.1 * warp + 0.1 * weft);
+    }
+    if (m == 14) {                                           // marble: broad veins over pale stone
+        float vein = 0.5 + 0.5 * sin(p.x * 3.4 + p.y * 5.2 + sin(p.y * 1.7) * 2.2);
+        float fine = matHash21(floor(p * 16.0));
+        return mix(mix(alb, tint, 0.72), tint * 0.55, smoothstep(0.62, 0.9, vein) * 0.45) * (0.94 + 0.04 * fine);
+    }
     // neon: a bright self-lit color; bloom turns it into a glow
     return mix(alb, tint, 0.9) * (1.12 + 0.25 * (0.5 + 0.5 * sin(p.x * 12.0 + p.y * 9.0)));
 }

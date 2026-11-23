@@ -40,9 +40,14 @@
             carpet:   { name: 'Carpet',   tint: '#6b5a50', pattern: 6, spec: 0.15, note: 'Fine woven fibers with a soft, matte finish.' },
             wood:     { name: 'Wood',     tint: '#8a5a33', pattern: 7, spec: 0.45, note: 'Warm planks with grain and growth rings.' },
             concrete: { name: 'Concrete', tint: '#9a9a94', pattern: 8, spec: 0.3, note: 'Poured stone with a fine, uneven grain.' },
-            neon:     { name: 'Neon',     tint: '#38e6ff', pattern: 9, spec: 0.5, note: 'Bright self-lit color. Glows when bloom is on.' }
+            neon:     { name: 'Neon',     tint: '#38e6ff', pattern: 9, spec: 0.5, note: 'Bright self-lit color. Glows when bloom is on.' },
+            sand:     { name: 'Sand',     tint: '#d8c38c', pattern: 10, spec: 0.2, note: 'Fine, matte grains with a warm tint.' },
+            rubber:   { name: 'Rubber',   tint: '#2a2d33', pattern: 11, spec: 0.35, note: 'Soft dark surface with a damped highlight.' },
+            ice:      { name: 'Ice',      tint: '#bfe8ff', pattern: 12, spec: 2.2, note: 'Pale, glossy surface with a cold fresnel edge.' },
+            fabric:   { name: 'Fabric',   tint: '#8b6d9f', pattern: 13, spec: 0.2, note: 'Soft woven cloth with a matte response.' },
+            marble:   { name: 'Marble',   tint: '#e7e3dc', pattern: 14, spec: 0.9, note: 'Polished stone with pale veins.' }
         };
-        const MATERIAL_ORDER = ['plastic', 'glass', 'metal', 'grass', 'brick', 'tile', 'carpet', 'wood', 'concrete', 'neon'];
+        const MATERIAL_ORDER = ['plastic', 'glass', 'metal', 'grass', 'brick', 'tile', 'carpet', 'wood', 'concrete', 'neon', 'sand', 'rubber', 'ice', 'fabric', 'marble'];
         const MATERIAL_KEYS = new Set(MATERIAL_ORDER);
         const materialKey = (o) => o && MATERIAL_KEYS.has(o.material) ? o.material : 'plastic';
         const materialDef = (o) => MATERIALS[materialKey(o)];
@@ -140,6 +145,29 @@
                     if (unions) changes.push(unions + ' union surface' + (unions === 1 ? '' : 's'));
                     if (!ws.defaults || !ws.defaults.player) {
                         applyDefaultPlayerStats(ws); changes.push('player defaults');
+                    }
+                    return changes;
+                }
+            },
+            {
+                version: '4.0.0.0',
+                title: 'Materials and player colour defaults',
+                notes: [
+                    'Fills in a material on every 3D shape that predates materials.',
+                    'Adds the Player skin, shirt and pants default colours to World Settings.',
+                    'Leaves existing instance data, scripts and references untouched.'
+                ],
+                apply(ws) {
+                    const changes = [];
+                    let materials = 0;
+                    for (const o of Object.values(sceneObjects)) {
+                        if (isShape(o) && !MATERIAL_KEYS.has(o.material)) { o.material = 'plastic'; materials++; }
+                    }
+                    if (materials) changes.push(materials + ' shape material' + (materials === 1 ? '' : 's'));
+                    if (!ws.defaults || !ws.defaults.playerColors) {
+                        if (!ws.defaults) ws.defaults = {};
+                        ws.defaults.playerColors = { skinColor: '#ffcc85', shirtColor: '#0d69ac', pantsColor: '#4b974b' };
+                        changes.push('player colour defaults');
                     }
                     return changes;
                 }

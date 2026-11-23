@@ -14,7 +14,7 @@ const VL_VERSION = '1.9.2';
 const VL_KEYWORDS = new Set(['call','get','local','while','for','in','do','end','if','then','else','elseif','and','or','not','function','return','break','continue','true','false','nil']);
 const VL_SPACES = { World: 'world', Storage: 'storage', Scripts: 'scripts', UI: 'ui', Communications: 'communications', Players: 'players' };
 const VL_MODULES = ['Instance','Scripting','Tweening','Extras','Players','Chat'];
-const VL_TYPES = ['prism6', 'ball', 'wedge', 'cylinder', 'model', 'script', 'worldsettings', 'human', 'sound', 'highlight', 'light', 'simpleeffect', 'advancedeffect', 'clientsocket', 'serversocket', 'peerconnection', 'groupconnection', 'frame', 'text', 'button', 'image', 'input', 'progressbar'];
+const VL_TYPES = ['prism6', 'ball', 'wedge', 'cylinder', 'union', 'model', 'script', 'worldsettings', 'human', 'sound', 'highlight', 'light', 'simpleeffect', 'advancedeffect', 'clientsocket', 'serversocket', 'peerconnection', 'groupconnection', 'frame', 'text', 'button', 'image', 'input', 'progressbar'];
 const VL_UI_TYPES = ['frame', 'text', 'button', 'image', 'input', 'progressbar'];
 const VL_GLOBALS = ['vanilla3D','print','wait','sin','cos','tan','sqrt','abs','floor','ceil','round','min','max','random','atan2','pi','type','tostring','tonumber','table','task','warn','error','deltaTime','length','auto'];
 // Runtime globals are shared by all scripts during one simulation.
@@ -879,6 +879,7 @@ function vlCreate(type, spaceId) {
     else if (type === 'ball') o = makeBall(dn('ball') + ' ' + (++counters.ball), spaceId, {});
     else if (type === 'wedge') o = makeWedge(dn('wedge') + ' ' + (++counters.wedge), spaceId, {});
     else if (type === 'cylinder') o = makeCylinder(dn('cylinder') + ' ' + (++counters.cylinder), spaceId, {});
+    else if (type === 'union') o = makeUnion(dn('union') + ' ' + (++counters.union), spaceId, {});
     else if (type === 'sound') o = makeSound(dn('sound') + (counters.sound++ ? ' ' + counters.sound : ''), spaceId);
     else if (type === 'highlight') o = makeHighlight(dn('highlight') + (counters.highlight++ ? ' ' + counters.highlight : ''), spaceId);
     else if (type === 'light') o = makeLight(dn('light') + ' ' + (++counters.light), spaceId);

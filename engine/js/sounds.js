@@ -112,6 +112,7 @@
             Object.assign(sceneObjects, JSON.parse(JSON.stringify(simSnapshot.objects)));
             Object.assign(counters, simSnapshot.counters);
             simSnapshot = null;
+            if (typeof clearEffectStates === 'function') clearEffectStates();
             physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear();
             manip = null;
             if (selectedObjectId && !sceneObjects[selectedObjectId]) selectedObjectId = null;
@@ -124,6 +125,7 @@
             // A focused UI input belongs to the run that is ending (or starting), so it never keeps the keyboard.
             if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#ui-layer')) document.activeElement.blur();
             physicsLastTime = 0;
+            if (typeof clearEffectStates === 'function') clearEffectStates();
             physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear();
             if (running) {
                 takeSnapshot();
@@ -176,7 +178,8 @@
         // Vanillalua is loaded from the shared external interpreter.
         const vlRuntime = VanillaluaShared.createEditorRuntime({
             sceneObjects, physicsVelocity, physicsVelocityFor, spaceOf, preInc, SPACE_KEYS, isShape, isInside,
-            GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, makeLight, makeUI: (type, spaceId) => makeUI(type, newUIName(type), spaceId),
+            GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, makeLight, makeSimpleEffect, makeAdvancedEffect,
+            effectPlay, effectStop, effectEmit, makeUI: (type, spaceId) => makeUI(type, newUIName(type), spaceId),
             makeConnection, CONNECTION_TYPES, makeWorldSettings, defaultHumanStats, dn, counters, newId, pruneOrphans,
             soundChanged: (id, name) => {
                 const h = sceneObjects[id];

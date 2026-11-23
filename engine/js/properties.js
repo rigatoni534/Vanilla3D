@@ -21,7 +21,7 @@
         const objHead = (id, o, ic, extra = '') =>
             `<div class="obj-head">${icon(ic)}<div class="obj-meta"><div class="obj-name">${esc(o.name)}</div>
                 <div class="obj-id"><span title="Instance type">${o.type}</span><span class="uid" title="Unique ID">${id}</span></div></div>${extra}</div>`;
-        const defaultNames = { prism6: 'Block', ball: 'Ball', wedge: 'Wedge', cylinder: 'Cylinder', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player', sound: 'Sound', highlight: 'Highlight', light: 'Light', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input', progressbar: 'ProgressBar' };
+        const defaultNames = { prism6: 'Block', ball: 'Ball', wedge: 'Wedge', cylinder: 'Cylinder', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player', sound: 'Sound', highlight: 'Highlight', light: 'Light', simpleeffect: 'SimpleEffect', advancedeffect: 'AdvancedEffect', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input', progressbar: 'ProgressBar' };
         const nameField = (o, dis = '') =>
             `<div class="field-label">Name</div><input class="text" type="text" id="prop-name" maxlength="48" value="${esc(o.name)}" aria-label="Name" ${dis}>`;
         function bindName(obj) {
@@ -50,7 +50,7 @@
         const propFields = [['prop-x', 'x'], ['prop-y', 'y'], ['prop-z', 'z'], ['prop-length', 'length'], ['prop-width', 'width'], ['prop-height', 'height'], ['prop-rx', 'rotX'], ['prop-ry', 'rotY'], ['prop-rz', 'rotZ']];
         function syncPropInputs() {
             const o = sceneObjects[selectedObjectId];
-            if (o && o.type === 'light') {
+            if (o && (o.type === 'light' || isEffect(o))) {
                 for (const [elId, key] of [['prop-x', 'x'], ['prop-y', 'y'], ['prop-z', 'z'], ['prop-rx', 'rotX'], ['prop-ry', 'rotY'], ['prop-rz', 'rotZ']]) {
                     const el = document.getElementById(elId);
                     if (el && document.activeElement !== el) el.value = Number.isFinite(o[key]) ? o[key] : 0;
@@ -598,6 +598,117 @@
                 if (an) an.addEventListener('input', () => { obj.angle = Math.max(5, Math.min(80, parseFloat(an.value) || 5)); });
                 const ls = document.getElementById('prop-light-shadows');
                 if (ls) ls.addEventListener('change', (e) => { obj.castShadows = e.target.checked; });
+                return;
+            }
+
+            if (isEffect(obj)) {
+                normalizeEffect(obj);
+                const id = selectedObjectId, simple = obj.type === 'simpleeffect';
+                const parent = sceneObjects[obj.parent], childOf = parent && !SPACE_KEYS.includes(obj.parent);
+                const cfg = effectConfig(obj);
+                const n = (fid, label, value, min, max, step, unit) => `
+                    <div class="field-label">${label}</div>
+                    <label class="num hnum"><input type="number" id="${fid}" min="${min}" max="${max}" step="${step}" value="${value}" aria-label="${label}"><span class="tag">${unit}</span></label>`;
+                const colorRow = (fid, label, value) => `
+                    <div class="field-label">${label}</div>
+                    <div class="accent-ctl"><input type="color" class="color-pick" id="${fid}-pick" value="${value}" aria-label="${label}"><input class="text hex-in" id="${fid}-hex" maxlength="7" spellcheck="false" value="${value}" aria-label="${label} hex code"></div>`;
+                const simpleHtml = `
+                    <div class="field-label">Preset</div>
+                    <select class="text" id="prop-fx-preset" aria-label="Effect preset">${EFFECT_PRESET_ORDER.map(k => `<option value="${k}"${obj.preset === k ? ' selected' : ''}>${esc(EFFECT_PRESETS[k].name)}</option>`).join('')}</select>
+                    <div class="field-note" id="prop-fx-note">${esc(effectPreset(obj).note)}</div>
+                    ${switchRow('prop-fx-emitting', 'Emitting', obj.emitting !== false, '')}
+                    ${n('prop-fx-rate', 'Rate', obj.rate, 0, 300, 1, '/s')}
+                    ${n('prop-fx-speed', 'Speed', obj.speed, 0, 4, 0.05, '×')}
+                    ${n('prop-fx-size', 'Size', obj.size, 0.05, 5, 0.05, '×')}
+                    ${colorRow('prop-fx-color', 'Color', obj.color)}
+                    <div class="field-row" style="margin-top:8px"><button class="btn btn-outline" id="prop-fx-play" type="button">Play</button><button class="btn btn-outline" id="prop-fx-stop" type="button">Stop</button></div>`;
+                const advancedHtml = `
+                    ${switchRow('prop-fx-emitting', 'Emitting', obj.emitting !== false, '')}
+                    ${n('prop-fx-rate', 'Rate', obj.rate, 0, 300, 1, '/s')}
+                    ${n('prop-fx-burst', 'Burst', obj.burst, 0, 300, 1, '')}
+                    <div class="field-label">Emitter shape</div>
+                    <select class="text" id="prop-fx-shape" aria-label="Emitter shape">${EFFECT_SHAPES.map(k => `<option value="${k}"${obj.shape === k ? ' selected' : ''}>${k[0].toUpperCase() + k.slice(1)}</option>`).join('')}</select>
+                    <div class="field-label">Space</div>
+                    <select class="text" id="prop-fx-space" aria-label="Effect space">${EFFECT_SPACES.map(k => `<option value="${k}"${obj.space === k ? ' selected' : ''}>${k === 'local' ? 'Local (follows parent)' : 'World'}</option>`).join('')}</select>
+                    ${n('prop-fx-radius', 'Emitter size', obj.radius, 0.01, 50, 0.05, 'm')}
+                    <div class="field-label">Image (world asset name or URL)</div>
+                    <input class="text" type="text" id="prop-fx-image" maxlength="400" value="${esc(obj.image || '')}" placeholder="Built-in sprite" aria-label="Effect image">
+                    ${n('prop-fx-frames', 'Frames', obj.frames, 1, 64, 1, '')}
+                    ${n('prop-fx-fps', 'Frame rate', obj.fps, 1, 60, 1, 'fps')}
+                    <div class="field-label">Blend</div>
+                    <select class="text" id="prop-fx-blend" aria-label="Blend mode">${EFFECT_BLENDS.map(k => `<option value="${k}"${obj.blend === k ? ' selected' : ''}>${k === 'additive' ? 'Additive' : 'Alpha'}</option>`).join('')}</select>
+                    <div class="field-label">Sprite</div>
+                    <select class="text" id="prop-fx-sprite" aria-label="Sprite">${EFFECT_SPRITES.map(k => `<option value="${k}"${obj.sprite === k ? ' selected' : ''}>${k[0].toUpperCase() + k.slice(1)}</option>`).join('')}</select>
+                    ${n('prop-fx-life', 'Lifetime', obj.lifetime, 0.05, 20, 0.05, 's')}
+                    ${n('prop-fx-size-start', 'Start size', obj.sizeStart, 0.01, 10, 0.05, 'm')}
+                    ${n('prop-fx-size-end', 'End size', obj.sizeEnd, 0.01, 10, 0.05, 'm')}
+                    ${n('prop-fx-speed', 'Speed', obj.speed, 0, 30, 0.1, 'm/s')}
+                    ${n('prop-fx-spread', 'Spread', obj.spread, 0, 180, 1, '°')}
+                    ${n('prop-fx-gravity', 'Gravity', obj.gravity, -50, 50, 0.1, 'm/s²')}
+                    ${n('prop-fx-drag', 'Drag', obj.drag, 0, 10, 0.05, '')}
+                    ${n('prop-fx-rotation', 'Spin', obj.rotation, 0, 720, 1, '°/s')}
+                    ${colorRow('prop-fx-color-start', 'Start color', cfg.colorStart)}
+                    ${colorRow('prop-fx-color-end', 'End color', cfg.colorEnd)}
+                    ${n('prop-fx-fade-in', 'Fade in', obj.fadeIn, 0, 1, 0.01, '')}
+                    ${n('prop-fx-fade-out', 'Fade out', obj.fadeOut, 0, 1, 0.01, '')}
+                    <div class="field-row" style="margin-top:8px"><button class="btn btn-outline" id="prop-fx-play" type="button">Play</button><button class="btn btn-outline" id="prop-fx-stop" type="button">Stop</button><button class="btn btn-outline" id="prop-fx-emit" type="button">Emit burst</button></div>`;
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, 'i-highlight')}
+                    ${section('Editor', nameField(obj))}
+                    ${section('Position', `<div class="field-row">
+                        ${numField('prop-x', 'X', 'x', 'X', obj.x, '')}
+                        ${numField('prop-y', 'Y', 'y', 'Y', obj.y, '')}
+                        ${numField('prop-z', 'Z', 'z', 'Z', obj.z, '')}
+                    </div><div class="field-note">${childOf ? 'Position is an offset from ' + esc(parent.name) + '. The effect follows that parent; Local particles turn with it.' : 'Position in the world. Set Space to Local and put the effect inside a shape or model to have it follow.'}</div>`)}
+                    ${section(simple ? 'Effect' : 'Emitter', simple ? simpleHtml : advancedHtml)}
+                    <div class="sec-body"><div class="field-note">Effects animate in the editor and while the simulation runs. SimpleEffect presets are ready to use; AdvancedEffect uses a horizontal sprite sheet when an image is set.</div></div>`;
+                bindName(obj);
+                for (const [elId, key] of [['prop-x', 'x'], ['prop-y', 'y'], ['prop-z', 'z']]) {
+                    document.getElementById(elId).addEventListener('input', (e) => { obj[key] = parseFloat(e.target.value) || 0; });
+                }
+                document.getElementById('prop-fx-emitting').addEventListener('change', (e) => { obj.emitting = e.target.checked; });
+                document.getElementById('prop-fx-play').addEventListener('click', () => { effectPlay(id); renderProperties(); });
+                document.getElementById('prop-fx-stop').addEventListener('click', () => { effectStop(id); renderProperties(); });
+                const numBind = (fid, key, min, max, integer) => {
+                    const el = document.getElementById(fid); if (!el) return;
+                    el.addEventListener('input', () => {
+                        let v = parseFloat(el.value); if (!Number.isFinite(v)) return;
+                        v = Math.max(min, Math.min(max, v)); obj[key] = integer ? Math.round(v) : v;
+                    });
+                };
+                numBind('prop-fx-rate', 'rate', 0, 300, false);
+                numBind('prop-fx-speed', 'speed', 0, 30, false);
+                if (document.getElementById('prop-fx-size')) numBind('prop-fx-size', 'size', 0.05, 5, false);
+                const simplePick = document.getElementById('prop-fx-color-pick');
+                if (simplePick) {
+                    simplePick.addEventListener('input', (e) => { obj.color = e.target.value; document.getElementById('prop-fx-color-hex').value = obj.color; });
+                    document.getElementById('prop-fx-color-hex').addEventListener('change', (e) => { let v = e.target.value.trim().replace(/^#/, ''); if (/^[0-9a-f]{3}$/i.test(v)) v = v.split('').map(c => c + c).join(''); if (/^[0-9a-f]{6}$/i.test(v)) { obj.color = ('#' + v).toLowerCase(); simplePick.value = obj.color; } e.target.value = obj.color; });
+                }
+                if (document.getElementById('prop-fx-preset')) document.getElementById('prop-fx-preset').addEventListener('change', (e) => {
+                    if (!EFFECT_KEYS.has(e.target.value)) return;
+                    obj.preset = e.target.value; obj.color = effectPreset(obj).colorStart;
+                    effectPlay(id);
+                    renderProperties();
+                });
+                if (simple) return;
+                const selectBind = (fid, key, allowed) => { const el = document.getElementById(fid); if (el) el.addEventListener('change', (e) => { if (allowed.includes(e.target.value)) obj[key] = e.target.value; }); };
+                selectBind('prop-fx-shape', 'shape', EFFECT_SHAPES); selectBind('prop-fx-space', 'space', EFFECT_SPACES);
+                selectBind('prop-fx-blend', 'blend', EFFECT_BLENDS); selectBind('prop-fx-sprite', 'sprite', EFFECT_SPRITES);
+                numBind('prop-fx-burst', 'burst', 0, 300, true); numBind('prop-fx-radius', 'radius', 0.01, 50, false);
+                numBind('prop-fx-frames', 'frames', 1, 64, true); numBind('prop-fx-fps', 'fps', 1, 60, true);
+                numBind('prop-fx-life', 'lifetime', 0.05, 20, false); numBind('prop-fx-size-start', 'sizeStart', 0.01, 10, false);
+                numBind('prop-fx-size-end', 'sizeEnd', 0.01, 10, false); numBind('prop-fx-spread', 'spread', 0, 180, false);
+                numBind('prop-fx-gravity', 'gravity', -50, 50, false); numBind('prop-fx-drag', 'drag', 0, 10, false);
+                numBind('prop-fx-rotation', 'rotation', 0, 720, false); numBind('prop-fx-fade-in', 'fadeIn', 0, 1, false);
+                numBind('prop-fx-fade-out', 'fadeOut', 0, 1, false);
+                document.getElementById('prop-fx-image').addEventListener('input', (e) => { obj.image = e.target.value; });
+                const bindColor = (fid, key) => {
+                    const pick = document.getElementById(fid + '-pick'), hex = document.getElementById(fid + '-hex');
+                    pick.addEventListener('input', () => { obj[key] = pick.value; hex.value = pick.value; });
+                    hex.addEventListener('change', () => { let v = hex.value.trim().replace(/^#/, ''); if (/^[0-9a-f]{3}$/i.test(v)) v = v.split('').map(c => c + c).join(''); if (/^[0-9a-f]{6}$/i.test(v)) { obj[key] = ('#' + v).toLowerCase(); pick.value = obj[key]; } hex.value = obj[key]; });
+                };
+                bindColor('prop-fx-color-start', 'colorStart'); bindColor('prop-fx-color-end', 'colorEnd');
+                document.getElementById('prop-fx-emit').addEventListener('click', () => { effectEmit(id, Math.max(1, obj.burst || 20)); });
                 return;
             }
 

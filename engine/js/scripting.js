@@ -295,6 +295,12 @@
             } else if (kind === 'light') {
                 const n = ++counters.light;
                 obj = makeLight(dn('light') + (n === 1 ? '' : ' ' + n), space, { rotX: 90 });
+            } else if (kind === 'simpleeffect') {
+                const n = ++counters.simpleeffect;
+                obj = makeSimpleEffect(dn('simpleeffect') + (n === 1 ? '' : ' ' + n), space);
+            } else if (kind === 'advancedeffect') {
+                const n = ++counters.advancedeffect;
+                obj = makeAdvancedEffect(dn('advancedeffect') + (n === 1 ? '' : ' ' + n), space);
             } else if (kind === 'texture') {
                 const n = ++counters.texture;
                 obj = makeTexture(dn('texture') + (n === 1 ? '' : ' ' + n), space, [4], 'grid');

@@ -378,6 +378,41 @@ void main() {
     if (dot(n, w - uCam) >= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }   // back face
     gl_Position = project(w);
 }`;
+        // Effects are camera-facing quads. The CPU simulation in effects.js owns the particles; this program only
+        // turns each one into two triangles with its own colour, size, rotation and sprite-sheet frame.
+        const EFFECT_VS = `
+layout(location = 0) in vec3 aCenter;
+layout(location = 1) in vec2 aCorner;
+layout(location = 2) in vec3 aColor;
+layout(location = 3) in vec4 aParams;   // alpha, size, rotation, sprite index
+layout(location = 4) in vec2 aUV0;
+layout(location = 5) in vec2 aUV1;
+out vec2 vUV;
+out vec3 vCol;
+out float vAlpha;
+void main() {
+    vec3 right = normalize(vec3(uR.x, 0.0, uR.z));
+    float c = cos(aParams.z), s = sin(aParams.z);
+    vec2 q = vec2(c * aCorner.x - s * aCorner.y, s * aCorner.x + c * aCorner.y) * aParams.y;
+    vec3 w = aCenter + right * q.x + uU * q.y;
+    vUV = mix(aUV0, aUV1, aCorner * 0.5 + 0.5);
+    vCol = aColor;
+    vAlpha = aParams.x;
+    if (dot(w - uCam, uF) <= 0.05) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+    gl_Position = project(w);
+}`;
+        const EFFECT_FS = `
+in vec2 vUV;
+in vec3 vCol;
+in float vAlpha;
+uniform sampler2D uTex;
+out vec4 o;
+void main() {
+    vec4 t = texture(uTex, vUV);
+    float a = t.a * vAlpha;
+    // Premultiplied output: alpha blending uses ONE, ONE_MINUS_SRC_ALPHA and additive uses ONE, ONE.
+    o = vec4(vCol * t.rgb * a, a);
+}`;
         const SHADOW_VS = `#version 300 es
 precision highp float;
 layout(location = 0) in vec3 aPos;
@@ -924,6 +959,77 @@ void main() {
             return m.v;
         }
 
+        // Four procedural sprites in one 256 x 64 atlas: a soft dot, smoke puff, spark and star. Built-in effects need
+        // no image file, and the same texture is used for every effect that does not name a world asset.
+        function makeEffectAtlas(gl) {
+            const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+            const g = c.getContext('2d');
+            const cell = 64;
+            const dot = (x, y, r, inner, outer) => {
+                const gr = g.createRadialGradient(x, y, 0, x, y, r);
+                gr.addColorStop(0, 'rgba(255,255,255,' + inner + ')');
+                gr.addColorStop(0.45, 'rgba(255,255,255,' + (outer || inner * 0.45) + ')');
+                gr.addColorStop(1, 'rgba(255,255,255,0)');
+                g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+            };
+            // soft
+            dot(32, 32, 30, 0.95, 0.35);
+            // smoke: a few overlapping soft puffs
+            g.globalCompositeOperation = 'lighter';
+            for (const [x, y, r, a] of [[26, 36, 18, 0.55], [38, 30, 22, 0.45], [34, 42, 16, 0.5], [44, 38, 13, 0.4]]) dot(x + cell, y, r, a, a * 0.3);
+            g.globalCompositeOperation = 'source-over';
+            // spark: a bright cross with a soft core
+            dot(32 + cell * 2, 32, 25, 0.8, 0.2);
+            g.strokeStyle = 'rgba(255,255,255,0.95)'; g.lineWidth = 3; g.lineCap = 'round';
+            g.beginPath(); g.moveTo(32 + cell * 2, 8); g.lineTo(32 + cell * 2, 56); g.moveTo(10 + cell * 2, 32); g.lineTo(54 + cell * 2, 32); g.stroke();
+            // star: four points
+            dot(32 + cell * 3, 32, 22, 0.75, 0.18);
+            g.fillStyle = 'rgba(255,255,255,0.9)';
+            for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+                g.beginPath(); g.moveTo(32 + cell * 3 + dx * 27, 32 + dy * 27); g.lineTo(32 + cell * 3 - dy * 5, 32 + dx * 5); g.lineTo(32 + cell * 3 + dy * 5, 32 - dx * 5); g.closePath(); g.fill();
+            }
+            const tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            return { tex, custom: false, loaded: true, url: '' };
+        }
+        // A custom image is uploaded once per URL. Until it arrives, effects keep using the built-in atlas, so a slow
+        // image never leaves a hole in the scene.
+        function effectTextureFor(e) {
+            const gl = GL.gl, url = typeof effectImageURL === 'function' ? effectImageURL(e) : '';
+            const atlas = GL.effect.atlas;
+            if (!url) return atlas;
+            let hit = GL.effectTextures.get(url);
+            if (!hit) {
+                const tex = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, tex);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                hit = { tex, custom: true, loaded: false, url };
+                GL.effectTextures.set(url, hit);
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    gl.bindTexture(gl.TEXTURE_2D, tex);
+                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                    hit.loaded = true;
+                };
+                img.onerror = () => { hit.failed = true; };
+                img.src = url;
+            }
+            return hit.loaded ? hit : atlas;
+        }
         function initGL() {
             try {
                 const gl = glCanvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true, stencil: true });
@@ -1030,6 +1136,14 @@ void main() {
                     scene: null, a: null, b: null, active: false, failed: false,
                     wantSamples: 0, wantDiv: 2, bloomAmt: 0, rayAmt: 0, sunUV: [0.5, 0.5], sunVis: 0, sunCol: [1, 1, 1]
                 };
+                const effect = glProgram(gl, EFFECT_VS, EFFECT_FS, ['uTex']);
+                effect.vao = gl.createVertexArray(); gl.bindVertexArray(effect.vao);
+                effect.buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, effect.buf);
+                [[0, 3, 0], [1, 2, 3], [2, 3, 5], [3, 4, 8], [4, 2, 12], [5, 2, 14]].forEach(([loc, size, off]) => {
+                    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 64, off * 4);
+                });
+                effect.atlas = makeEffectAtlas(gl);
+                gl.bindVertexArray(null);
 
                 const tex = [makeLabelAtlas('#ffffff', true), makeLabelAtlas('#0f172a', false)].map(c => {
                     const t = gl.createTexture();
@@ -1043,7 +1157,7 @@ void main() {
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                     return t;
                 });
-                GL = { gl, prism, axis, label, gizmo, tex, shadow, ball: ballP, sphere, mesh, post, sm: null, dummy: makeShadowMap(gl, 1) };
+                GL = { gl, prism, axis, label, gizmo, tex, shadow, ball: ballP, sphere, mesh, post, effect, effectTextures: new Map(), sm: null, dummy: makeShadowMap(gl, 1) };
                 resize();
             } catch (err) {
                 console.warn('WebGL 2 unavailable, using the 2D renderer instead:', err);
@@ -1378,7 +1492,7 @@ void main() {
             post.active = false;
         }
 
-        function drawGL(prisms, balls, meshes, unions, highlights, lights, countFaces) {
+        function drawGL(prisms, balls, meshes, unions, highlights, lights, countFaces, effects) {
             const { gl, prism: P, axis: A, label: L, tex } = GL;
             const cam = [camPosX, camPosY, camPosZ];
             const dynLights = packDynamicLights(lights, cam);
@@ -1685,6 +1799,10 @@ void main() {
                 gl.disable(gl.STENCIL_TEST);
             }
 
+            // 1c2. effects: after every opaque surface, before the editor's outlines, so particles are depth-tested
+            // against the scene but do not tint the selection lines drawn on top of it.
+            if (effects && effects.length) drawEffectsGL(effects);
+
             // 1d. union outlines: the creases of the surface only, never the seams of its triangles. Edges on the
             // far side are dropped, and the depth buffer hides the ones behind walls.
             gl.depthMask(false);
@@ -1979,6 +2097,83 @@ void main() {
             glDrawCalls++;
         }
 
+        // Effects are drawn after the opaque scene so the depth buffer hides particles behind geometry. Alpha and
+        // additive particles are separate draw calls, and every effect without a custom image shares one atlas.
+        function drawEffectsGL(effects) {
+            if (!GL || !GL.effect || !effects || !effects.length) return;
+            const items = effectRenderItems(effects);
+            if (!items.length) return;
+            const gl = GL.gl, E = GL.effect;
+            const groups = new Map();
+            const groupFor = (info) => {
+                let g = groups.get(info.tex);
+                if (!g) { g = { info, alpha: [], additive: [] }; groups.set(info.tex, g); }
+                return g;
+            };
+            const corners = [[-1, -1], [1, -1], [-1, 1], [1, -1], [1, 1], [-1, 1]];
+            for (const { e, st, a } of items) {
+                const info = effectTextureFor(e), cfg = effectConfig(e);
+                const custom = info.custom && info.loaded, frames = custom ? cfg.frames : 1, fps = cfg.fps;
+                const group = groupFor(info);
+                for (let i = 0; i < st.count; i++) {
+                    const age = st.age[i], life = st.life[i];
+                    if (age >= life) continue;
+                    let alpha = 1;
+                    const fin = st.fadeIn[i] * life, fout = st.fadeOut[i] * life;
+                    if (fin > 0 && age < fin) alpha = age / fin;
+                    if (fout > 0 && age > life - fout) alpha = Math.min(alpha, (life - age) / fout);
+                    if (alpha <= 0.002) continue;
+                    const t = age / life, size = Math.max(0.01, st.size0[i] + (st.size1[i] - st.size0[i]) * t);
+                    const px = st.pos[i * 3], py = st.pos[i * 3 + 1], pz = st.pos[i * 3 + 2];
+                    let wx = px, wy = py, wz = pz;
+                    if (st.local[i]) {
+                        const m = a.m;
+                        wx = a.x + m[0] * px + m[1] * py + m[2] * pz;
+                        wy = a.y + m[3] * px + m[4] * py + m[5] * pz;
+                        wz = a.z + m[6] * px + m[7] * py + m[8] * pz;
+                    }
+                    const r = st.r0[i] + (st.r1[i] - st.r0[i]) * t;
+                    const gcol = st.g0[i] + (st.g1[i] - st.g0[i]) * t;
+                    const b = st.b0[i] + (st.b1[i] - st.b0[i]) * t;
+                    let u0 = 0, v0 = 0, u1 = 1, v1 = 1;
+                    if (custom) {
+                        const frame = Math.floor(age * fps) % frames;
+                        u0 = frame / frames; u1 = (frame + 1) / frames;
+                    } else {
+                        const sprite = Math.max(0, Math.min(3, st.sprite[i] | 0));
+                        u0 = sprite * 0.25; u1 = u0 + 0.25; v0 = 0; v1 = 1;
+                    }
+                    const out = st.blend[i] ? group.additive : group.alpha;
+                    for (const [cx, cy] of corners) {
+                        out.push(wx, wy, wz, cx, cy, r, gcol, b, alpha, size, st.angle[i], st.sprite[i], u0, v0, u1, v1);
+                    }
+                }
+            }
+            if (!groups.size) return;
+            gl.useProgram(E.prog);
+            gl.uniform3f(E.u.uCam, camPosX, camPosY, camPosZ);
+            gl.uniform3f(E.u.uR, rgtX, 0, rgtZ);
+            gl.uniform3f(E.u.uU, upX, upY, upZ);
+            gl.uniform3f(E.u.uF, fwdX, fwdY, fwdZ);
+            gl.uniform2f(E.u.uView, width, height);
+            gl.uniform1f(E.u.uFov, FOV);
+            gl.uniform1i(E.u.uTex, 0);
+            gl.bindVertexArray(E.vao);
+            gl.enable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND);
+            for (const group of groups.values()) {
+                gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, group.info.tex);
+                for (const [additive, list] of [[false, group.alpha], [true, group.additive]]) {
+                    if (!list.length) continue;
+                    gl.blendFunc(gl.ONE, additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, E.buf);
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(list), gl.DYNAMIC_DRAW);
+                    gl.drawArrays(gl.TRIANGLES, 0, list.length / 16);
+                }
+            }
+            gl.bindVertexArray(null);
+            gl.depthMask(true); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.activeTexture(gl.TEXTURE0);
+        }
+
         function drawFallback(prisms, balls) {
             // Axes
             if (settings.showAxes !== false) {
@@ -2082,9 +2277,12 @@ void main() {
         }
         let uiDirty = false;
         let outputDirty = false;
+        let lastEffectsTime = 0;
         function render() {
             if (!width || !height || !Number.isFinite(cx + cy)) { requestAnimationFrame(render); return; }
             const frameStart = performance.now();
+            const effectDt = lastEffectsTime ? Math.min(0.1, Math.max(0, (frameStart - lastEffectsTime) / 1000)) : 0;
+            lastEffectsTime = frameStart;
             // Counting visible faces and scanning the scene for the status bar is done about once a second, not per
             // frame: it is only display data and it used to cost a full walk of the scene every frame.
             const statDue = frameStart - lastFpsTime >= 950;
@@ -2138,7 +2336,7 @@ void main() {
             ctx.clearRect(0, 0, width, height);
             // One pass builds every draw list, so each object's parent chain is walked once per frame instead of five
             // times and five intermediate arrays are not produced.
-            const prisms = [], balls = [], meshes = [], unions = [], highlights = [], lights = [];
+            const prisms = [], balls = [], meshes = [], unions = [], highlights = [], lights = [], effects = [];
             for (const [id, o] of Object.entries(sceneObjects)) {
                 if (o.type === 'highlight') { highlights.push([id, o]); continue; }
                 if (id === pc.hideId || spaceOf(o) !== 'world') continue;
@@ -2147,7 +2345,9 @@ void main() {
                 else if (o.type === 'ball') balls.push([id, o]);
                 else if (o.type === 'wedge' || o.type === 'cylinder') meshes.push([id, o]);
                 else if (o.type === 'union') unions.push([id, o]);
+                else if (isEffect(o)) effects.push([id, o]);
             }
+            updateEffects(effectDt, effects);
             const selHandleObj = selectedObjectId ? sceneObjects[selectedObjectId] : null;
             const handleTarget = selHandleObj && selHandleObj.type === 'model'
                 ? getModelBounds(selectedObjectId)
@@ -2160,7 +2360,7 @@ void main() {
             // Without WebGL 2 the flat renderer draws wedges, cylinders and unions as their boxes.
             glDrawCalls = 0;
             const visibleCount = GL
-                ? drawGL(prisms, balls, meshes, unions, highlights, lights, statDue && settings.showStatus !== false)
+                ? drawGL(prisms, balls, meshes, unions, highlights, lights, statDue && settings.showStatus !== false, effects)
                 : drawFallback(prisms.concat(meshes, unions), balls);
             // WebGL draws the gizmos as solid, shaded geometry. The flat fallback keeps its 2D handles below.
             if (GL) { drawGizmosGL(ordered); presentPost(); }

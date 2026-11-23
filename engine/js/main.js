@@ -229,20 +229,47 @@
         canvas.addEventListener('mouseleave', () => { if (!manip && !uiDragging) { hoverKey = null; canvas.style.cursor = ''; } });
 
         // ───────── Boot ─────────
+        const PLAY_MODE = new URLSearchParams(location.search).get('play') === '1';
+        function installPlayMode() {
+            document.body.classList.add('play-mode');
+            document.title = 'Vanilla Player';
+            const raw = localStorage.getItem('vanilla-player-world-v1');
+            if (!raw) { toast('No world was imported. Open the Player page and choose a world.', 'bad'); return false; }
+            try {
+                const data = validateWorldFile(JSON.parse(raw));
+                applyWorldFile(data);
+            } catch (err) {
+                toast('The imported world could not be opened: ' + err.message, 'bad');
+                return false;
+            }
+            closeModals();
+            const menu = document.getElementById('play-menu');
+            const showMenu = (show) => { menu.hidden = !show; if (show) document.getElementById('play-resume').focus(); };
+            document.getElementById('play-resume').addEventListener('click', () => showMenu(false));
+            document.getElementById('play-leave').addEventListener('click', () => { location.href = '../player/'; });
+            window.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                e.preventDefault(); e.stopImmediatePropagation();
+                showMenu(menu.hidden);
+            }, true);
+            return true;
+        }
         initGL();
         applySettings();
         // A new world starts with the DefaultPlayer model in Storage and the PlayerManagement script.
         for (const [id, o] of makePlayerSetup(newId)) sceneObjects[id] = o;
         bootRestore();
+        if (PLAY_MODE) installPlayMode();
         // The autosave baseline is the world as it is now, so an untouched world is never written over your save.
         try { autosaveBase = JSON.stringify(buildWorldFile()); } catch (e) { autosaveBase = ''; }
         refreshTheme();
         renderVersionHistory();
-        maybeShowWhatsNew();
+        if (!PLAY_MODE) maybeShowWhatsNew();
         renderExplorer();
         renderProperties();
         setMode('select');
         requestAnimationFrame(render);
+        if (PLAY_MODE) setSimulationRunning(true);
     // Replace the embedded language-reference section with the canonical shared docs.
   if (window.VanillaluaShared) {
     const article = document.getElementById('docs-article');

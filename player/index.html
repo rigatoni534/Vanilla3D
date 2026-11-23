@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#171a21">
-<meta name="description" content="Play Vanilla3D games in the browser. Coming later.">
+<meta name="description" content="Play Vanilla3D worlds in the browser.">
 <title>Vanilla Player</title>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/vanilla.css">
@@ -30,20 +30,55 @@
   .pl-nav a:hover { background: var(--hover); color: var(--text); }
   .pl-nav a[aria-current="page"] { background: var(--accent-soft); color: var(--text); }
 
-  .pl-main { flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 620px; margin: 0 auto; padding: 48px 22px; }
-  .pl-main h1 { margin: 0 0 12px; font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
-  .pl-main h1 .pl-dot { color: var(--accent); }
-  .pl-main p { margin: 0 0 12px; color: var(--text-2); font-size: 13.5px; line-height: 1.65; }
-  .pl-main a { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
-  .pl-main a:hover { border-bottom-color: var(--accent); }
+  .pl-main { flex: 1; width: min(760px, 100%); margin: 0 auto; padding: 42px 22px 24px; }
   .pl-badge {
-    display: inline-flex; align-items: center; height: 22px; padding: 0 9px; margin-bottom: 18px;
+    display: inline-flex; align-items: center; height: 22px; padding: 0 9px; margin-bottom: 16px;
     border: 1px solid var(--line); border-radius: 99px;
     color: var(--muted); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
   }
+  .pl-main h1 { margin: 0 0 8px; font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+  .pl-main h1 .pl-dot { color: var(--accent); }
+  .pl-main > p { margin: 0 0 22px; color: var(--text-2); font-size: 13.5px; line-height: 1.65; max-width: 60ch; }
+
+  .pl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 650px) { .pl-grid { grid-template-columns: 1fr; } }
+  .pl-card { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 17px; }
+  .pl-card h2 { margin: 0 0 6px; font-size: 14px; }
+  .pl-card p { margin: 0 0 12px; color: var(--text-2); font-size: 12.5px; line-height: 1.55; }
+  .pl-drop {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    min-height: 112px; padding: 14px; border: 1px dashed var(--line); border-radius: 9px;
+    color: var(--text-2); font-size: 12.5px; text-align: center; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .pl-drop:hover, .pl-drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .pl-drop b { color: var(--text); font-size: 13px; }
+  .pl-input {
+    width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px;
+    background: var(--bg); color: var(--text); font: inherit; font-size: 12.5px;
+  }
+  .pl-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .pl-row { display: flex; gap: 8px; align-items: center; margin-top: 9px; flex-wrap: wrap; }
+  .pl-btn {
+    display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 13px;
+    border: 1px solid var(--line); border-radius: 7px; background: var(--rail); color: var(--text);
+    font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .pl-btn:hover { background: var(--hover); }
+  .pl-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pl-btn.primary:disabled { opacity: .45; cursor: not-allowed; }
+  .pl-status { min-height: 19px; margin-top: 10px; color: var(--text-2); font-size: 12px; line-height: 1.45; }
+  .pl-status.bad { color: var(--danger, #e66); }
+  .pl-world { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+  .pl-world.show { display: block; }
+  .pl-world-name { font-size: 13px; font-weight: 600; }
+  .pl-world-meta { margin-top: 2px; color: var(--muted); font-size: 11.5px; }
+  .pl-trust { display: flex; gap: 8px; align-items: flex-start; margin-top: 11px; color: var(--text-2); font-size: 12px; line-height: 1.5; }
+  .pl-trust input { margin-top: 2px; accent-color: var(--accent); }
+  .pl-note { margin-top: 18px; color: var(--muted); font-size: 11.5px; line-height: 1.55; }
   .pl-foot {
     display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-    max-width: 620px; margin: 0 auto; width: 100%; padding: 18px 22px 34px;
+    width: min(760px, 100%); margin: 0 auto; padding: 18px 22px 34px;
     border-top: 1px solid var(--line-soft);
     color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
   }
@@ -61,16 +96,157 @@
   </header>
 
   <main class="pl-main">
-    <span class="pl-badge">Not built yet</span>
+    <span class="pl-badge">Play a world</span>
     <h1>Player<span class="pl-dot">.</span></h1>
-    <p>A standalone way to play Vanilla3D games in the browser, without the editor around it.</p>
-    <p>The engine cannot run playable games yet, so this page is a placeholder. When it is ready, a world you make in the editor will open here.</p>
-    <p>For now, build and play your worlds in the <a href="../engine/">editor</a>, and pick up premade scripts, models and interfaces in the <a href="../toolbox/">toolbox</a>.</p>
+    <p>Open a <b>.vnw</b> world and play it without the editor around it. Your world stays in this browser until you choose another one.</p>
+
+    <div class="pl-grid">
+      <section class="pl-card">
+        <h2>Open a world file</h2>
+        <p>Choose a file, or drop it here.</p>
+        <label class="pl-drop" id="drop" for="world-file">
+          <b>Choose a .vnw file</b>
+          <span>or drag and drop it</span>
+          <input id="world-file" type="file" accept=".vnw,application/json" hidden>
+        </label>
+        <div class="pl-status" id="file-status" aria-live="polite"></div>
+        <div class="pl-row">
+          <button class="pl-btn" id="last-world" type="button" disabled>Open last world</button>
+        </div>
+      </section>
+
+      <section class="pl-card">
+        <h2>Open a world URL</h2>
+        <p>The server must allow cross-origin requests.</p>
+        <input class="pl-input" id="world-url" type="url" inputmode="url" placeholder="https://example.com/my-world.vnw" aria-label="World URL">
+        <div class="pl-row">
+          <button class="pl-btn" id="url-open" type="button">Fetch world</button>
+        </div>
+        <div class="pl-status" id="url-status" aria-live="polite"></div>
+      </section>
+    </div>
+
+    <div class="pl-world" id="world-info">
+      <div class="pl-world-name" id="world-name"></div>
+      <div class="pl-world-meta" id="world-meta"></div>
+      <label class="pl-trust"><input type="checkbox" id="trust"> <span>I trust this world. Its scripts run in my browser and can change the game while I play.</span></label>
+      <div class="pl-row">
+        <button class="pl-btn primary" id="play" type="button" disabled>Play Solo</button>
+      </div>
+    </div>
+
+    <p class="pl-note">The Player uses the same engine as the editor. Worlds with scripts run those scripts locally. Multiplayer lobbies are not part of this build.</p>
   </main>
 
   <footer class="pl-foot">
     <span>Vanilla3D</span>
     <span>player</span>
   </footer>
+
+  <script>
+    (() => {
+      const WORLD_KEY = 'vanilla-player-world-v1';
+      const fileInput = document.getElementById('world-file');
+      const drop = document.getElementById('drop');
+      const fileStatus = document.getElementById('file-status');
+      const urlStatus = document.getElementById('url-status');
+      const urlInput = document.getElementById('world-url');
+      const urlOpen = document.getElementById('url-open');
+      const lastBtn = document.getElementById('last-world');
+      const info = document.getElementById('world-info');
+      const nameEl = document.getElementById('world-name');
+      const metaEl = document.getElementById('world-meta');
+      const trust = document.getElementById('trust');
+      const play = document.getElementById('play');
+      let world = null;
+
+      const say = (el, text, bad) => { el.textContent = text; el.classList.toggle('bad', !!bad); };
+      const valid = (raw) => {
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('That is not a Vanilla world file.');
+        if (raw.format !== 'VanillaWorld') throw new Error('That file is not a Vanilla world.');
+        if (raw.formatVersion !== 1) throw new Error('That world was made by a newer version of Vanilla3D.');
+        if (!raw.objects || typeof raw.objects !== 'object' || Array.isArray(raw.objects)) throw new Error('That world has no instances in it.');
+        if (Object.values(raw.objects).some(o => o && o.parent === 'players')) throw new Error('That world contains a saved player, which cannot be imported.');
+        return raw;
+      };
+      const summarize = (data, source) => {
+        const objects = Object.values(data.objects).filter(Boolean);
+        const scripts = objects.filter(o => o.type === 'script');
+        const name = (objects.find(o => o.type === 'worldsettings' && typeof o.worldName === 'string') || {}).worldName
+          || data.worldName || data.name || 'Untitled world';
+        const creator = data.creator || data.author || '';
+        return { name, creator, objects: objects.length, scripts: scripts.length, source };
+      };
+      const choose = (data, label) => {
+        world = data;
+        const s = summarize(data, label);
+        nameEl.textContent = s.name;
+        metaEl.textContent = [s.creator ? 'by ' + s.creator : '', s.objects + ' instances', s.scripts + ' script' + (s.scripts === 1 ? '' : 's'), label].filter(Boolean).join(' · ');
+        info.classList.add('show');
+        trust.checked = false; play.disabled = true;
+        say(fileStatus, 'Ready to play. Confirm you trust it first.');
+      };
+      const readFile = async (file) => {
+        if (!file) return;
+        if (file.size > 32 * 1024 * 1024) throw new Error('That file is larger than 32 MB.');
+        const text = await file.text();
+        let data;
+        try { data = JSON.parse(text); } catch (e) { throw new Error('That file is not valid JSON.'); }
+        choose(valid(data), file.name);
+      };
+      fileInput.addEventListener('change', async () => {
+        try { await readFile(fileInput.files && fileInput.files[0]); }
+        catch (err) { say(fileStatus, err.message, true); info.classList.remove('show'); }
+        finally { fileInput.value = ''; }
+      });
+      drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+      ['dragenter', 'dragover'].forEach(type => drop.addEventListener(type, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+      ['dragleave', 'drop'].forEach(type => drop.addEventListener(type, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+      drop.addEventListener('drop', async (e) => {
+        try { await readFile(e.dataTransfer.files && e.dataTransfer.files[0]); }
+        catch (err) { say(fileStatus, err.message, true); info.classList.remove('show'); }
+      });
+      urlOpen.addEventListener('click', async () => {
+        const url = urlInput.value.trim();
+        if (!url) { say(urlStatus, 'Paste a world URL first.', true); return; }
+        let parsed;
+        try { parsed = new URL(url); } catch (e) { say(urlStatus, 'That is not a valid URL.', true); return; }
+        if (parsed.protocol !== 'https:') { say(urlStatus, 'Use an https:// URL.', true); return; }
+        say(urlStatus, 'Fetching…');
+        try {
+          const res = await fetch(parsed.href, { mode: 'cors' });
+          if (!res.ok) throw new Error('The server answered ' + res.status + '.');
+          const text = await res.text();
+          if (text.length > 32 * 1024 * 1024) throw new Error('That world is larger than 32 MB.');
+          let data;
+          try { data = JSON.parse(text); } catch (e) { throw new Error('The URL did not return valid JSON.'); }
+          choose(valid(data), parsed.hostname);
+          say(urlStatus, 'World downloaded.');
+        } catch (err) {
+          say(urlStatus, err instanceof TypeError ? 'The world could not be fetched. The server may be offline or may not allow CORS.' : err.message, true);
+        }
+      });
+      trust.addEventListener('change', () => { play.disabled = !trust.checked || !world; });
+      play.addEventListener('click', () => {
+        if (!world || !trust.checked) return;
+        try {
+          localStorage.setItem(WORLD_KEY, JSON.stringify(world));
+          location.href = '../engine/index.html?play=1';
+        } catch (e) {
+          say(fileStatus, 'The browser could not store that world. It may be full.', true);
+        }
+      });
+      const stored = localStorage.getItem(WORLD_KEY);
+      if (stored) {
+        try {
+          const data = valid(JSON.parse(stored));
+          const s = summarize(data, 'last world');
+          lastBtn.disabled = false;
+          lastBtn.textContent = 'Open ' + s.name;
+          lastBtn.addEventListener('click', () => choose(data, 'last world'));
+        } catch (e) { localStorage.removeItem(WORLD_KEY); }
+      }
+    })();
+  </script>
 </body>
 </html>

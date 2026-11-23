@@ -5,9 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.12.3">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.14.1">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
-  
+    <style>
+      /* Play mode is the same engine and world loader with the editor chrome removed. */
+      body.play-mode #toolbar, body.play-mode #tabbar, body.play-mode #sidebar, body.play-mode #statusbar,
+      body.play-mode #tools, body.play-mode #hint, body.play-mode #viewfinder-container, body.play-mode #script-editor,
+      body.play-mode #sim-badge { display: none !important; }
+      body.play-mode #workspace { position: fixed; inset: 0; height: 100vh; }
+      body.play-mode #main-column { height: 100vh; }
+      body.play-mode #canvas-container { height: 100vh; }
+      #play-menu { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; background: rgba(7,10,16,.66); backdrop-filter: blur(8px); }
+      #play-menu[hidden] { display: none; }
+      #play-menu .play-card { width: min(360px, calc(100vw - 32px)); padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+      #play-menu h2 { margin: 0 0 6px; font-size: 20px; }
+      #play-menu p { margin: 0 0 18px; color: var(--text-2); font-size: 13px; line-height: 1.55; }
+      #play-menu .play-actions { display: flex; flex-direction: column; gap: 8px; }
+      #play-menu .play-actions .btn { justify-content: center; height: 36px; }
+    </style>
 </head>
 <body>
   <!-- Icon sprite -->
@@ -592,7 +607,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 12</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 14</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -645,6 +660,9 @@
         <h3 data-group="Editor guide">Run and Stop</h3>
         <p><b>Run</b> works like Roblox Studio: the world is snapshotted, physics and scripts run live, and <b>Stop</b> restores the snapshot exactly as it was. Anything scripts create or change during a run is discarded on Stop, and global variables are cleared.</p>
         <div class="callout"><b>Heads up:</b> saving, opening a world and starting a new one are blocked while a simulation runs. Stop first.</div>
+        <h3 data-group="Editor guide">Playing worlds</h3>
+        <p>The <b>Player</b> page opens a <code>.vnw</code> file from your computer, a drag-and-drop, the last played world, or an <code>https</code> URL. It shows the world name, creator and instance and script counts, and it asks you to confirm that you trust the world before its scripts run. The world is kept in this browser; opening the page again offers it as the last world.</p>
+        <p><b>Play Solo</b> opens the world in play mode. The editor panels are hidden and the simulation starts immediately; <b>Escape</b> opens Pause, <b>Resume</b> returns to the game and <b>Leave game</b> goes back to the Player page. Play mode uses the same engine, physics, scripts and player controller as the editor.</p>
         <h3 data-group="Editor guide">World Settings</h3>
         <p>Open <b>World ▾ → Settings</b> in the top bar to edit the world itself. The dialog writes to the World Settings instance under World, so the values save with the world and the environment fields stay available in Properties. <b>Audio</b> there sets the master volume and chooses what footsteps, impacts and the player death use: procedural by default, a built-in preset, an uploaded audio asset, or silence.</p>
         <table class="docs-table"><thead><tr><th>Setting</th><th>What it does</th></tr></thead><tbody>
@@ -1114,26 +1132,37 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=4.0.0.0.12.3"></script>
-  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 12';</script>
+  <div id="play-menu" hidden role="dialog" aria-modal="true" aria-labelledby="play-menu-title">
+    <div class="play-card">
+      <h2 id="play-menu-title">Paused</h2>
+      <p>The world is still running. Resume to go back, or leave the game.</p>
+      <div class="play-actions">
+        <button class="btn btn-primary" id="play-resume">Resume</button>
+        <button class="btn btn-outline" id="play-leave">Leave game</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../vanillalua.js?v=4.0.0.0.14.1"></script>
+  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 14';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/collision.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/scene.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/effects.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/csg.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/version-history.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/playeranim.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/player.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/sounds.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/scripting.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/shell.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/files.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/offline.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/explorer.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/shortcuts.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/properties.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/render.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/gl.js?v=4.0.0.0.12.3"></script>
-  <script defer src="js/main.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/collision.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/scene.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/effects.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/csg.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/version-history.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/playeranim.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/player.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/sounds.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/scripting.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/shell.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/files.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/offline.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/explorer.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/shortcuts.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/properties.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/render.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/gl.js?v=4.0.0.0.14.1"></script>
+  <script defer src="js/main.js?v=4.0.0.0.14.1"></script>
 </body>
 </html>

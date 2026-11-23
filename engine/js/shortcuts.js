@@ -64,7 +64,6 @@ function shortcutRename() {
 function shortcutCopy(cut) {
     const ids = cut ? shortcutEditableSelection() : shortcutSelection();
     if (!ids.length) return false;
-    shortcutPushHistory();
     clipboard = makeClip(ids, !!cut);
     if (cut) for (const id of ids) if (sceneObjects[id]) deleteItem(id);
     toast(cut ? 'Cut ' + ids.length + ' item' + (ids.length === 1 ? '' : 's') + '.' : 'Copied ' + ids.length + ' item' + (ids.length === 1 ? '' : 's') + '.');
@@ -74,14 +73,12 @@ function shortcutPaste(asChild) {
     if (!clipboard) return false;
     const target = asChild ? selectedObjectId : (selectedObjectId && sceneObjects[selectedObjectId] ? sceneObjects[selectedObjectId].parent : 'world');
     if (asChild && !target) { toast('Select a parent first, or use Ctrl+V to paste beside the selection.', 'warn'); return false; }
-    shortcutPushHistory();
     pasteInto(target || 'world');
     return true;
 }
 function shortcutDuplicate() {
     const ids = shortcutSelection();
     if (!ids.length) return false;
-    shortcutPushHistory();
     const saved = clipboard;
     clipboard = makeClip(ids, false);
     const parent = sceneObjects[ids[0]] ? sceneObjects[ids[0]].parent : 'world';
@@ -101,7 +98,6 @@ function shortcutSelectAll() {
 function shortcutDelete() {
     const ids = shortcutEditableSelection();
     if (!ids.length) return false;
-    shortcutPushHistory();
     for (const id of ids) if (sceneObjects[id]) deleteItem(id);
     multiSel.clear();
     return true;
@@ -161,5 +157,29 @@ function shortcutKey(e) {
     } else if (key === ' ') {
         if (shortcutRename()) { e.preventDefault(); e.stopImmediatePropagation(); }
     }
+}
+// Existing menus and drag/drop call the same editor functions as the shortcuts. Wrap the mutating entry points so an
+// undo entry exists no matter where the change came from. Calls made by another wrapped operation are suppressed so a
+// union or a group records one snapshot, not one per child.
+let shortcutHistoryBusy = 0;
+function shortcutWrapHistory(fn) {
+    return function (...args) {
+        if (shortcutHistoryBusy) return fn.apply(this, args);
+        shortcutPushHistory();
+        shortcutHistoryBusy++;
+        try { return fn.apply(this, args); }
+        finally { shortcutHistoryBusy--; }
+    };
+}
+for (const [name, fn] of Object.entries({ addInstance, reparent, deleteItem, pasteInto, groupSelected, ungroupSelected, unionSelected })) {
+    if (typeof fn !== 'function') continue;
+    const wrapped = shortcutWrapHistory(fn);
+    if (name === 'addInstance') addInstance = wrapped;
+    else if (name === 'reparent') reparent = wrapped;
+    else if (name === 'deleteItem') deleteItem = wrapped;
+    else if (name === 'pasteInto') pasteInto = wrapped;
+    else if (name === 'groupSelected') groupSelected = wrapped;
+    else if (name === 'ungroupSelected') ungroupSelected = wrapped;
+    else if (name === 'unionSelected') unionSelected = wrapped;
 }
 window.addEventListener('keydown', shortcutKey, true);

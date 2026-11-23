@@ -77,7 +77,7 @@
             return Object.assign({
                 type: 'light', name, parent, x: 0, y: 3, z: 0,
                 color: '#ffe3ad', brightness: 1.5, range: 14, lightType: 'point', angle: 45,
-                enabled: true, rotX: 90, rotY: 0, rotZ: 0
+                enabled: true, castShadows: true, rotX: 90, rotY: 0, rotZ: 0
             }, props);
         }
         const isLight = (o) => !!o && o.type === 'light';

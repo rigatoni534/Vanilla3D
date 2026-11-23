@@ -240,6 +240,7 @@
                     obj.range = Math.max(0.5, Math.min(100, Number.isFinite(obj.range) ? obj.range : 14));
                     obj.angle = Math.max(5, Math.min(80, Number.isFinite(obj.angle) ? obj.angle : 45));
                     if (!LIGHT_TYPES.includes(obj.lightType)) obj.lightType = 'point';
+                    obj.castShadows = obj.castShadows !== false;
                     for (const k of ['x', 'y', 'z', 'rotX', 'rotY', 'rotZ']) if (!Number.isFinite(obj[k])) obj[k] = 0;
                 }
                 if (obj.type === 'worldsettings') normalizeWorldSettings(obj);

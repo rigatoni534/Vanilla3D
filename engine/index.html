@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.4">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.5.2">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
   
 </head>
@@ -400,9 +400,9 @@
               <select id="set-quality" class="sel" aria-label="Graphics preset"><option value="low">Low</option><option value="medium">Medium</option><option value="standard">Standard</option><option value="high">High</option><option value="extra">Extra High</option><option value="unlimited">Unlimited</option><option value="custom">Custom</option></select></div>
             <div class="setting-desc set-note" id="quality-note"></div>
             <div class="set-sub">Lighting</div>
-            <div class="setting"><div><div class="setting-title">Lighting style</div><div class="setting-desc">Enhanced adds sky light, sun highlights and shadows that follow the time of day. Classic is the flat shading from before.</div></div>
+            <div class="setting"><div><div class="setting-title">Lighting style</div><div class="setting-desc">Enhanced adds sky light, sun highlights, placeable lights and their shadows. Sun shadows follow the time of day; spot lights can cast their own shadows. Classic is the flat shading from before.</div></div>
               <select id="set-lighting" class="sel" aria-label="Lighting style"><option value="enhanced">Enhanced</option><option value="classic">Classic</option></select></div>
-            <div class="setting"><div><div class="setting-title">Shadows</div><div class="setting-desc">Soft sun and moon shadows. Higher quality is sharper but needs a faster graphics card.</div></div>
+            <div class="setting"><div><div class="setting-title">Shadows</div><div class="setting-desc">Soft sun and moon shadows and spot-light shadow maps. Higher quality is sharper but needs a faster graphics card.</div></div>
               <select id="set-shadows" class="sel" aria-label="Shadow quality"><option value="off">Off</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
             <label class="setting" for="opt-haze"><div><div class="setting-title">Atmospheric haze</div><div class="setting-desc">Distant objects fade into the color of the sky, so far edges blend into the horizon.</div></div><input type="checkbox" id="opt-haze" class="switch"></label>
             <label class="setting" for="opt-bloom"><div><div class="setting-title">Bloom and sun rays</div><div class="setting-desc">Bright surfaces glow and the sun casts soft light shafts across the view. Applies to Enhanced lighting; the Standard preset and above turn it on.</div></div><input type="checkbox" id="opt-bloom" class="switch"></label>
@@ -564,7 +564,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 4</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 5</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -681,7 +681,7 @@
         <p>A <b>Sound</b> plays one of the built-in sounds: Beep, Chime, Click, Thud or Siren. They are synthesised, so a world never needs an audio file. <b>Playing</b> starts and stops it, <b>Looped</b> repeats it while it plays, and <b>Volume</b> is a slider from 0 to 1. Sounds play while the simulation runs; Stop silences them and restores the world.</p>
         <p><b>Max distance</b> makes a Sound positional and only applies when the Sound is a child of an object: it is heard within that many meters of its parent and fades out as the camera moves away, so a Sound inside a block is loud beside the block and silent further off. A Sound placed straight in a Space is heard at the same volume everywhere. Scripts can change Playing, Looped, Volume, MaxDistance and Preset while the simulation runs.</p>
         <p>A <b>Highlight</b> draws an outline around the object it sits inside. Put one inside a model to outline a player, or inside a part to outline just that part. Only the edges the camera can see are drawn: an edge on the far side of the shape is left out, and a wall hides the part of the outline behind it. A cut hole is outlined all the way around its rim. <b>Color</b> sets the outline color, and <b>Appears over objects</b> turns off hiding by other objects and always draws the visible edges on top (on by default), so a player can be seen through a wall; the far side of the shape itself is still left out.</p>
-        <p>A <b>Light</b> is a placeable point or spot light. Point lights shine in every direction; spot lights shine in a cone and use Rotation to aim, with their local +Z direction and a default rotation pointing down. <b>Enabled</b> turns a light on and off, <b>Color</b> sets its tint, <b>Brightness</b> its strength, <b>Range</b> how far it reaches in Vanillameters, and <b>Cone angle</b> the width of a spot beam. The nearest eight enabled lights are used in the viewport, so a large world stays fast. Lights work with Enhanced lighting; placed lights do not cast shadows yet. A small sun marker shows each light in the editor, even when it is inside a wall, and a selected light uses the normal Move and Rotate gizmos.</p>
+        <p>A <b>Light</b> is a placeable point or spot light. Point lights shine in every direction; spot lights shine in a cone and use Rotation to aim, with their local +Z direction and a default rotation pointing down. <b>Enabled</b> turns a light on and off, <b>Color</b> sets its tint, <b>Brightness</b> its strength, <b>Range</b> how far it reaches in Vanillameters, and <b>Cone angle</b> the width of a spot beam. Spot lights also have <b>Cast shadows</b>; the nearest two shadow-casting spots get a shadow map, and shadow quality follows the Shadows setting. Point lights do not cast shadows yet. The nearest eight enabled lights are used in the viewport, so a large world stays fast. A small sun marker shows each light in the editor, even when it is inside a wall, and a selected light uses the normal Move and Rotate gizmos.</p>
         <h3 data-group="Editor guide">Textures</h3>
         <p>A <b>Texture</b> paints chosen faces of a Rectangular Prism. Use <b>Add Child…</b> in a prism's three-dot menu and choose <b>Texture</b>; it appears as a child of that prism and always affects its parent.</p>
         <ul>
@@ -703,8 +703,8 @@
           <tr><td>Field of view</td><td>40 to 110 degrees. Higher shows more of the world. The default is 75.</td></tr>
           <tr><td>Graphics preset</td><td>Low, Medium, Standard, High, Extra High or Unlimited. A preset sets shadows, texture detail, anti-aliasing, render resolution, bloom and sun rays together. Low and Medium draw no bloom and use a coarser grid texture at a lower resolution, so they run on weaker graphics cards. Extra High and Unlimited draw above screen resolution, add the finest grid lines and surface grain, and use the sharpest shadows.</td></tr>
           <tr><td>Bloom and sun rays</td><td>Bright surfaces glow softly and the sun casts light shafts across the viewport. Needs Enhanced lighting. Turn it off to keep the sharpest possible image.</td></tr>
-          <tr><td>Lighting style</td><td>Enhanced uses sky light, sun highlights, placeable lights and shadows that follow the World Settings time of day. Classic is the earlier flat shading and does not draw placeable lights.</td></tr>
-          <tr><td>Shadows</td><td>Off, Low, Medium or High. Shadows are soft, follow the sun by day and the moon by night, and stay sharp around where you are looking.</td></tr>
+          <tr><td>Lighting style</td><td>Enhanced uses sky light, sun highlights, placeable lights and shadows. Sun shadows follow the World Settings time of day, and spot lights can cast their own shadows. Classic is the earlier flat shading and does not draw placeable lights.</td></tr>
+          <tr><td>Shadows</td><td>Off, Low, Medium or High. Sun shadows are soft, follow the sun by day and the moon by night, and stay sharp around where you are looking. The setting also sets the resolution of spot-light shadow maps.</td></tr>
           <tr><td>Atmospheric haze</td><td>Fades distant objects into the sky color. Only applies to Enhanced lighting.</td></tr>
           <tr><td>Render distance</td><td>Off draws the whole world. Otherwise 40 to 400 Vm: shapes past the distance fade into the sky color and are no longer drawn.</td></tr>
           <tr><td>Show origin marker</td><td>Turns the red, green and blue lines at the origin on or off.</td></tr>
@@ -884,7 +884,7 @@ print(block)</code></pre>
           <tr><td>Wedges, cylinders and unions</td><td>The same properties as a prism, except <code>Spawnpoint</code>.</td></tr>
           <tr><td>Sounds</td><td><code>Playing</code> and <code>Looped</code> (True or False), <code>Volume</code> (0 to 1), <code>MaxDistance</code> (meters, 0 or more, used only when the Sound is inside an object) and <code>Preset</code> (one of <code>beep</code>, <code>chime</code>, <code>click</code>, <code>thud</code>, <code>siren</code>)</td></tr>
           <tr><td>Highlights</td><td><code>Color</code> (a hex string) and <code>OverObjects</code> (True or False)</td></tr>
-          <tr><td>Lights</td><td>Edited in the Properties panel: point or spot, <code>Enabled</code>, <code>Color</code>, <code>Brightness</code>, <code>Range</code>, and <code>Cone angle</code> for spots. Scripts can set those fields and use <code>Position</code> and <code>Rotation</code>; <code>LightType</code> is <code>"point"</code> or <code>"spot"</code>.</td></tr>
+          <tr><td>Lights</td><td>Edited in the Properties panel: point or spot, <code>Enabled</code>, <code>Color</code>, <code>Brightness</code>, <code>Range</code>, <code>Cast shadows</code> and <code>Cone angle</code> for spots. Scripts can set those fields and use <code>Position</code> and <code>Rotation</code>; <code>LightType</code> is <code>"point"</code> or <code>"spot"</code> and <code>Shadows</code> is True or False.</td></tr>
           <tr><td>Connections</td><td><code>Active</code> (True or False). ClientSocket adds <code>Client</code>, <code>Player</code> and <code>Bandwidth</code>; ServerSocket adds <code>Bandwidth</code> and <code>MaxClients</code>; PeerConnection adds <code>Password</code>, <code>Client1</code>, <code>Client2</code>, <code>Player1</code> and <code>Player2</code>; GroupConnection adds <code>Password</code>.</td></tr>
           <tr><td>Blocks</td><td><code>Spawnpoint</code> (true or false). Only one block can be the spawnpoint.</td></tr>
           <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr><tr><td>Players</td><td><code>Character</code> (the player's current model, read-only) and <code>ModelAdded</code> (an event; passes the new model). Use <code>Players.AssignModelToPlayer</code> to give a player a model.</td></tr>
@@ -1072,23 +1072,23 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=4.0.0.0.4"></script>
-  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 4';</script>
+  <script src="../vanillalua.js?v=4.0.0.0.5.2"></script>
+  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 5';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/collision.js?v=4.0.0.0.4"></script>
-  <script defer src="js/scene.js?v=4.0.0.0.4"></script>
-  <script defer src="js/csg.js?v=4.0.0.0.4"></script>
-  <script defer src="js/version-history.js?v=4.0.0.0.4"></script>
-  <script defer src="js/player.js?v=4.0.0.0.4"></script>
-  <script defer src="js/sounds.js?v=4.0.0.0.4"></script>
-  <script defer src="js/scripting.js?v=4.0.0.0.4"></script>
-  <script defer src="js/shell.js?v=4.0.0.0.4"></script>
-  <script defer src="js/files.js?v=4.0.0.0.4"></script>
-  <script defer src="js/offline.js?v=4.0.0.0.4"></script>
-  <script defer src="js/explorer.js?v=4.0.0.0.4"></script>
-  <script defer src="js/properties.js?v=4.0.0.0.4"></script>
-  <script defer src="js/render.js?v=4.0.0.0.4"></script>
-  <script defer src="js/gl.js?v=4.0.0.0.4"></script>
-  <script defer src="js/main.js?v=4.0.0.0.4"></script>
+  <script defer src="js/collision.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/scene.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/csg.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/version-history.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/player.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/sounds.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/scripting.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/shell.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/files.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/offline.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/explorer.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/properties.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/render.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/gl.js?v=4.0.0.0.5.2"></script>
+  <script defer src="js/main.js?v=4.0.0.0.5.2"></script>
 </body>
 </html>

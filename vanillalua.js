@@ -512,7 +512,7 @@ VL_PROPS.cylinder = Object.assign({}, VL_PROPS.ball);
 VL_PROPS.union = Object.assign({}, VL_PROPS.ball);
 VL_PROPS.sound = { Playing: ['playing', 'bool'], Looped: ['looped', 'bool'], Volume: ['volume', 'num'], MaxDistance: ['maxDistance', 'num'], Preset: ['preset', 'str'] };
 VL_PROPS.highlight = { Color: ['color', 'str'], OverObjects: ['overObjects', 'bool'] };
-VL_PROPS.light = { Enabled: ['enabled', 'bool'], Color: ['color', 'str'], Brightness: ['brightness', 'num'], Range: ['range', 'num'], LightType: ['lightType', 'str'], Angle: ['angle', 'num'] };
+VL_PROPS.light = { Enabled: ['enabled', 'bool'], Color: ['color', 'str'], Brightness: ['brightness', 'num'], Range: ['range', 'num'], LightType: ['lightType', 'str'], Angle: ['angle', 'num'], Shadows: ['castShadows', 'bool'] };
 // UI: Position and Size are percentages of the parent, and Position is the centre of the element.
 const VL_UI_PROPS = { Visible: ['visible', 'bool'], PositionX: ['posX', 'num'], PositionY: ['posY', 'num'], Width: ['sizeX', 'num'], Height: ['sizeY', 'num'] };
 VL_PROPS.frame = Object.assign({ Color: ['color', 'str'], Transparency: ['transparency', 'num'], BorderWidth: ['borderWidth', 'num'], BorderColor: ['borderColor', 'str'], BackgroundBlur: ['backgroundBlur', 'num'], BorderBlur: ['borderBlur', 'num'], ClipChildren: ['clipChildren', 'bool'] }, VL_UI_PROPS);
@@ -1427,7 +1427,7 @@ function stopScripts() {
       makeWedge: (name, parent) => makeShape('wedge', name, parent), makeCylinder: (name, parent) => makeShape('cylinder', name, parent),
       makeSound: (name, parent) => ({ type: 'sound', name, parent, preset: 'beep', playing: false, looped: false, volume: 0.6, maxDistance: 20 }),
       makeHighlight: (name, parent) => ({ type: 'highlight', name, parent, color: '#ffd23f', overObjects: true }),
-      makeLight: (name, parent) => ({ type: 'light', name, parent, x: 0, y: 3, z: 0, color: '#ffe3ad', brightness: 1.5, range: 14, lightType: 'point', angle: 45, enabled: true, rotX: 90, rotY: 0, rotZ: 0 }),
+      makeLight: (name, parent) => ({ type: 'light', name, parent, x: 0, y: 3, z: 0, color: '#ffe3ad', brightness: 1.5, range: 14, lightType: 'point', angle: 45, enabled: true, castShadows: true, rotX: 90, rotY: 0, rotZ: 0 }),
       makeConnection: (type, parent) => {
         const n = ++counters[type], name = type + (n === 1 ? '' : ' ' + n);
         if (type === 'serversocket') return { type, name, parent, active: true, bandwidth: 4096, maxClients: 8 };

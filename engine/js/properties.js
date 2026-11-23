@@ -568,8 +568,9 @@
                         <label class="num hnum"><input type="number" id="prop-light-brightness" min="0" max="8" step="0.1" value="${obj.brightness}" aria-label="Brightness"><span class="tag">×</span></label>
                         <div class="field-label">Range</div>
                         <label class="num hnum"><input type="number" id="prop-light-range" min="0.5" max="100" step="0.5" value="${obj.range}" aria-label="Range in meters"><span class="tag">m</span></label>
-                        ${spot ? `<div class="field-label">Cone angle</div><label class="num hnum"><input type="number" id="prop-light-angle" min="5" max="80" step="1" value="${obj.angle}" aria-label="Cone angle in degrees"><span class="tag">°</span></label>` : ''}
-                        <div class="field-note">Enhanced lighting only. Up to the 8 nearest lights are drawn. Placed lights do not cast shadows yet.</div>
+                        ${spot ? `<div class="field-label">Cone angle</div><label class="num hnum"><input type="number" id="prop-light-angle" min="5" max="80" step="1" value="${obj.angle}" aria-label="Cone angle in degrees"><span class="tag">°</span></label>
+                        ${switchRow('prop-light-shadows', 'Cast shadows', obj.castShadows !== false, '')}` : ''}
+                        <div class="field-note">Enhanced lighting only. Up to the 8 nearest lights are drawn; the nearest 2 spot lights that cast shadows get a map. Point lights do not cast shadows yet.</div>
                     `)}`;
                 bindName(obj);
                 for (const [elId, key] of [['prop-x', 'x'], ['prop-y', 'y'], ['prop-z', 'z'], ['prop-rx', 'rotX'], ['prop-ry', 'rotY'], ['prop-rz', 'rotZ']]) {
@@ -595,6 +596,8 @@
                 rn.addEventListener('input', () => { obj.range = Math.max(0.5, Math.min(100, parseFloat(rn.value) || 0.5)); });
                 const an = document.getElementById('prop-light-angle');
                 if (an) an.addEventListener('input', () => { obj.angle = Math.max(5, Math.min(80, parseFloat(an.value) || 5)); });
+                const ls = document.getElementById('prop-light-shadows');
+                if (ls) ls.addEventListener('change', (e) => { obj.castShadows = e.target.checked; });
                 return;
             }
 

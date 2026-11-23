@@ -1795,10 +1795,11 @@ void main() {
                 const near = 0.15;
                 const zOf = (p) => (p[0] - cam[0]) * fwdX + (p[1] - cam[1]) * fwdY + (p[2] - cam[2]) * fwdZ;
                 const mixP = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-                let i = 0;
+                let i = 0, farZ = 0;
                 for (const s of segs) {
                     let a = s.a, b = s.b;
                     const za = zOf(a), zb = zOf(b);
+                    farZ = Math.max(farZ, za, zb);
                     if (za < near && zb < near) continue;
                     if (za < near) a = mixP(a, b, (near - za) / (zb - za));
                     else if (zb < near) b = mixP(b, a, (near - zb) / (za - zb));
@@ -1814,7 +1815,9 @@ void main() {
                 gl.useProgram(A.prog); setCam(A); gl.bindVertexArray(A.vao);
                 gl.bindBuffer(gl.ARRAY_BUFFER, A.buf);
                 gl.bufferData(gl.ARRAY_BUFFER, verts.subarray(0, i), gl.DYNAMIC_DRAW);
-                gl.uniform1f(A.u.uZBias, 2e-5);
+                // Depth precision falls off with distance, so a fixed world-space push that works close up flickers on
+                // distant outlines. Scale it with the farthest segment, capped so a line still cannot show through a wall.
+                gl.uniform1f(A.u.uZBias, Math.min(2.5e-4, 2e-5 * Math.max(1, Math.min(12, farZ / 8))));
                 if (!depthTest) gl.disable(gl.DEPTH_TEST);
                 gl.drawArrays(gl.TRIANGLES, 0, i / 13);
                 if (!depthTest) gl.enable(gl.DEPTH_TEST);

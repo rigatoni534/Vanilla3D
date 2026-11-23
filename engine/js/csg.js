@@ -397,41 +397,95 @@ function csgMeshTriangles(polys) {
     }
     return tris;
 }
-// Whether a flat polygon covers a point on its own plane (used to tell a real cut boundary from a seam).
-function csgPolyCovers(poly, p, n) {
-    const ax = Math.abs(n[0]), ay = Math.abs(n[1]), az = Math.abs(n[2]);
-    const skip = ax >= ay && ax >= az ? 0 : ay >= az ? 1 : 2;
-    const i = (skip + 1) % 3, j = (skip + 2) % 3;
-    const v = poly.v;
-    let inside = false;
-    for (let a = 0, b = v.length - 1; a < v.length; b = a++) {
-        if ((v[a][j] > p[j]) !== (v[b][j] > p[j]) &&
-            p[i] < (v[b][i] - v[a][i]) * (p[j] - v[a][j]) / (v[b][j] - v[a][j]) + v[a][i]) inside = !inside;
-    }
-    return inside;
-}
-// Every polygon edge, with the normals of the faces that meet there.
+// Outlines come from surface adjacency, not from looking at one edge in isolation. Vertices are welded, then each
+// polygon edge is split where another vertex lands on it (a T-junction). That gives both sides of a cut the same
+// small edges even when the CSG produced different tessellation on each side. A silhouette is then an edge with two
+// faces that bend sharply; a lone welded edge is usually a tessellation seam inside a flat face, not a silhouette.
+const CSG_WELD_EPS = 0.0001;
+const CSG_WELD_CELL = 0.02;
 function csgEdgeData(polys) {
-    const map = new Map();
-    const keyOf = (p) => csgRound(p[0]).toFixed(4) + ',' + csgRound(p[1]).toFixed(4) + ',' + csgRound(p[2]).toFixed(4);
+    const verts = [], byKey = new Map();
+    const keyOf = (p) => {
+        const x = csgRound(p[0]) + 0, y = csgRound(p[1]) + 0, z = csgRound(p[2]) + 0;
+        return x + ',' + y + ',' + z;
+    };
+    const addVertex = (p) => {
+        const key = keyOf(p);
+        let id = byKey.get(key);
+        if (id === undefined) {
+            id = verts.length;
+            verts.push([csgRound(p[0]) + 0, csgRound(p[1]) + 0, csgRound(p[2]) + 0]);
+            byKey.set(key, id);
+        }
+        return id;
+    };
+    // Keep the original polygon edge and its face normal. The endpoints are welded immediately, before any splitting.
+    const edges = [];
     for (const poly of polys) {
         if (!poly || !poly.plane) continue;
         const v = poly.v, n = poly.plane.n;
-        for (let i = 0; i < v.length; i++) {
-            const a = v[i], b = v[(i + 1) % v.length];
-            if (Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) < 1e-7) continue;
-            const ka = keyOf(a), kb = keyOf(b);
-            const key = ka < kb ? ka + '|' + kb : kb + '|' + ka;
-            let e = map.get(key);
-            if (!e) {
-                // A point inside the polygon that owns the edge, used to tell which side its flat face is on.
-                let cx = 0, cy = 0, cz = 0;
-                for (const p of v) { cx += p[0]; cy += p[1]; cz += p[2]; }
-                e = { a: ka < kb ? a : b, b: ka < kb ? b : a, normals: [], centroid: [cx / v.length, cy / v.length, cz / v.length] };
-                map.set(key, e);
-            }
-            if (!e.normals.some(m => m[0] * n[0] + m[1] * n[1] + m[2] * n[2] > 0.9999)) e.normals.push(n);
+        const ids = v.map(addVertex);
+        for (let i = 0; i < ids.length; i++) {
+            const a = ids[i], b = ids[(i + 1) % ids.length];
+            if (a === b) continue;
+            const dx = verts[b][0] - verts[a][0], dy = verts[b][1] - verts[a][1], dz = verts[b][2] - verts[a][2];
+            if (dx * dx + dy * dy + dz * dz < 1e-12) continue;
+            edges.push({ a, b, n });
         }
+    }
+    if (!edges.length) return { all: [], creases: [] };
+    // A small spatial hash makes the T-junction search local instead of comparing every vertex with every edge.
+    const grid = new Map(), cellKey = (x, y, z) => x + ',' + y + ',' + z;
+    verts.forEach((p, id) => {
+        const x = Math.floor(p[0] / CSG_WELD_CELL), y = Math.floor(p[1] / CSG_WELD_CELL), z = Math.floor(p[2] / CSG_WELD_CELL);
+        const key = cellKey(x, y, z);
+        const list = grid.get(key);
+        if (list) list.push(id); else grid.set(key, [id]);
+    });
+    const split = [];
+    for (const edge of edges) {
+        const A = verts[edge.a], B = verts[edge.b];
+        const dx = B[0] - A[0], dy = B[1] - A[1], dz = B[2] - A[2];
+        const len2 = dx * dx + dy * dy + dz * dz;
+        const candidates = new Set();
+        const x0 = Math.floor((Math.min(A[0], B[0]) - CSG_WELD_EPS) / CSG_WELD_CELL), x1 = Math.floor((Math.max(A[0], B[0]) + CSG_WELD_EPS) / CSG_WELD_CELL);
+        const y0 = Math.floor((Math.min(A[1], B[1]) - CSG_WELD_EPS) / CSG_WELD_CELL), y1 = Math.floor((Math.max(A[1], B[1]) + CSG_WELD_EPS) / CSG_WELD_CELL);
+        const z0 = Math.floor((Math.min(A[2], B[2]) - CSG_WELD_EPS) / CSG_WELD_CELL), z1 = Math.floor((Math.max(A[2], B[2]) + CSG_WELD_EPS) / CSG_WELD_CELL);
+        for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) {
+            const list = grid.get(cellKey(x, y, z));
+            if (!list) continue;
+            for (const id of list) {
+                if (id === edge.a || id === edge.b) continue;
+                const p = verts[id];
+                const t = ((p[0] - A[0]) * dx + (p[1] - A[1]) * dy + (p[2] - A[2]) * dz) / len2;
+                if (t <= 1e-4 || t >= 1 - 1e-4) continue;
+                const qx = p[0] - (A[0] + dx * t), qy = p[1] - (A[1] + dy * t), qz = p[2] - (A[2] + dz * t);
+                if (qx * qx + qy * qy + qz * qz <= CSG_WELD_EPS * CSG_WELD_EPS) candidates.add(id);
+            }
+        }
+        const chain = [edge.a, ...candidates].sort((a, b) => {
+            if (a === edge.a) return -1;
+            if (b === edge.a) return 1;
+            if (a === edge.b) return 1;
+            if (b === edge.b) return -1;
+            const pa = verts[a], pb = verts[b];
+            return ((pa[0] - A[0]) * dx + (pa[1] - A[1]) * dy + (pa[2] - A[2]) * dz)
+                 - ((pb[0] - A[0]) * dx + (pb[1] - A[1]) * dy + (pb[2] - A[2]) * dz);
+        });
+        chain.push(edge.b);
+        for (let i = 1; i < chain.length; i++) if (chain[i - 1] !== chain[i]) split.push({ a: chain[i - 1], b: chain[i], n: edge.n });
+    }
+    // One record per welded sub-edge, holding every face that meets there.
+    const map = new Map();
+    for (const edge of split) {
+        const a = Math.min(edge.a, edge.b), b = Math.max(edge.a, edge.b);
+        const key = a + '|' + b;
+        let e = map.get(key);
+        if (!e) {
+            e = { a: verts[a], b: verts[b], normals: [] };
+            map.set(key, e);
+        }
+        if (!e.normals.some(n => n[0] * edge.n[0] + n[1] * edge.n[1] + n[2] * edge.n[2] > 0.9999)) e.normals.push(edge.n);
     }
     const all = [...map.values()], creases = [];
     for (const e of all) {
@@ -440,35 +494,7 @@ function csgEdgeData(polys) {
             const a = e.normals[i], b = e.normals[j];
             if (a[0] * b[0] + a[1] * b[1] + a[2] * b[2] < CSG_CREASE_COS) { sharp = true; break; }
         }
-        // A cut can leave the two surfaces at different resolutions, so the edge of a hole carries only one face.
-        // Such an edge is a real outline when the flat surface does not carry on past it; a seam inside a face is
-        // covered by the next polygon over. Test a point just off the edge, on the far side from the polygon that
-        // owns it, and keep the edge when nothing covers that side.
-        let boundary = false;
-        if (!sharp && e.normals.length === 1) {
-            const n = e.normals[0];
-            const ex = e.b[0] - e.a[0], ey = e.b[1] - e.a[1], ez = e.b[2] - e.a[2];
-            const elen = Math.hypot(ex, ey, ez);
-            const mx = (e.a[0] + e.b[0]) / 2, my = (e.a[1] + e.b[1]) / 2, mz = (e.a[2] + e.b[2]) / 2;
-            let ax = (ey * n[2] - ez * n[1]) / (elen || 1), ay = (ez * n[0] - ex * n[2]) / (elen || 1), az = (ex * n[1] - ey * n[0]) / (elen || 1);
-            const alen = Math.hypot(ax, ay, az);
-            if (alen > 1e-9) {
-                ax /= alen; ay /= alen; az /= alen;
-                const side = (e.centroid[0] - mx) * ax + (e.centroid[1] - my) * ay + (e.centroid[2] - mz) * az;
-                const dir = side > 0 ? -1 : 1;
-                const eps = Math.min(0.01, Math.max(0.0005, elen * 0.02));
-                const q = [mx + ax * dir * eps, my + ay * dir * eps, mz + az * dir * eps];
-                let covered = false;
-                for (const poly of polys) {
-                    const pn = poly.plane.n;
-                    if (Math.abs(pn[0] * n[0] + pn[1] * n[1] + pn[2] * n[2]) < 0.9999) continue;
-                    if (csgPolyCovers(poly, q, pn)) { covered = true; break; }
-                }
-                boundary = !covered;
-            }
-        }
-        e.boundary = boundary;
-        if (sharp || boundary) creases.push(e);
+        if (sharp) creases.push(e);
     }
     return { all, creases };
 }
@@ -570,11 +596,7 @@ function shapeOutlineEdges(o) {
         for (const e of data.edges.creases) {
             out.push({
                 a: csgShapePoint(o, e.a), b: csgShapePoint(o, e.b),
-                normals: e.normals.map(n => csgShapeNormal(o, n)),
-                // A cut boundary has one face, but that face still has a side. Draw it only when the camera is on
-                // that side: marking every boundary edge always-visible made the far side of a hole draw through
-                // the union's own front surface.
-                alwaysVisible: false
+                normals: e.normals.map(n => csgShapeNormal(o, n))
             });
         }
         return out;
@@ -593,15 +615,42 @@ function shapeOutlineEdges(o) {
 function visibleOutlineEdges(o) {
     const cam = [camPosX, camPosY, camPosZ], out = [];
     for (const e of shapeOutlineEdges(o)) {
-        if (e.alwaysVisible) { out.push(e); continue; }
         const mx = (e.a[0] + e.b[0]) / 2, my = (e.a[1] + e.b[1]) / 2, mz = (e.a[2] + e.b[2]) / 2;
         const front = e.normals.some(n => n[0] * (mx - cam[0]) + n[1] * (my - cam[1]) + n[2] * (mz - cam[2]) < 1e-4);
         if (front) out.push(e);
     }
     return out;
 }
+// A model made from separate parts should read as one silhouette. Merge the parts into one solid for the outline,
+// then cache the result against a signature of their geometry. Moving or resizing a part invalidates it; merely
+// selecting or recolouring the model does not rebuild the CSG.
+const modelOutlineCache = new Map();
+function modelOutlineEdges(modelId) {
+    const parts = getModelPrisms(modelId).filter(([, o]) => o && !o.wireframe);
+    if (!parts.length) return [];
+    const sig = parts.map(([id, o]) => [id, o.type, o.x, o.y, o.z, o.width, o.height, o.length, o.rotX, o.rotY, o.rotZ].join(':')).join('|');
+    const cached = modelOutlineCache.get(modelId);
+    if (cached && cached.sig === sig) return cached.edges;
+    const solid = csgBuildUnion(parts.map(([, shape]) => ({ shape, op: 'add' })), 'union');
+    let edges = [];
+    if (solid) {
+        const merged = {
+            type: 'union', x: solid.center[0], y: solid.center[1], z: solid.center[2],
+            width: solid.half[0], height: solid.half[1], length: solid.half[2],
+            rotX: 0, rotY: 0, rotZ: 0, mesh: solid.mesh, cellBase: solid.half.slice()
+        };
+        edges = shapeOutlineEdges(merged);
+    }
+    modelOutlineCache.set(modelId, { sig, edges });
+    return edges;
+}
 // The edges of everything under one Highlight, in world space.
 function highlightOutlineEdges(h) {
+    const parent = sceneObjects[h.parent];
+    if (parent && parent.type === 'model') {
+        const merged = modelOutlineEdges(h.parent);
+        if (merged.length) return merged;
+    }
     const out = [];
     for (const [, o] of highlightTargets(h)) out.push(...visibleOutlineEdges(o));
     return out;

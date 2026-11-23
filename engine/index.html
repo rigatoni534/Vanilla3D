@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.8.1">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.9.1">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
   
 </head>
@@ -592,7 +592,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 8</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 9</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -705,11 +705,11 @@
         <p>The player walks up a wedge's slope at walking pace, and the slope holds things up along its angle, so a ball rolls down it and a box rests on the slope rather than floating at the top of the shape. Only the tall back face is a wall, and the air above the slope is empty: nothing is stopped by the box a wedge would fill.</p>
         <p>A <b>Cylinder</b> is a round column standing on its ends, with a flat top and bottom. Its Size is a half size too: Width and Length are the radius on the X and Z axes and Height is half the column's height. Rotating it tilts the column, and physics then treats it as the box around it. Untilted, it collides as the round column it looks like: the corners of the square around it are empty air, the player stands on its round top and is stopped by its round side, and a ball rests on the top only where the top really is. Blocks are held by its round top and stopped by its round side too, rather than by the square around it, and a block pushed into the round side slides around the curve instead of stopping square on it as it would on a rectangle. A body dropped squarely onto the round top stays there rather than being shoved off the side. It also weighs by its round volume rather than the square around it.</p>
         <p>A <b>Union</b> is one solid built from other parts. Select the parts in World, then choose <b>Union Selected</b> in the three-dot menu: they are merged into a single instance and the originals are removed. Turn on <b>Negated (subtract in a union)</b> in a part's properties to cut that part away instead of adding it, and use <b>Intersect Selected</b> to keep only the space every selected part shares. That is how you cut a doorway: build the wall, put a block where the doorway belongs, make that block Negated, select both and choose Union Selected.</p>
-        <p>The union is a real surface built from the parts: blocks, wedges, cylinders, balls and other unions are cut and joined into one continuous mesh, with no hidden blocks and no steps along a slope. Its outline is drawn only along the real creases of that surface, so the seams where the original parts met are not visible. Cut-out parts stay hollow, and the player is blocked by the surface's cells rather than by the whole box, so a cut doorway can be walked through. The union keeps the size of the parts it was built from, and building a union again from new parts is how you change one.</p>
+        <p>The union is a real surface built from the parts: blocks, wedges, cylinders, balls and other unions are cut and joined into one continuous mesh, with no hidden blocks and no steps along a slope. Its outline is drawn only along the real creases of that surface: shared vertices are welded and T-junctions are split before creases are found, so the seams where the original parts met are not visible. Cut-out parts stay hollow, and the player is blocked by the surface's cells rather than by the whole box, so a cut doorway can be walked through. The union keeps the size of the parts it was built from, and building a union again from new parts is how you change one.</p>
         <p>A <b>Sound</b> plays a built-in preset (Beep, Chime, Click, Thud or Siren) or an audio file uploaded in <b>World Settings → Assets</b>. Presets are synthesised, so a world never needs an audio file. <b>Playing</b> starts and stops it, <b>Looped</b> repeats it, <b>Volume</b> is a slider from 0 to 1, <b>Pitch</b> changes its speed and <b>3D sound</b> turns HRTF panning on. <b>Rolloff</b> controls how quickly it fades with distance, and a looped uploaded file crossfades at the seam. Sounds play while the simulation runs; Stop silences them and restores the world.</p>
         <p><b>Max distance</b> makes a Sound positional and only applies when the Sound is a child of an object: it is heard within that many meters of its parent and fades out as the camera moves away, so a Sound inside a block is loud beside the block and silent further off. A Sound placed straight in a Space, or one with 3D sound off, is heard at the same volume everywhere. The camera is the listener, so turning and moving changes the left/right and distance cues.</p>
         <p>With no files, the engine also gives the controlled player footsteps that follow the material under its feet, falling air, landing whooshes and a death sound, and hard body impacts make a material-aware thud. <b>World Settings → Audio</b> can replace any of those with a preset or an uploaded asset, or turn it off. Scripts can change Playing, Looped, Volume, Pitch, Spatial, Rolloff, MaxDistance, Preset and Source while the simulation runs, and can call <code>Play()</code> and <code>Stop()</code> on a Sound.</p>
-        <p>A <b>Highlight</b> draws an outline around the object it sits inside. Put one inside a model to outline a player, or inside a part to outline just that part. Only the edges the camera can see are drawn: an edge on the far side of the shape is left out, and a wall hides the part of the outline behind it. A cut hole is outlined all the way around its rim. <b>Color</b> sets the outline color, and <b>Appears over objects</b> turns off hiding by other objects and always draws the visible edges on top (on by default), so a player can be seen through a wall; the far side of the shape itself is still left out.</p>
+        <p>A <b>Highlight</b> draws an outline around the object it sits inside. Put one inside a model to outline a player, or inside a part to outline just that part. Only the edges the camera can see are drawn: an edge on the far side of the shape is left out, and a wall hides the part of the outline behind it. A cut hole is outlined all the way around its rim. A model's parts are merged into one outline, so its internal part seams do not show. <b>Color</b> sets the outline color, and <b>Appears over objects</b> turns off hiding by other objects and always draws the visible edges on top (on by default), so a player can be seen through a wall; the far side of the shape itself is still left out.</p>
         <p>A <b>Light</b> is a placeable point or spot light. Point lights shine in every direction; spot lights shine in a cone and use Rotation to aim, with their local +Z direction and a default rotation pointing down. <b>Enabled</b> turns a light on and off, <b>Color</b> sets its tint, <b>Brightness</b> its strength, <b>Range</b> how far it reaches in Vanillameters, and <b>Cone angle</b> the width of a spot beam. Both spot and point lights have <b>Cast shadows</b>; the nearest two shadow-casting lights get a map, and shadow quality follows the Shadows setting. A spot uses one cone map; a point uses a six-face cube map, so its shadow wraps around it. The nearest eight enabled lights are used in the viewport, so a large world stays fast. A small sun marker shows each light in the editor, even when it is inside a wall, and a selected light uses the normal Move and Rotate gizmos.</p>
         <h3 data-group="Editor guide">Textures</h3>
         <p>A <b>Texture</b> paints chosen faces of a Rectangular Prism. Use <b>Add Child…</b> in a prism's three-dot menu and choose <b>Texture</b>; it appears as a child of that prism and always affects its parent.</p>
@@ -1103,24 +1103,24 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=4.0.0.0.8.1"></script>
-  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 8';</script>
+  <script src="../vanillalua.js?v=4.0.0.0.9.1"></script>
+  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 9';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/collision.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/scene.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/effects.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/csg.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/version-history.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/player.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/sounds.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/scripting.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/shell.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/files.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/offline.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/explorer.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/properties.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/render.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/gl.js?v=4.0.0.0.8.1"></script>
-  <script defer src="js/main.js?v=4.0.0.0.8.1"></script>
+  <script defer src="js/collision.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/scene.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/effects.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/csg.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/version-history.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/player.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/sounds.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/scripting.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/shell.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/files.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/offline.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/explorer.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/properties.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/render.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/gl.js?v=4.0.0.0.9.1"></script>
+  <script defer src="js/main.js?v=4.0.0.0.9.1"></script>
 </body>
 </html>

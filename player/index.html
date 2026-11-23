@@ -132,10 +132,22 @@
       <label class="pl-trust"><input type="checkbox" id="trust"> <span>I trust this world. Its scripts run in my browser and can change the game while I play.</span></label>
       <div class="pl-row">
         <button class="pl-btn primary" id="play" type="button" disabled>Play Solo</button>
+        <button class="pl-btn" id="host-lobby" type="button" disabled>Host Lobby</button>
       </div>
     </div>
 
-    <p class="pl-note">The Player uses the same engine as the editor. Worlds with scripts run those scripts locally. Multiplayer lobbies are not part of this build.</p>
+    <section class="pl-card" style="margin-top:14px">
+      <h2>Join a lobby</h2>
+      <p>Ask the host for their 5-character room code. The host sends the world to you; this browser does not need a copy.</p>
+      <div class="pl-row">
+        <input class="pl-input" id="join-code" maxlength="5" autocomplete="off" spellcheck="false" placeholder="ABCDE" aria-label="Room code" style="width:118px;text-transform:uppercase;letter-spacing:.12em">
+        <button class="pl-btn" id="join-lobby" type="button">Join Lobby</button>
+      </div>
+      <div class="pl-row"><input class="pl-input" id="player-name" maxlength="24" autocomplete="nickname" placeholder="Your name" aria-label="Your name" style="max-width:190px"></div>
+      <div class="pl-status" id="lobby-status" aria-live="polite"></div>
+    </section>
+
+    <p class="pl-note">The Player uses the same engine as the editor. Worlds with scripts run those scripts locally when you play solo. A guest joins the host's session, receives the host world and controls a guest avatar while the host runs the simulation.</p>
   </main>
 
   <footer class="pl-foot">
@@ -158,7 +170,13 @@
       const metaEl = document.getElementById('world-meta');
       const trust = document.getElementById('trust');
       const play = document.getElementById('play');
+      const hostLobby = document.getElementById('host-lobby');
+      const joinLobby = document.getElementById('join-lobby');
+      const joinCode = document.getElementById('join-code');
+      const playerName = document.getElementById('player-name');
+      const lobbyStatus = document.getElementById('lobby-status');
       let world = null;
+      try { playerName.value = localStorage.getItem('vanilla-player-name') || ''; } catch (e) {}
 
       const say = (el, text, bad) => { el.textContent = text; el.classList.toggle('bad', !!bad); };
       const valid = (raw) => {
@@ -183,7 +201,7 @@
         nameEl.textContent = s.name;
         metaEl.textContent = [s.creator ? 'by ' + s.creator : '', s.objects + ' instances', s.scripts + ' script' + (s.scripts === 1 ? '' : 's'), label].filter(Boolean).join(' · ');
         info.classList.add('show');
-        trust.checked = false; play.disabled = true;
+        trust.checked = false; play.disabled = true; hostLobby.disabled = true;
         say(fileStatus, 'Ready to play. Confirm you trust it first.');
       };
       const readFile = async (file) => {
@@ -226,16 +244,29 @@
           say(urlStatus, err instanceof TypeError ? 'The world could not be fetched. The server may be offline or may not allow CORS.' : err.message, true);
         }
       });
-      trust.addEventListener('change', () => { play.disabled = !trust.checked || !world; });
-      play.addEventListener('click', () => {
-        if (!world || !trust.checked) return;
-        try {
-          localStorage.setItem(WORLD_KEY, JSON.stringify(world));
-          location.href = '../engine/index.html?play=1';
-        } catch (e) {
-          say(fileStatus, 'The browser could not store that world. It may be full.', true);
-        }
+      const saveWorld = () => {
+        if (!world || !trust.checked) return false;
+        try { localStorage.setItem(WORLD_KEY, JSON.stringify(world)); return true; }
+        catch (e) { say(fileStatus, 'The browser could not store that world. It may be full.', true); return false; }
+      };
+      const nameValue = () => {
+        const name = (playerName.value || 'Player').trim().slice(0, 24) || 'Player';
+        try { localStorage.setItem('vanilla-player-name', name); } catch (e) {}
+        return name;
+      };
+      trust.addEventListener('change', () => { play.disabled = !trust.checked || !world; hostLobby.disabled = !trust.checked || !world; });
+      play.addEventListener('click', () => { if (!saveWorld()) return; location.href = '../engine/index.html?play=1&name=' + encodeURIComponent(nameValue()); });
+      hostLobby.addEventListener('click', () => {
+        if (!saveWorld()) return;
+        location.href = '../engine/index.html?play=1&role=host&name=' + encodeURIComponent(nameValue());
       });
+      joinCode.addEventListener('input', () => { joinCode.value = joinCode.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); });
+      joinLobby.addEventListener('click', () => {
+        const code = joinCode.value.trim().toUpperCase();
+        if (code.length !== 5) { say(lobbyStatus, 'Enter the 5-character room code.', true); return; }
+        location.href = '../engine/index.html?play=1&role=guest&room=' + encodeURIComponent(code) + '&name=' + encodeURIComponent(nameValue());
+      });
+      joinCode.addEventListener('keydown', (e) => { if (e.key === 'Enter') joinLobby.click(); });
       const stored = localStorage.getItem(WORLD_KEY);
       if (stored) {
         try {

@@ -229,10 +229,28 @@
         canvas.addEventListener('mouseleave', () => { if (!manip && !uiDragging) { hoverKey = null; canvas.style.cursor = ''; } });
 
         // ───────── Boot ─────────
-        const PLAY_MODE = new URLSearchParams(location.search).get('play') === '1';
+        const PLAY_PARAMS = new URLSearchParams(location.search);
+        const PLAY_MODE = PLAY_PARAMS.get('play') === '1';
+        const PLAY_ROLE = PLAY_PARAMS.get('role') || 'solo';
+        const PLAY_NAME = PLAY_PARAMS.get('name') || 'Player';
+        const PLAY_ROOM = PLAY_PARAMS.get('room') || '';
         function installPlayMode() {
             document.body.classList.add('play-mode');
             document.title = 'Vanilla Player';
+            const menu = document.getElementById('play-menu');
+            const showMenu = (show) => { menu.hidden = !show; if (show) document.getElementById('play-resume').focus(); };
+            document.getElementById('play-resume').addEventListener('click', () => showMenu(false));
+            document.getElementById('play-leave').addEventListener('click', () => { location.href = '../player/'; });
+            window.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                e.preventDefault(); e.stopImmediatePropagation();
+                showMenu(menu.hidden);
+            }, true);
+            if (PLAY_ROLE === 'guest') {
+                closeModals();
+                playStartGuest(PLAY_ROOM, PLAY_NAME);
+                return true;
+            }
             const raw = localStorage.getItem('vanilla-player-world-v1');
             if (!raw) { toast('No world was imported. Open the Player page and choose a world.', 'bad'); return false; }
             try {
@@ -243,15 +261,7 @@
                 return false;
             }
             closeModals();
-            const menu = document.getElementById('play-menu');
-            const showMenu = (show) => { menu.hidden = !show; if (show) document.getElementById('play-resume').focus(); };
-            document.getElementById('play-resume').addEventListener('click', () => showMenu(false));
-            document.getElementById('play-leave').addEventListener('click', () => { location.href = '../player/'; });
-            window.addEventListener('keydown', (e) => {
-                if (e.key !== 'Escape') return;
-                e.preventDefault(); e.stopImmediatePropagation();
-                showMenu(menu.hidden);
-            }, true);
+            if (PLAY_ROLE === 'host') playStartHost(PLAY_NAME);
             return true;
         }
         initGL();
@@ -269,7 +279,7 @@
         renderProperties();
         setMode('select');
         requestAnimationFrame(render);
-        if (PLAY_MODE) setSimulationRunning(true);
+        if (PLAY_MODE && PLAY_ROLE !== 'guest') setSimulationRunning(true);
     // Replace the embedded language-reference section with the canonical shared docs.
   if (window.VanillaluaShared) {
     const article = document.getElementById('docs-article');

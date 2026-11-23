@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.15.1">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.16.8">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
     <style>
       /* Play mode is the same engine and world loader with the editor chrome removed. */
@@ -22,6 +22,46 @@
       #play-menu p { margin: 0 0 18px; color: var(--text-2); font-size: 13px; line-height: 1.55; }
       #play-menu .play-actions { display: flex; flex-direction: column; gap: 8px; }
       #play-menu .play-actions .btn { justify-content: center; height: 36px; }
+      #play-net { position: fixed; z-index: 450; top: 12px; right: 12px; width: min(330px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--line); border-radius: 11px; background: color-mix(in srgb, var(--panel) 92%, transparent); box-shadow: 0 18px 50px rgba(0,0,0,.35); color: var(--text); font-size: 11.5px; }
+      #play-net[hidden] { display: none; }
+      #play-net .pn-top { display: flex; align-items: center; gap: 7px; }
+      #play-net .pn-role { font-weight: 700; }
+      #play-net .pn-code { margin-left: auto; color: var(--accent); font: 700 14px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; }
+      #play-net .pn-btn { height: 25px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--rail); color: var(--text); font: inherit; font-size: 11px; cursor: pointer; }
+      #play-net .pn-btn:hover { background: var(--hover); }
+      #play-net .pn-status { min-height: 16px; margin-top: 6px; color: var(--text-2); line-height: 1.4; }
+      #play-net .pn-roster { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+      #play-net .pn-person { display: inline-flex; align-items: center; gap: 4px; color: var(--text-2); }
+      #play-net .pn-person i { width: 7px; height: 7px; border-radius: 50%; }
+      #play-net .pn-chat { display: flex; flex-direction: column; gap: 4px; height: 100px; overflow: auto; margin-top: 7px; padding: 6px; border: 1px solid var(--line-soft); border-radius: 6px; background: rgba(0,0,0,.12); }
+      #play-net .pn-chat .sys { color: var(--muted); font-style: italic; }
+      #play-net .pn-chat .who { color: var(--muted); }
+      #play-net .pn-input { width: 100%; height: 28px; margin-top: 6px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; font-size: 11.5px; }
+      .mp-dot { width: 7px; height: 7px; margin-left: 4px; border-radius: 50%; background: #5bd6a2; box-shadow: 0 0 0 3px rgba(91,214,162,.14); }
+      .mp-card { width: min(520px, calc(100vw - 28px)); }
+      .mp-body { display: flex; flex-direction: column; gap: 14px; }
+      .mp-field { display: flex; flex-direction: column; gap: 5px; color: var(--text-2); font-size: 11.5px; }
+      .mp-field input { height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--text); font: inherit; font-size: 12.5px; }
+      .mp-field input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+      .mp-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .mp-row .btn { height: 34px; }
+      .mp-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .mp-box { padding: 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); }
+      .mp-box h3 { margin: 0 0 8px; font-size: 12px; color: var(--text); }
+      .mp-box p { margin: 0 0 9px; font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
+      .mp-code { display: inline-flex; align-items: center; height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--accent); font: 700 17px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .14em; }
+      .mp-status { min-height: 18px; color: var(--text-2); font-size: 11.5px; line-height: 1.45; }
+      .mp-status.bad { color: var(--danger, #e66); }
+      .mp-status.good { color: #5bd6a2; }
+      .mp-roster { display: flex; flex-direction: column; gap: 5px; max-height: 130px; overflow: auto; }
+      .mp-person { display: flex; align-items: center; gap: 7px; font-size: 11.5px; }
+      .mp-person i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+      .mp-chat { display: flex; flex-direction: column; gap: 5px; height: 128px; overflow: auto; padding: 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); font-size: 11.5px; line-height: 1.4; }
+      .mp-chat .who { color: var(--muted); }
+      .mp-chat .sys { color: var(--muted); font-style: italic; }
+      .mp-chat input { margin-top: 6px; height: 30px; width: 100%; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; font-size: 12px; }
+      .mp-hidden { display: none !important; }
+      @media (max-width: 520px) { .mp-split { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -142,6 +182,7 @@
         </div>
       </div>
       <button id="version-btn" class="btn" title="Version info"><svg class="ic"><use href="#i-info"/></svg><span class="label">Version</span></button>
+      <button id="mp-btn" class="btn" title="Multiplayer"><svg class="ic"><use href="#i-players"/></svg><span class="label">Multiplayer</span><span id="mp-dot" class="mp-dot" hidden></span></button>
       <button id="settings-btn" class="btn" title="Settings"><svg class="ic"><use href="#i-sliders"/></svg><span class="label">Settings</span></button>
     </div>
   </header>
@@ -607,7 +648,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 15</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 16</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -663,6 +704,10 @@
         <h3 data-group="Editor guide">Playing worlds</h3>
         <p>The <b>Player</b> page opens a <code>.vnw</code> file from your computer, a drag-and-drop, the last played world, or an <code>https</code> URL. It shows the world name, creator and instance and script counts, and it asks you to confirm that you trust the world before its scripts run. The world is kept in this browser; opening the page again offers it as the last world.</p>
         <p><b>Play Solo</b> opens the world in play mode. The editor panels are hidden and the simulation starts immediately; <b>Escape</b> opens Pause, <b>Resume</b> returns to the game and <b>Leave game</b> goes back to the Player page. Play mode uses the same engine, physics, scripts and player controller as the editor.</p>
+        <h3 data-group="Editor guide">Multiplayer</h3>
+        <p>Press <b>Multiplayer</b> in the toolbar. <b>Host room</b> creates a five-character code; share it with up to four guests. A guest opens <b>Join room</b>, enters the code, and receives the host's current world. The host stays authoritative, relays and checks edit batches, and keeps the tab open for the room to exist. The room has a roster, chat and coloured selection markers, so you can see what another collaborator has selected.</p>
+        <p>Rooms use PeerJS over the free public signalling server and then a direct WebRTC connection. There is no backend to deploy and no account. A restrictive network may need a TURN relay; a host can supply one through <code>window.VANILLA_TURN</code> before loading the editor. Messages are capped, rate-limited and validated, and an editing room pauses its world sync while the simulation runs.</p>
+        <p>The <b>Player</b> page also has <b>Host Lobby</b> and <b>Join Lobby</b>. The host runs the simulation and streams the live world to guests. Each guest gets a simple player avatar that the host moves from that guest's WASD, Space and Shift input; the guest camera follows the avatar, and other objects stay host-owned. Hosting is limited by the host tab staying online, the public signalling service, and the 32 MB world-transfer cap.</p>
         <h3 data-group="Editor guide">World Settings</h3>
         <p>Open <b>World ▾ → Settings</b> in the top bar to edit the world itself. The dialog writes to the World Settings instance under World, so the values save with the world and the environment fields stay available in Properties. <b>Audio</b> there sets the master volume and chooses what footsteps, impacts and the player death use: procedural by default, a built-in preset, an uploaded audio asset, or silence.</p>
         <table class="docs-table"><thead><tr><th>Setting</th><th>What it does</th></tr></thead><tbody>
@@ -1132,6 +1177,44 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
+  <div id="mp-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mp-title">
+    <div class="modal-card mp-card">
+      <div class="modal-head">
+        <h2 class="modal-title" id="mp-title">Multiplayer</h2>
+        <button class="icon-btn" id="mp-close" type="button" aria-label="Close multiplayer">✕</button>
+      </div>
+      <div class="modal-body mp-body">
+        <label class="mp-field">Your name<input id="mp-name" maxlength="24" autocomplete="nickname" placeholder="Player"></label>
+        <div class="mp-split">
+          <div class="mp-box">
+            <h3>Host a room</h3>
+            <p>Guests edit this world with you. You stay authoritative, and the host tab must stay open.</p>
+            <button class="btn btn-primary" id="mp-host" type="button">Host room</button>
+          </div>
+          <div class="mp-box">
+            <h3>Join a room</h3>
+            <p>Enter the 5-character code the host shared.</p>
+            <div class="mp-row"><input id="mp-code" maxlength="5" autocomplete="off" spellcheck="false" placeholder="ABCDE" style="width:108px;height:34px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--text);font:inherit;font-size:13px;letter-spacing:.12em;text-transform:uppercase"><button class="btn btn-outline" id="mp-join" type="button">Join</button></div>
+          </div>
+        </div>
+        <div class="mp-status" id="mp-status" aria-live="polite"></div>
+        <div id="mp-session" class="mp-hidden">
+          <div class="mp-row"><span class="mp-code" id="mp-room-code">-----</span><button class="btn btn-outline" id="mp-copy" type="button">Copy code</button><button class="btn btn-outline" id="mp-leave" type="button">Leave</button></div>
+          <div class="mp-box" style="margin-top:10px"><h3>In this room</h3><div class="mp-roster" id="mp-roster"></div></div>
+          <div class="mp-box" style="margin-top:10px"><h3>Chat</h3><div class="mp-chat" id="mp-chat" aria-live="polite"></div><input id="mp-chat-input" maxlength="500" placeholder="Message the room…" aria-label="Chat message"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="play-net" hidden aria-live="polite">
+    <div class="pn-top"><span class="pn-role" id="pn-role">Room</span><span class="pn-code" id="pn-code">-----</span><button class="pn-btn" id="pn-copy" type="button">Copy</button><button class="pn-btn" id="pn-leave" type="button">Leave</button></div>
+    <div class="pn-status" id="pn-status"></div>
+    <div class="pn-roster" id="pn-roster"></div>
+    <div class="pn-chat" id="pn-chat"></div>
+    <input class="pn-input" id="pn-chat-input" maxlength="500" placeholder="Message the room…" aria-label="Chat message">
+  </div>
+
   <div id="play-menu" hidden role="dialog" aria-modal="true" aria-labelledby="play-menu-title">
     <div class="play-card">
       <h2 id="play-menu-title">Paused</h2>
@@ -1143,26 +1226,31 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=4.0.0.0.15.1"></script>
-  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 15';</script>
+  <script src="../assets/peerjs.min.js"></script>
+  <script src="../vanillalua.js?v=4.0.0.0.16.8"></script>
+  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 16';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/collision.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/scene.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/effects.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/csg.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/version-history.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/playeranim.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/player.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/sounds.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/scripting.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/shell.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/files.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/offline.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/explorer.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/shortcuts.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/properties.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/render.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/gl.js?v=4.0.0.0.15.1"></script>
-  <script defer src="js/main.js?v=4.0.0.0.15.1"></script>
+  <script defer src="js/collision.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/scene.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/effects.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/csg.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/version-history.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/playeranim.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/player.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/sounds.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/scripting.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/shell.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/files.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/offline.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/explorer.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/shortcuts.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/properties.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/protocol.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/net.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/multiplayer.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/playmultiplayer.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/render.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/gl.js?v=4.0.0.0.16.8"></script>
+  <script defer src="js/main.js?v=4.0.0.0.16.8"></script>
 </body>
 </html>

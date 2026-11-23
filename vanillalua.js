@@ -9,12 +9,12 @@ const VL_VERSION = '1.9.0';
     renderDocs(container) { if (container) container.innerHTML = this.docsHTML; },
     createEditorRuntime(hostContext) {
       const host = hostContext;
-            const {sceneObjects, physicsVelocity, physicsVelocityFor, spaceOf, preInc, SPACE_KEYS, isShape, isInside, GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, makeUI, makeConnection, CONNECTION_TYPES, makeWorldSettings, defaultHumanStats, dn, counters, newId, pruneOrphans} = hostContext;
+            const {sceneObjects, physicsVelocity, physicsVelocityFor, spaceOf, preInc, SPACE_KEYS, isShape, isInside, GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, makeLight, makeUI, makeConnection, CONNECTION_TYPES, makeWorldSettings, defaultHumanStats, dn, counters, newId, pruneOrphans} = hostContext;
 // A small Lua-like language. Every script starts with `call Scripts` and `get Instance`.
 const VL_KEYWORDS = new Set(['call','get','local','while','for','in','do','end','if','then','else','elseif','and','or','not','function','return','break','continue','true','false','nil']);
 const VL_SPACES = { World: 'world', Storage: 'storage', Scripts: 'scripts', UI: 'ui', Communications: 'communications', Players: 'players' };
 const VL_MODULES = ['Instance','Scripting','Tweening','Extras','Players'];
-const VL_TYPES = ['prism6', 'ball', 'wedge', 'cylinder', 'model', 'script', 'worldsettings', 'human', 'sound', 'highlight', 'clientsocket', 'serversocket', 'peerconnection', 'groupconnection', 'frame', 'text', 'button', 'image', 'input', 'progressbar'];
+const VL_TYPES = ['prism6', 'ball', 'wedge', 'cylinder', 'model', 'script', 'worldsettings', 'human', 'sound', 'highlight', 'light', 'clientsocket', 'serversocket', 'peerconnection', 'groupconnection', 'frame', 'text', 'button', 'image', 'input', 'progressbar'];
 const VL_UI_TYPES = ['frame', 'text', 'button', 'image', 'input', 'progressbar'];
 const VL_GLOBALS = ['vanilla3D','print','wait','sin','cos','tan','sqrt','abs','floor','ceil','round','min','max','random','atan2','pi','type','tostring','tonumber','table','task','warn','error','deltaTime','length','auto'];
 // Runtime globals are shared by all scripts during one simulation.
@@ -300,7 +300,7 @@ function vlAnalyze(ast, diags) {
                     const m = f.name, n = e.args.length;
                     if (m === 'create') {
                         if (n !== 2) err(e.line, 'Instance.create needs 2 arguments: (type, space).');
-                        if (e.args[0] && e.args[0].k === 'str' && !VL_TYPES.includes(e.args[0].v)) err(e.line, 'Unknown instance type "' + e.args[0].v + '". Use prism6, ball, wedge, cylinder, model, script, worldsettings, human, sound, highlight, frame, text, button, image or input.');
+                        if (e.args[0] && e.args[0].k === 'str' && !VL_TYPES.includes(e.args[0].v)) err(e.line, 'Unknown instance type "' + e.args[0].v + '". Use prism6, ball, wedge, cylinder, model, script, worldsettings, human, sound, highlight, light, frame, text, button, image or input.');
                         if (e.args[1] && (e.args[1].k === 'str' || e.args[1].k === 'num' || e.args[1].k === 'bool')) err(e.line, 'The second argument of Instance.create must be a loaded Space such as World.');
                     } else if (m === 'delete') {
                         if (n !== 1) err(e.line, 'Instance.delete needs 1 argument: (instance).');
@@ -512,6 +512,7 @@ VL_PROPS.cylinder = Object.assign({}, VL_PROPS.ball);
 VL_PROPS.union = Object.assign({}, VL_PROPS.ball);
 VL_PROPS.sound = { Playing: ['playing', 'bool'], Looped: ['looped', 'bool'], Volume: ['volume', 'num'], MaxDistance: ['maxDistance', 'num'], Preset: ['preset', 'str'] };
 VL_PROPS.highlight = { Color: ['color', 'str'], OverObjects: ['overObjects', 'bool'] };
+VL_PROPS.light = { Enabled: ['enabled', 'bool'], Color: ['color', 'str'], Brightness: ['brightness', 'num'], Range: ['range', 'num'], LightType: ['lightType', 'str'], Angle: ['angle', 'num'] };
 // UI: Position and Size are percentages of the parent, and Position is the centre of the element.
 const VL_UI_PROPS = { Visible: ['visible', 'bool'], PositionX: ['posX', 'num'], PositionY: ['posY', 'num'], Width: ['sizeX', 'num'], Height: ['sizeY', 'num'] };
 VL_PROPS.frame = Object.assign({ Color: ['color', 'str'], Transparency: ['transparency', 'num'], BorderWidth: ['borderWidth', 'num'], BorderColor: ['borderColor', 'str'], BackgroundBlur: ['backgroundBlur', 'num'], BorderBlur: ['borderBlur', 'num'], ClipChildren: ['clipChildren', 'bool'] }, VL_UI_PROPS);
@@ -608,8 +609,8 @@ function vlGetOwnProp(inst, name, line) {
     if (name === 'Type') return o.type;
     if (name === 'Parent') return SPACE_KEYS.includes(o.parent) ? vlSpaces[o.parent] : vlInst(o.parent);
     if (isShape(o) && name === 'Velocity') return new VLVec(0, 0, 0, { id: inst.id, keys: ['x', 'y', 'z'], vel: true });
-    if (isShape(o) && name === 'Rotation') return new VLVec(0, 0, 0, { id: inst.id, keys: ['rotX', 'rotY', 'rotZ'] });
-    if (isShape(o) && name === 'Position') return new VLVec(0, 0, 0, { id: inst.id, keys: ['x', 'y', 'z'] });
+    if ((isShape(o) || o.type === 'light') && name === 'Rotation') return new VLVec(0, 0, 0, { id: inst.id, keys: ['rotX', 'rotY', 'rotZ'] });
+    if ((isShape(o) || o.type === 'light') && name === 'Position') return new VLVec(0, 0, 0, { id: inst.id, keys: ['x', 'y', 'z'] });
     if (isShape(o) && name === 'Size') return new VLVec(0, 0, 0, { id: inst.id, keys: ['width', 'height', 'length'] });
     if (o.type === 'player' && name === 'ModelAdded') return vlPlayerEvent(inst.id, 'ModelAdded');
     if (o.type === 'player' && name === 'Character') return o.currentModel && sceneObjects[o.currentModel] ? vlInst(o.currentModel) : null;
@@ -644,10 +645,16 @@ function vlSetProp(inst, name, v, line) {
         vel.x = v.get(0); vel.y = v.get(1); vel.z = v.get(2);
         return;
     }
-    if (isShape(o) && (name === 'Position' || name === 'Size' || name === 'Rotation')) {
+    if ((isShape(o) || o.type === 'light') && (name === 'Position' || name === 'Rotation')) {
         if (!(v instanceof VLVec)) throw new VLError(name + ' needs a vector, for example vanilla3D.' + name + '(0, 1, 0).', line);
-        const keys = name === 'Position' ? ['x', 'y', 'z'] : (name === 'Rotation' ? ['rotX', 'rotY', 'rotZ'] : ['width', 'height', 'length']);
-        for (let i = 0; i < 3; i++) { const n = v.get(i); o[keys[i]] = name === 'Size' ? Math.max(0.05, n) : n; }
+        const keys = name === 'Position' ? ['x', 'y', 'z'] : ['rotX', 'rotY', 'rotZ'];
+        for (let i = 0; i < 3; i++) o[keys[i]] = v.get(i);
+        return;
+    }
+    if (isShape(o) && name === 'Size') {
+        if (!(v instanceof VLVec)) throw new VLError('Size needs a vector, for example vanilla3D.Size(1, 1, 1).', line);
+        const keys = ['width', 'height', 'length'];
+        for (let i = 0; i < 3; i++) o[keys[i]] = Math.max(0.05, v.get(i));
         return;
     }
     const def = VL_PROPS.common[name] || (VL_PROPS[o.type] || {})[name];
@@ -752,6 +759,7 @@ function vlCreate(type, spaceId) {
     else if (type === 'cylinder') o = makeCylinder(dn('cylinder') + ' ' + (++counters.cylinder), spaceId, {});
     else if (type === 'sound') o = makeSound(dn('sound') + (counters.sound++ ? ' ' + counters.sound : ''), spaceId);
     else if (type === 'highlight') o = makeHighlight(dn('highlight') + (counters.highlight++ ? ' ' + counters.highlight : ''), spaceId);
+    else if (type === 'light') o = makeLight(dn('light') + ' ' + (++counters.light), spaceId);
     else if (VL_UI_TYPES.includes(type)) o = host.makeUI(type, spaceId);
     else if (type === 'model') { const n = ++counters.model; o = { type: 'model', name: dn('model') + (n === 1 ? '' : ' ' + n), parent: spaceId }; }
     else if (type === 'worldsettings') o = makeWorldSettings(dn('worldsettings') + ' ' + (++counters.worldsettings), spaceId);
@@ -1124,7 +1132,7 @@ const vlInstanceModule = new VLModule('Instance', {
     SetUID: vlSetUIDFn,
     create: new VLFn('Instance.create', (args, line) => {
         const [type, space] = args;
-        if (typeof type !== 'string' || !VL_TYPES.includes(type)) throw new VLError('Unknown instance type "' + vlStr(type) + '". Use prism6, ball, wedge, cylinder, model, script, worldsettings, human, sound, highlight, clientsocket, serversocket, peerconnection, groupconnection, frame, text, button, image, input or progressbar.', line);
+        if (typeof type !== 'string' || !VL_TYPES.includes(type)) throw new VLError('Unknown instance type "' + vlStr(type) + '". Use prism6, ball, wedge, cylinder, model, script, worldsettings, human, sound, highlight, light, clientsocket, serversocket, peerconnection, groupconnection, frame, text, button, image, input or progressbar.', line);
         if (space instanceof VLPlayersObj) throw new VLError('The Players space is read-only. Players join on their own.', line);
         if (!(space instanceof VLSpace)) throw new VLError('Instance.create needs a loaded Space as its second argument, for example World.', line);
         if (VL_UI_TYPES.includes(type) && space.id !== 'ui') throw new VLError('UI instances can only be created in the UI space.', line);
@@ -1406,7 +1414,7 @@ function stopScripts() {
     }
   };
   shared.runPlayground = function (source) {
-    const sceneObjects = Object.create(null), physicsVelocity = new Map(), counters = { prism: 0, ball: 0, model: 0, worldsettings: 0, script: 0, human: 0, wedge: 0, cylinder: 0, sound: 0, highlight: 0, clientsocket: 0, serversocket: 0, peerconnection: 0, groupconnection: 0, frame: 0, text: 0, button: 0, image: 0, input: 0 };
+    const sceneObjects = Object.create(null), physicsVelocity = new Map(), counters = { prism: 0, ball: 0, model: 0, worldsettings: 0, script: 0, human: 0, wedge: 0, cylinder: 0, sound: 0, highlight: 0, light: 0, clientsocket: 0, serversocket: 0, peerconnection: 0, groupconnection: 0, frame: 0, text: 0, button: 0, image: 0, input: 0 };
     let idCounter = 0, selectedObjectId = null;
     const SPACE_KEYS = ['world', 'storage', 'scripts', 'ui', 'communications'];
     const isShape = o => !!o && (o.type === 'prism6' || o.type === 'ball' || o.type === 'wedge' || o.type === 'cylinder' || o.type === 'union');
@@ -1419,6 +1427,7 @@ function stopScripts() {
       makeWedge: (name, parent) => makeShape('wedge', name, parent), makeCylinder: (name, parent) => makeShape('cylinder', name, parent),
       makeSound: (name, parent) => ({ type: 'sound', name, parent, preset: 'beep', playing: false, looped: false, volume: 0.6, maxDistance: 20 }),
       makeHighlight: (name, parent) => ({ type: 'highlight', name, parent, color: '#ffd23f', overObjects: true }),
+      makeLight: (name, parent) => ({ type: 'light', name, parent, x: 0, y: 3, z: 0, color: '#ffe3ad', brightness: 1.5, range: 14, lightType: 'point', angle: 45, enabled: true, rotX: 90, rotY: 0, rotZ: 0 }),
       makeConnection: (type, parent) => {
         const n = ++counters[type], name = type + (n === 1 ? '' : ' ' + n);
         if (type === 'serversocket') return { type, name, parent, active: true, bandwidth: 4096, maxClients: 8 };

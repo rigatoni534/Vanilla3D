@@ -39,6 +39,12 @@
                 }
                 if (ok && tmax >= tmin && tmax > 0) { const t = Math.max(tmin, 0); if (t < bestT) { bestT = t; best = id; } }
             }
+            // Lights have no surface to hit, so they are picked by their marker on screen.
+            for (const [id, p] of Object.entries(sceneObjects)) {
+                if (p.type !== 'light' || spaceOf(p) !== 'world') continue;
+                const s = project(new Vec3(p.x, p.y, p.z));
+                if (s.z > 0.1 && Math.hypot(x - s.x, y - s.y) <= 14 && s.z < bestT) { bestT = s.z; best = id; }
+            }
             return best ? { id: best, t: bestT } : null;
         }
         function pickInstance(x, y) { const hit = pickInstanceAt(x, y); return hit ? hit.id : null; }

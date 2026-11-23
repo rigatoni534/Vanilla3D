@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.4">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
   
 </head>
@@ -219,6 +219,7 @@
     <button class="menu-item" role="menuitem" data-kind="cylinder"><svg class="ic"><use href="#i-cylinder"/></svg>Cylinder<span class="menu-meta">cylinder</span></button>
     <button class="menu-item" role="menuitem" data-kind="sound"><svg class="ic"><use href="#i-sound"/></svg>Sound<span class="menu-meta">sound</span></button>
     <button class="menu-item" role="menuitem" data-kind="highlight"><svg class="ic"><use href="#i-highlight"/></svg>Highlight<span class="menu-meta">highlight</span></button>
+    <button class="menu-item" role="menuitem" data-kind="light"><svg class="ic"><use href="#i-sun"/></svg>Light<span class="menu-meta">light</span></button>
     <button class="menu-item" role="menuitem" data-kind="frame"><svg class="ic"><use href="#i-ui-frame"/></svg>Frame<span class="menu-meta">frame</span></button>
     <button class="menu-item" role="menuitem" data-kind="text"><svg class="ic"><use href="#i-ui-text"/></svg>Text<span class="menu-meta">text</span></button>
     <button class="menu-item" role="menuitem" data-kind="button"><svg class="ic"><use href="#i-ui-button"/></svg>Button<span class="menu-meta">button</span></button>
@@ -372,6 +373,7 @@
               <label for="sv-texture">Textures</label><input type="checkbox" id="sv-texture" class="switch">
               <label for="sv-sound">Sounds</label><input type="checkbox" id="sv-sound" class="switch">
               <label for="sv-highlight">Highlights</label><input type="checkbox" id="sv-highlight" class="switch">
+              <label for="sv-light">Lights</label><input type="checkbox" id="sv-light" class="switch">
               <label for="sv-frame">UI frames</label><input type="checkbox" id="sv-frame" class="switch">
               <label for="sv-text">UI text</label><input type="checkbox" id="sv-text" class="switch">
               <label for="sv-button">UI buttons</label><input type="checkbox" id="sv-button" class="switch">
@@ -562,11 +564,11 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 3</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 4</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
-          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b>, <b>Scripts</b>, <b>UI</b> and <b>Communications</b> spaces, plus <b>Players</b> and <b>Engine</b>. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Wedge, a Cylinder, a Ball, a Sound, a Highlight, a Human, a World Settings or a Script; Communications offers ClientSocket, ServerSocket, PeerConnection and GroupConnection. Storage holds objects kept for scripts and never renders; only World renders. UI holds the screen interface.</td></tr>
+          <tr><td>Explorer</td><td>Lists the <b>World</b>, <b>Storage</b>, <b>Scripts</b>, <b>UI</b> and <b>Communications</b> spaces, plus <b>Players</b> and <b>Engine</b>. Use the <b>+</b> on a space to create a Rectangular Prism (<code>prism6</code>), a Wedge, a Cylinder, a Ball, a Sound, a Highlight, a Light, a Human, a World Settings or a Script; Communications offers ClientSocket, ServerSocket, PeerConnection and GroupConnection. Storage holds objects kept for scripts and never renders; only World renders. UI holds the screen interface.</td></tr>
           <tr><td>Viewport</td><td>The 3D view. Select, Move and Scale modes work here.</td></tr>
           <tr><td>Properties</td><td>Edits the selected instance: name, position, size, physics flags, script options.</td></tr>
           <tr><td>Tab bar</td><td>World is always open. Scripts open as tabs over the viewport.</td></tr>
@@ -679,6 +681,7 @@
         <p>A <b>Sound</b> plays one of the built-in sounds: Beep, Chime, Click, Thud or Siren. They are synthesised, so a world never needs an audio file. <b>Playing</b> starts and stops it, <b>Looped</b> repeats it while it plays, and <b>Volume</b> is a slider from 0 to 1. Sounds play while the simulation runs; Stop silences them and restores the world.</p>
         <p><b>Max distance</b> makes a Sound positional and only applies when the Sound is a child of an object: it is heard within that many meters of its parent and fades out as the camera moves away, so a Sound inside a block is loud beside the block and silent further off. A Sound placed straight in a Space is heard at the same volume everywhere. Scripts can change Playing, Looped, Volume, MaxDistance and Preset while the simulation runs.</p>
         <p>A <b>Highlight</b> draws an outline around the object it sits inside. Put one inside a model to outline a player, or inside a part to outline just that part. Only the edges the camera can see are drawn: an edge on the far side of the shape is left out, and a wall hides the part of the outline behind it. A cut hole is outlined all the way around its rim. <b>Color</b> sets the outline color, and <b>Appears over objects</b> turns off hiding by other objects and always draws the visible edges on top (on by default), so a player can be seen through a wall; the far side of the shape itself is still left out.</p>
+        <p>A <b>Light</b> is a placeable point or spot light. Point lights shine in every direction; spot lights shine in a cone and use Rotation to aim, with their local +Z direction and a default rotation pointing down. <b>Enabled</b> turns a light on and off, <b>Color</b> sets its tint, <b>Brightness</b> its strength, <b>Range</b> how far it reaches in Vanillameters, and <b>Cone angle</b> the width of a spot beam. The nearest eight enabled lights are used in the viewport, so a large world stays fast. Lights work with Enhanced lighting; placed lights do not cast shadows yet. A small sun marker shows each light in the editor, even when it is inside a wall, and a selected light uses the normal Move and Rotate gizmos.</p>
         <h3 data-group="Editor guide">Textures</h3>
         <p>A <b>Texture</b> paints chosen faces of a Rectangular Prism. Use <b>Add Child…</b> in a prism's three-dot menu and choose <b>Texture</b>; it appears as a child of that prism and always affects its parent.</p>
         <ul>
@@ -700,7 +703,7 @@
           <tr><td>Field of view</td><td>40 to 110 degrees. Higher shows more of the world. The default is 75.</td></tr>
           <tr><td>Graphics preset</td><td>Low, Medium, Standard, High, Extra High or Unlimited. A preset sets shadows, texture detail, anti-aliasing, render resolution, bloom and sun rays together. Low and Medium draw no bloom and use a coarser grid texture at a lower resolution, so they run on weaker graphics cards. Extra High and Unlimited draw above screen resolution, add the finest grid lines and surface grain, and use the sharpest shadows.</td></tr>
           <tr><td>Bloom and sun rays</td><td>Bright surfaces glow softly and the sun casts light shafts across the viewport. Needs Enhanced lighting. Turn it off to keep the sharpest possible image.</td></tr>
-          <tr><td>Lighting style</td><td>Enhanced uses sky light, sun highlights and shadows that follow the World Settings time of day. Classic is the earlier flat shading.</td></tr>
+          <tr><td>Lighting style</td><td>Enhanced uses sky light, sun highlights, placeable lights and shadows that follow the World Settings time of day. Classic is the earlier flat shading and does not draw placeable lights.</td></tr>
           <tr><td>Shadows</td><td>Off, Low, Medium or High. Shadows are soft, follow the sun by day and the moon by night, and stay sharp around where you are looking.</td></tr>
           <tr><td>Atmospheric haze</td><td>Fades distant objects into the sky color. Only applies to Enhanced lighting.</td></tr>
           <tr><td>Render distance</td><td>Off draws the whole world. Otherwise 40 to 400 Vm: shapes past the distance fade into the sky color and are no longer drawn.</td></tr>
@@ -837,7 +840,7 @@ print(block.Name)</code></pre>
         <p>When a dot member on a Space matches a local variable, its string value is treated as the UID. Bracket lookup also works: <code>World[blockUID]</code>. You can pass the Space to <code>GetUID</code> when names are duplicated, for example <code>Instance.GetUID("Block", World)</code>.</p>
         <h3 data-group="Vanillalua language">10. The Instance module</h3>
         <ul>
-          <li><code>Instance.create(type, space)</code> — creates and returns an instance. Supported types: <code>"prism6"</code>, <code>"ball"</code>, <code>"wedge"</code>, <code>"cylinder"</code>, <code>"sound"</code>, <code>"highlight"</code>, <code>"script"</code>, <code>"worldsettings"</code>, <code>"human"</code>, and the connection types <code>"clientsocket"</code>, <code>"serversocket"</code>, <code>"peerconnection"</code> and <code>"groupconnection"</code>, which can only be created in <code>Communications</code>.</li>
+          <li><code>Instance.create(type, space)</code> — creates and returns an instance. Supported types: <code>"prism6"</code>, <code>"ball"</code>, <code>"wedge"</code>, <code>"cylinder"</code>, <code>"sound"</code>, <code>"highlight"</code>, <code>"light"</code>, <code>"script"</code>, <code>"worldsettings"</code>, <code>"human"</code>, and the connection types <code>"clientsocket"</code>, <code>"serversocket"</code>, <code>"peerconnection"</code> and <code>"groupconnection"</code>, which can only be created in <code>Communications</code>.</li>
           <li><code>Instance.duplicate(instance)</code> — duplicates an instance in its current space.</li>
           <li><code>Instance.duplicate(instance, space)</code> — duplicates it into a chosen loaded space.</li>
           <li><code>Instance.delete(instance)</code> — deletes the instance. References to it become deleted references.</li>
@@ -881,6 +884,7 @@ print(block)</code></pre>
           <tr><td>Wedges, cylinders and unions</td><td>The same properties as a prism, except <code>Spawnpoint</code>.</td></tr>
           <tr><td>Sounds</td><td><code>Playing</code> and <code>Looped</code> (True or False), <code>Volume</code> (0 to 1), <code>MaxDistance</code> (meters, 0 or more, used only when the Sound is inside an object) and <code>Preset</code> (one of <code>beep</code>, <code>chime</code>, <code>click</code>, <code>thud</code>, <code>siren</code>)</td></tr>
           <tr><td>Highlights</td><td><code>Color</code> (a hex string) and <code>OverObjects</code> (True or False)</td></tr>
+          <tr><td>Lights</td><td>Edited in the Properties panel: point or spot, <code>Enabled</code>, <code>Color</code>, <code>Brightness</code>, <code>Range</code>, and <code>Cone angle</code> for spots. Scripts can set those fields and use <code>Position</code> and <code>Rotation</code>; <code>LightType</code> is <code>"point"</code> or <code>"spot"</code>.</td></tr>
           <tr><td>Connections</td><td><code>Active</code> (True or False). ClientSocket adds <code>Client</code>, <code>Player</code> and <code>Bandwidth</code>; ServerSocket adds <code>Bandwidth</code> and <code>MaxClients</code>; PeerConnection adds <code>Password</code>, <code>Client1</code>, <code>Client2</code>, <code>Player1</code> and <code>Player2</code>; GroupConnection adds <code>Password</code>.</td></tr>
           <tr><td>Blocks</td><td><code>Spawnpoint</code> (true or false). Only one block can be the spawnpoint.</td></tr>
           <tr><td>Scripts</td><td><code>Run</code>, a function: <code>myScript.Run()</code> starts that script</td></tr><tr><td>Players</td><td><code>Character</code> (the player's current model, read-only) and <code>ModelAdded</code> (an event; passes the new model). Use <code>Players.AssignModelToPlayer</code> to give a player a model.</td></tr>
@@ -1068,23 +1072,23 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=4.0.0.0"></script>
-  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 3';</script>
+  <script src="../vanillalua.js?v=4.0.0.0.4"></script>
+  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 4';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/collision.js?v=4.0.0.0"></script>
-  <script defer src="js/scene.js?v=4.0.0.0"></script>
-  <script defer src="js/csg.js?v=4.0.0.0"></script>
-  <script defer src="js/version-history.js?v=4.0.0.0"></script>
-  <script defer src="js/player.js?v=4.0.0.0"></script>
-  <script defer src="js/sounds.js?v=4.0.0.0"></script>
-  <script defer src="js/scripting.js?v=4.0.0.0"></script>
-  <script defer src="js/shell.js?v=4.0.0.0"></script>
-  <script defer src="js/files.js?v=4.0.0.0"></script>
-  <script defer src="js/offline.js?v=4.0.0.0"></script>
-  <script defer src="js/explorer.js?v=4.0.0.0"></script>
-  <script defer src="js/properties.js?v=4.0.0.0"></script>
-  <script defer src="js/render.js?v=4.0.0.0"></script>
-  <script defer src="js/gl.js?v=4.0.0.0"></script>
-  <script defer src="js/main.js?v=4.0.0.0"></script>
+  <script defer src="js/collision.js?v=4.0.0.0.4"></script>
+  <script defer src="js/scene.js?v=4.0.0.0.4"></script>
+  <script defer src="js/csg.js?v=4.0.0.0.4"></script>
+  <script defer src="js/version-history.js?v=4.0.0.0.4"></script>
+  <script defer src="js/player.js?v=4.0.0.0.4"></script>
+  <script defer src="js/sounds.js?v=4.0.0.0.4"></script>
+  <script defer src="js/scripting.js?v=4.0.0.0.4"></script>
+  <script defer src="js/shell.js?v=4.0.0.0.4"></script>
+  <script defer src="js/files.js?v=4.0.0.0.4"></script>
+  <script defer src="js/offline.js?v=4.0.0.0.4"></script>
+  <script defer src="js/explorer.js?v=4.0.0.0.4"></script>
+  <script defer src="js/properties.js?v=4.0.0.0.4"></script>
+  <script defer src="js/render.js?v=4.0.0.0.4"></script>
+  <script defer src="js/gl.js?v=4.0.0.0.4"></script>
+  <script defer src="js/main.js?v=4.0.0.0.4"></script>
 </body>
 </html>

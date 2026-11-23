@@ -292,6 +292,9 @@
             } else if (kind === 'highlight') {
                 const n = ++counters.highlight;
                 obj = makeHighlight(dn('highlight') + (n === 1 ? '' : ' ' + n), space);
+            } else if (kind === 'light') {
+                const n = ++counters.light;
+                obj = makeLight(dn('light') + (n === 1 ? '' : ' ' + n), space, { rotX: 90 });
             } else if (kind === 'texture') {
                 const n = ++counters.texture;
                 obj = makeTexture(dn('texture') + (n === 1 ? '' : ' ' + n), space, [4], 'grid');

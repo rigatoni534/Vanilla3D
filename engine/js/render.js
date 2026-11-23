@@ -297,6 +297,47 @@
             }
         }
 
+        // Light markers are editor-only: a small sun glyph at the light's position, with a short beam for a spot.
+        // They are drawn after the scene so a light inside a wall is still easy to select and move.
+        function drawLightMarkers(lights) {
+            if (!lights || !lights.length || simulationRunning) return;
+            for (const [id, o] of lights) {
+                const p = project(new Vec3(o.x, o.y, o.z));
+                if (p.z < 0.2) continue;
+                const col = HEX6.test(o.color) ? o.color : '#ffe3ad';
+                const r = parseInt(col.slice(1, 3), 16), g = parseInt(col.slice(3, 5), 16), b = parseInt(col.slice(5, 7), 16);
+                const sel = id === selectedObjectId;
+                const rad = sel ? 12 : 9;
+                ctx.save();
+                ctx.globalAlpha = o.enabled === false ? 0.3 : 1;
+                const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad * 2.5);
+                glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.35)`);
+                glow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+                ctx.fillStyle = glow;
+                ctx.fillRect(p.x - rad * 2.5, p.y - rad * 2.5, rad * 5, rad * 5);
+                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${sel ? 0.95 : 0.7})`;
+                ctx.lineWidth = sel ? 1.8 : 1.15;
+                for (let i = 0; i < 8; i++) {
+                    const a = i / 8 * Math.PI * 2, r0 = rad * 1.25, r1 = rad * (sel ? 1.85 : 1.65);
+                    ctx.beginPath(); ctx.moveTo(p.x + Math.cos(a) * r0, p.y + Math.sin(a) * r0);
+                    ctx.lineTo(p.x + Math.cos(a) * r1, p.y + Math.sin(a) * r1); ctx.stroke();
+                }
+                ctx.beginPath(); ctx.arc(p.x, p.y, rad * 0.55, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.9)`; ctx.fill();
+                ctx.beginPath(); ctx.arc(p.x, p.y, rad, 0, Math.PI * 2);
+                ctx.strokeStyle = sel ? accentCol : `rgba(${r}, ${g}, ${b}, 0.8)`; ctx.lineWidth = sel ? 2 : 1.2; ctx.stroke();
+                if (o.lightType === 'spot') {
+                    const R = rotMat(o), reach = Math.max(1.5, Math.min(6, (o.range || 14) * 0.3));
+                    const e = project(new Vec3(o.x + R[2] * reach, o.y + R[5] * reach, o.z + R[8] * reach));
+                    if (e.z > 0.1) {
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(e.x, e.y);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.5)`; ctx.lineWidth = 1; ctx.stroke();
+                    }
+                }
+                ctx.restore();
+            }
+        }
+
         // ───────── Move / Scale handles ─────────
         const AXIS_COLOR = { x: '#ef4444', y: '#22c55e', z: '#3b82f6' };
         const HALF_KEY = { x: 'width', y: 'height', z: 'length' };
@@ -311,6 +352,7 @@
         function canEditHandles() {
             const o = sceneObjects[selectedObjectId];
             if (mode === 'select' || !o || spaceOf(o) !== 'world') return false;
+            if (o.type === 'light') return mode !== 'scale';
             if (mode === 'rotate') return isShape(o) && !o.locked;
             if (isShape(o)) return !o.locked;
             if (o.type === 'model') return getModelPrisms(selectedObjectId).length > 0;

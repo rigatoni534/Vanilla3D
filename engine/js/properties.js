@@ -21,7 +21,7 @@
         const objHead = (id, o, ic, extra = '') =>
             `<div class="obj-head">${icon(ic)}<div class="obj-meta"><div class="obj-name">${esc(o.name)}</div>
                 <div class="obj-id"><span title="Instance type">${o.type}</span><span class="uid" title="Unique ID">${id}</span></div></div>${extra}</div>`;
-        const defaultNames = { prism6: 'Block', ball: 'Ball', wedge: 'Wedge', cylinder: 'Cylinder', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player', sound: 'Sound', highlight: 'Highlight', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input', progressbar: 'ProgressBar' };
+        const defaultNames = { prism6: 'Block', ball: 'Ball', wedge: 'Wedge', cylinder: 'Cylinder', model: 'Model', script: 'Script', worldsettings: 'Settings', human: 'Player', sound: 'Sound', highlight: 'Highlight', light: 'Light', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input', progressbar: 'ProgressBar' };
         const nameField = (o, dis = '') =>
             `<div class="field-label">Name</div><input class="text" type="text" id="prop-name" maxlength="48" value="${esc(o.name)}" aria-label="Name" ${dis}>`;
         function bindName(obj) {
@@ -50,6 +50,13 @@
         const propFields = [['prop-x', 'x'], ['prop-y', 'y'], ['prop-z', 'z'], ['prop-length', 'length'], ['prop-width', 'width'], ['prop-height', 'height'], ['prop-rx', 'rotX'], ['prop-ry', 'rotY'], ['prop-rz', 'rotZ']];
         function syncPropInputs() {
             const o = sceneObjects[selectedObjectId];
+            if (o && o.type === 'light') {
+                for (const [elId, key] of [['prop-x', 'x'], ['prop-y', 'y'], ['prop-z', 'z'], ['prop-rx', 'rotX'], ['prop-ry', 'rotY'], ['prop-rz', 'rotZ']]) {
+                    const el = document.getElementById(elId);
+                    if (el && document.activeElement !== el) el.value = Number.isFinite(o[key]) ? o[key] : 0;
+                }
+                return;
+            }
             if (!isShape(o)) return;
             for (const [elId, key] of propFields) {
                 const el = document.getElementById(elId);
@@ -528,6 +535,66 @@
                     obj.language = e.target.value;
                     if (editorScriptId === id) refreshEditor();
                 });
+                return;
+            }
+
+            if (obj.type === 'light') {
+                if (!LIGHT_TYPES.includes(obj.lightType)) obj.lightType = 'point';
+                obj.brightness = Math.max(0, Math.min(8, Number.isFinite(obj.brightness) ? obj.brightness : 1.5));
+                obj.range = Math.max(0.5, Math.min(100, Number.isFinite(obj.range) ? obj.range : 14));
+                obj.angle = Math.max(5, Math.min(80, Number.isFinite(obj.angle) ? obj.angle : 45));
+                const lc = HEX6.test(obj.color) ? obj.color : '#ffe3ad';
+                const spot = obj.lightType === 'spot';
+                container.innerHTML = `
+                    ${objHead(selectedObjectId, obj, 'i-sun')}
+                    ${section('Editor', nameField(obj))}
+                    ${section('Position', `<div class="field-row">
+                        ${numField('prop-x', 'X', 'x', 'X', obj.x, '')}
+                        ${numField('prop-y', 'Y', 'y', 'Y', obj.y, '')}
+                        ${numField('prop-z', 'Z', 'z', 'Z', obj.z, '')}
+                    </div>`)}
+                    ${spot ? section('Direction', `<div class="field-row">
+                        ${numField('prop-rx', 'X', 'x', 'Rotation X in degrees', obj.rotX || 0, '')}
+                        ${numField('prop-ry', 'Y', 'y', 'Rotation Y in degrees', obj.rotY || 0, '')}
+                        ${numField('prop-rz', 'Z', 'z', 'Rotation Z in degrees', obj.rotZ || 0, '')}
+                    </div><div class="field-note">A spot shines along its local +Z. The default rotation points it down.</div>`) : ''}
+                    ${section('Light', `
+                        <div class="field-label">Type</div>
+                        <select class="text" id="prop-light-type" aria-label="Light type">${LIGHT_TYPES.map(k => `<option value="${k}"${obj.lightType === k ? ' selected' : ''}>${k === 'spot' ? 'Spot' : 'Point'}</option>`).join('')}</select>
+                        ${switchRow('prop-light-enabled', 'Enabled', obj.enabled !== false, '')}
+                        <div class="field-label">Color</div>
+                        <div class="accent-ctl"><input type="color" class="color-pick" id="prop-light-color" value="${lc}" aria-label="Light color"><input class="text hex-in" id="prop-light-hex" maxlength="7" spellcheck="false" value="${lc}" aria-label="Light color hex code"></div>
+                        <div class="field-label">Brightness</div>
+                        <label class="num hnum"><input type="number" id="prop-light-brightness" min="0" max="8" step="0.1" value="${obj.brightness}" aria-label="Brightness"><span class="tag">×</span></label>
+                        <div class="field-label">Range</div>
+                        <label class="num hnum"><input type="number" id="prop-light-range" min="0.5" max="100" step="0.5" value="${obj.range}" aria-label="Range in meters"><span class="tag">m</span></label>
+                        ${spot ? `<div class="field-label">Cone angle</div><label class="num hnum"><input type="number" id="prop-light-angle" min="5" max="80" step="1" value="${obj.angle}" aria-label="Cone angle in degrees"><span class="tag">°</span></label>` : ''}
+                        <div class="field-note">Enhanced lighting only. Up to the 8 nearest lights are drawn. Placed lights do not cast shadows yet.</div>
+                    `)}`;
+                bindName(obj);
+                for (const [elId, key] of [['prop-x', 'x'], ['prop-y', 'y'], ['prop-z', 'z'], ['prop-rx', 'rotX'], ['prop-ry', 'rotY'], ['prop-rz', 'rotZ']]) {
+                    const el = document.getElementById(elId);
+                    if (el) el.addEventListener('input', (e) => { obj[key] = parseFloat(e.target.value) || 0; });
+                }
+                document.getElementById('prop-light-type').addEventListener('change', (e) => {
+                    obj.lightType = e.target.value === 'spot' ? 'spot' : 'point';
+                    renderProperties();
+                });
+                document.getElementById('prop-light-enabled').addEventListener('change', (e) => { obj.enabled = e.target.checked; });
+                const lp = document.getElementById('prop-light-color'), lh = document.getElementById('prop-light-hex');
+                lp.addEventListener('input', () => { obj.color = lp.value.toLowerCase(); lh.value = obj.color; });
+                lh.addEventListener('change', () => {
+                    let v = lh.value.trim().replace(/^#/, '');
+                    if (/^[0-9a-f]{3}$/i.test(v)) v = v.split('').map(c => c + c).join('');
+                    if (/^[0-9a-f]{6}$/i.test(v)) { obj.color = ('#' + v).toLowerCase(); lp.value = obj.color; }
+                    lh.value = HEX6.test(obj.color) ? obj.color : '#ffe3ad';
+                });
+                const bn = document.getElementById('prop-light-brightness');
+                bn.addEventListener('input', () => { obj.brightness = Math.max(0, Math.min(8, parseFloat(bn.value) || 0)); });
+                const rn = document.getElementById('prop-light-range');
+                rn.addEventListener('input', () => { obj.range = Math.max(0.5, Math.min(100, parseFloat(rn.value) || 0.5)); });
+                const an = document.getElementById('prop-light-angle');
+                if (an) an.addEventListener('input', () => { obj.angle = Math.max(5, Math.min(80, parseFloat(an.value) || 5)); });
                 return;
             }
 

@@ -52,6 +52,11 @@ uniform int uMode;                // 0 classic, 1 enhanced
 uniform int uMat;                 // surface pattern: plastic, glass, metal, grass, brick, tile, carpet, wood, concrete, neon
 uniform vec3 uMatTint;            // the material's own color, mixed with the Color property
 uniform float uMatSpec;           // how strong this material's highlight is
+// Placeable point and spot lights. Only the nearest eight are uploaded, so a big build stays within a small uniform budget.
+uniform int uLightCount;
+uniform vec3 uLightPos[8], uLightCol[8], uLightDir[8];
+uniform vec4 uLightInfo[8];       // reach, brightness, type (0 point, 1 spot), unused
+uniform vec2 uLightCone[8];       // cosine of the inner and outer spot cone
 uniform vec3 uSunDir, uSunCol, uSkyCol, uGndCol, uHazeCol;
 uniform float uHaze, uFogFar, uShStr, uSpec;
 uniform int uShadowOn;
@@ -127,6 +132,35 @@ vec3 matAlbedo(vec3 alb, vec3 w, vec3 n, int m, vec3 tint) {
     }
     // neon: a bright self-lit color; bloom turns it into a glow
     return mix(alb, tint, 0.9) * (1.12 + 0.25 * (0.5 + 0.5 * sin(p.x * 12.0 + p.y * 9.0)));
+}
+// Placed lights add a local falloff on top of the sun and sky. They are deliberately not shadowed: the two sun
+// cascades are the only shadow maps, so a light inside a room still reaches the walls around it.
+vec3 dynamicLight(vec3 wp, vec3 N, vec3 V, vec3 alb, float specScale) {
+    vec3 sum = vec3(0.0);
+    for (int i = 0; i < 8; i++) {
+        if (i >= uLightCount) break;
+        vec4 info = uLightInfo[i];
+        vec3 d = uLightPos[i] - wp;
+        float dist = length(d);
+        float reach = max(info.x, 0.001);
+        if (dist >= reach || info.y <= 0.0) continue;
+        vec3 L = d / max(dist, 0.0001);
+        float ndl = max(dot(N, L), 0.0);
+        if (ndl <= 0.0) continue;
+        float atten = 1.0 - dist / reach;
+        atten *= atten;
+        if (info.z > 0.5) {
+            float beam = dot(-L, normalize(uLightDir[i]));
+            float soft = smoothstep(uLightCone[i].y, uLightCone[i].x, beam);
+            if (soft <= 0.0) continue;
+            atten *= soft;
+        }
+        vec3 rad = uLightCol[i] * info.y * atten;
+        sum += alb * rad * ndl;
+        vec3 H = normalize(L + V);
+        sum += uLightCol[i] * pow(max(dot(N, H), 0.0), 48.0) * uMatSpec * specScale * info.y * atten;
+    }
+    return sum;
 }
 // Grid texture: lines at every 0.25, 0.5 and 1 Vm, locked to world coordinates.
 // Each axis fades on its own, so lines that run away from you stay visible far into the distance. When cells get
@@ -223,6 +257,7 @@ void main() {
         vec3 col = alb * (mix(uGndCol, uSkyCol, N.y * 0.5 + 0.5) + uSunCol * diff);
         vec3 H = normalize(uSunDir + V);
         col += uSunCol * pow(max(dot(N, H), 0.0), 64.0) * step(0.0, ndl) * sh * uSpec * uMatSpec;
+        col += dynamicLight(vW, N, V, alb, 0.35);
         col += uSkyCol * pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.1;
         if (uMat == 1) {
             float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
@@ -286,6 +321,7 @@ void main() {
         vec3 col = toLin(alb) * (mix(uGndCol, uSkyCol, N.y * 0.5 + 0.5) + uSunCol * max(ndl, 0.0) * sh);
         vec3 H = normalize(uSunDir + V);
         col += uSunCol * pow(max(dot(N, H), 0.0), 72.0) * step(0.0, ndl) * sh * uSpec * uMatSpec * 1.6;
+        col += dynamicLight(vW, N, V, toLin(alb), 0.45);
         col += uSkyCol * pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.1;
         if (uMat == 1) {
             float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
@@ -671,7 +707,7 @@ void main() {
         }
 
         // Uniforms shared by the prism and mesh programs, which use the same fragment shader.
-        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uMat', 'uMatTint', 'uMatSpec', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize', 'uTexDetail', 'uGrain'];
+        const SHAPE_UNIFORMS = ['uCenter', 'uHalf', 'uRot', 'uColors', 'uAlbedo', 'uFaceTex', 'uEdgeColor', 'uEdgeAlpha', 'uEdgeW', 'uWire', 'uMode', 'uMat', 'uMatTint', 'uMatSpec', 'uLightCount', 'uLightPos', 'uLightCol', 'uLightDir', 'uLightInfo', 'uLightCone', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize', 'uTexDetail', 'uGrain'];
 
         // ── Meshes for the shapes a box cannot describe ──
         // Vertices are position (3), normal (3), edge UV (2) and face index (1) in the same -1..1 space as a box, so Size
@@ -746,7 +782,7 @@ void main() {
                 };
                 mesh.wedge = meshVao(wedgeMesh());
                 mesh.cylinder = meshVao(cylinderMesh(48));
-                const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uMat', 'uMatTint', 'uMatSpec', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
+                const ballP = glProgram(gl, BALL_VS, BALL_FS, ['uCenter', 'uHalf', 'uRot', 'uPatT', 'uBase', 'uFaceCols', 'uFaceCol', 'uWire', 'uEdgeColor', 'uSel', 'uClassic', 'uMode', 'uMat', 'uMatTint', 'uMatSpec', 'uLightCount', 'uLightPos', 'uLightCol', 'uLightDir', 'uLightInfo', 'uLightCone', 'uSunDir', 'uSunCol', 'uSkyCol', 'uGndCol', 'uHazeCol', 'uHaze', 'uFogFar', 'uShStr', 'uSpec', 'uShadowOn', 'uSh0', 'uSh1', 'uLVP0', 'uLVP1', 'uShInfo', 'uShSize']);
                 // unit sphere (32 x 20), shared by every ball: one triangle list and one wireframe list
                 const SEG = 32, RING = 20, sv = [], tri = [], lin = [];
                 for (let i = 0; i <= RING; i++) for (let j = 0; j <= SEG; j++) {
@@ -877,6 +913,51 @@ void main() {
             // Deleted shapes leave their buffers behind, so drop those once the cache has grown past the scene.
             if (shadeCache.size > 2048) for (const k of shadeCache.keys()) if (!sceneObjects[k]) shadeCache.delete(k);
             return entry;
+        }
+        const MAX_DYNAMIC_LIGHTS = 8;
+        function packDynamicLights(lights, cam) {
+            const out = {
+                count: 0, pos: new Float32Array(MAX_DYNAMIC_LIGHTS * 3), col: new Float32Array(MAX_DYNAMIC_LIGHTS * 3),
+                dir: new Float32Array(MAX_DYNAMIC_LIGHTS * 3), info: new Float32Array(MAX_DYNAMIC_LIGHTS * 4), cone: new Float32Array(MAX_DYNAMIC_LIGHTS * 2)
+            };
+            const ranked = [];
+            for (const entry of lights || []) {
+                const o = entry && entry[1];
+                if (!o || o.enabled === false) continue;
+                const brightness = Math.max(0, Math.min(8, Number.isFinite(+o.brightness) ? +o.brightness : 1.5));
+                const range = Math.max(0.5, Math.min(100, Number.isFinite(+o.range) ? +o.range : 14));
+                if (brightness <= 0) continue;
+                const x = Number.isFinite(+o.x) ? +o.x : 0, y = Number.isFinite(+o.y) ? +o.y : 0, z = Number.isFinite(+o.z) ? +o.z : 0;
+                const dx = x - cam[0], dy = y - cam[1], dz = z - cam[2];
+                ranked.push({ o, x, y, z, brightness, range, d2: dx * dx + dy * dy + dz * dz });
+            }
+            ranked.sort((a, b) => a.d2 - b.d2);
+            const lin = (v) => Math.pow(Math.max(0, Math.min(255, v)) / 255, 2.2);
+            const n = Math.min(MAX_DYNAMIC_LIGHTS, ranked.length);
+            for (let i = 0; i < n; i++) {
+                const L = ranked[i], o = L.o, k = i * 3, j = i * 4;
+                out.pos[k] = L.x; out.pos[k + 1] = L.y; out.pos[k + 2] = L.z;
+                const color = HEX6.test(o.color) ? o.color : '#ffe3ad';
+                out.col[k] = lin(parseInt(color.slice(1, 3), 16)); out.col[k + 1] = lin(parseInt(color.slice(3, 5), 16)); out.col[k + 2] = lin(parseInt(color.slice(5, 7), 16));
+                const R = rotMat(o);
+                const dx = R[2], dy = R[5], dz = R[8], dl = Math.hypot(dx, dy, dz) || 1;
+                out.dir[k] = dx / dl; out.dir[k + 1] = dy / dl; out.dir[k + 2] = dz / dl;
+                const spot = o.lightType === 'spot';
+                out.info[j] = L.range; out.info[j + 1] = L.brightness; out.info[j + 2] = spot ? 1 : 0; out.info[j + 3] = 0;
+                const half = Math.max(2.5, Math.min(40, (Number.isFinite(+o.angle) ? +o.angle : 45) * Math.PI / 360));
+                out.cone[i * 2] = Math.cos(half * 0.7); out.cone[i * 2 + 1] = Math.cos(half);
+            }
+            out.count = n;
+            return out;
+        }
+        function setDynamicLights(P, data) {
+            const gl = GL.gl;
+            gl.uniform1i(P.u.uLightCount, data.count);
+            gl.uniform3fv(P.u.uLightPos, data.pos);
+            gl.uniform3fv(P.u.uLightCol, data.col);
+            gl.uniform3fv(P.u.uLightDir, data.dir);
+            gl.uniform4fv(P.u.uLightInfo, data.info);
+            gl.uniform2fv(P.u.uLightCone, data.cone);
         }
         function setMaterial(P, o) {
             const gl = GL.gl, def = materialDef(o), tint = def.tint;
@@ -1122,9 +1203,10 @@ void main() {
             post.active = false;
         }
 
-        function drawGL(prisms, balls, meshes, unions, highlights, countFaces) {
+        function drawGL(prisms, balls, meshes, unions, highlights, lights, countFaces) {
             const { gl, prism: P, axis: A, label: L, tex } = GL;
             const cam = [camPosX, camPosY, camPosZ];
+            const dynLights = packDynamicLights(lights, cam);
             const setCam = (p) => {
                 gl.uniform3f(p.u.uCam, cam[0], cam[1], cam[2]);
                 gl.uniform3f(p.u.uR, rgtX, 0, rgtZ);
@@ -1180,6 +1262,7 @@ void main() {
                 gl.uniform1f(P.u.uHaze, enhanced && settings.haze !== false ? 0.0035 : 0);
                 gl.uniform1f(P.u.uFogFar, fogFar);
                 gl.uniform1f(P.u.uSpec, lt.spec); gl.uniform1f(P.u.uShStr, shStr);
+                setDynamicLights(P, dynLights);
                 gl.uniform1i(P.u.uShadowOn, shadowSet ? 1 : 0);
                 const sm = shadowSet && GL.sm;
                 gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, sm ? sm.c0.tex : GL.dummy.tex);
@@ -1863,18 +1946,20 @@ void main() {
             ctx.clearRect(0, 0, width, height);
             // One pass builds every draw list, so each object's parent chain is walked once per frame instead of five
             // times and five intermediate arrays are not produced.
-            const prisms = [], balls = [], meshes = [], unions = [], highlights = [];
+            const prisms = [], balls = [], meshes = [], unions = [], highlights = [], lights = [];
             for (const [id, o] of Object.entries(sceneObjects)) {
                 if (o.type === 'highlight') { highlights.push([id, o]); continue; }
                 if (id === pc.hideId || spaceOf(o) !== 'world') continue;
-                if (o.type === 'prism6') prisms.push([id, o]);
+                if (o.type === 'light') lights.push([id, o]);
+                else if (o.type === 'prism6') prisms.push([id, o]);
                 else if (o.type === 'ball') balls.push([id, o]);
                 else if (o.type === 'wedge' || o.type === 'cylinder') meshes.push([id, o]);
                 else if (o.type === 'union') unions.push([id, o]);
             }
-            const handleTarget = (selectedObjectId && sceneObjects[selectedObjectId] && sceneObjects[selectedObjectId].type === 'model')
+            const selHandleObj = selectedObjectId ? sceneObjects[selectedObjectId] : null;
+            const handleTarget = selHandleObj && selHandleObj.type === 'model'
                 ? getModelBounds(selectedObjectId)
-                : (selectedObjectId ? sceneObjects[selectedObjectId] : null);
+                : (selHandleObj && selHandleObj.type === 'light' ? Object.assign({}, selHandleObj, { width: 0.35, height: 0.35, length: 0.35 }) : selHandleObj);
             lastHandles = canEditHandles() && handleTarget ? buildHandles(handleTarget) : [];
             if (hoverKey && !lastHandles.some(h => h.key === hoverKey)) hoverKey = null;
             const ordered = lastHandles.slice().sort((a, b) => b.z - a.z);
@@ -1883,10 +1968,11 @@ void main() {
             // Without WebGL 2 the flat renderer draws wedges, cylinders and unions as their boxes.
             glDrawCalls = 0;
             const visibleCount = GL
-                ? drawGL(prisms, balls, meshes, unions, highlights, statDue && settings.showStatus !== false)
+                ? drawGL(prisms, balls, meshes, unions, highlights, lights, statDue && settings.showStatus !== false)
                 : drawFallback(prisms.concat(meshes, unions), balls);
             // WebGL draws the gizmos as solid, shaded geometry. The flat fallback keeps its 2D handles below.
             if (GL) { drawGizmosGL(ordered); presentPost(); }
+            drawLightMarkers(lights);
 
             // Model bounding box in 3D
             if (selectedObjectId && sceneObjects[selectedObjectId] && sceneObjects[selectedObjectId].type === 'model') {

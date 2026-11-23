@@ -19,7 +19,7 @@
             let changed = true;
             while (changed) { changed = false; for (const [id, o] of Object.entries(sceneObjects)) if (o.parent !== 'engine' && !SPACE_KEYS.includes(o.parent) && !sceneObjects[o.parent]) { delete sceneObjects[id]; physicsVelocity.delete(id); vlInstCache.delete(id); if (selectedObjectId === id) selectedObjectId = null; changed = true; } }
         }
-        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player', wedge: 'Wedge', cylinder: 'Cylinder', sound: 'Sound', highlight: 'Highlight', union: 'Union', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input', progressbar: 'ProgressBar', clientsocket: 'ClientSocket', serversocket: 'ServerSocket', peerconnection: 'PeerConnection', groupconnection: 'GroupConnection' })[type] || 'Instance'; }
+        function dn(type) { const d = (typeof settings !== 'undefined' && settings.defaultNames && settings.defaultNames[type]); return d || ({ prism6: 'Block', model: 'Model', script: 'Script', worldsettings: 'Settings', texture: 'Texture', ball: 'Ball', human: 'Player', wedge: 'Wedge', cylinder: 'Cylinder', sound: 'Sound', highlight: 'Highlight', light: 'Light', union: 'Union', frame: 'Frame', text: 'Text', button: 'Button', image: 'Image', input: 'Input', progressbar: 'ProgressBar', clientsocket: 'ClientSocket', serversocket: 'ServerSocket', peerconnection: 'PeerConnection', groupconnection: 'GroupConnection' })[type] || 'Instance'; }
         function preInc(n) { return typeof settings !== 'undefined' && !!(settings.preinclude && settings.preinclude[n]); }
         // Textures: a child of a prism6 that paints chosen faces. Faces use the engine's face order.
         const FACE_LABELS = ['Front', 'Back', 'Right', 'Left', 'Top', 'Bottom'];
@@ -70,6 +70,17 @@
         function makeHighlight(name, parent) {
             return { type: 'highlight', name, parent, color: '#ffd23f', overObjects: true };
         }
+        // A Light is a point or spot light in the world. It is not a shape: it has no size or collision, only a
+        // position, a colour and a reach. Spot lights use the same rotation order as every other instance.
+        const LIGHT_TYPES = ['point', 'spot'];
+        function makeLight(name, parent, props) {
+            return Object.assign({
+                type: 'light', name, parent, x: 0, y: 3, z: 0,
+                color: '#ffe3ad', brightness: 1.5, range: 14, lightType: 'point', angle: 45,
+                enabled: true, rotX: 90, rotY: 0, rotZ: 0
+            }, props);
+        }
+        const isLight = (o) => !!o && o.type === 'light';
         // ───────── World versions and migrations ─────────
         // A world remembers the version it was created in and the version its content has been migrated to. The
         // engine version it is opened or saved with is kept only as the file's last-writer version, so an old world
@@ -562,8 +573,8 @@
         };
         sceneObjects['Linen551'] = makeTexture('Texture', 'Cobalt092', [4], 'grid');
         sceneObjects['Amber417'] = makeWorldSettings('Settings', 'world');
-        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0, wedge: 0, cylinder: 0, union: 0, sound: 0, highlight: 0, frame: 0, text: 0, button: 0, image: 0, input: 0, progressbar: 0, clientsocket: 0, serversocket: 0, peerconnection: 0, groupconnection: 0 };
-        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human', wedge: 'i-wedge', cylinder: 'i-cylinder', union: 'i-union', sound: 'i-sound', highlight: 'i-highlight', frame: 'i-ui-frame', text: 'i-ui-text', button: 'i-ui-button', image: 'i-ui-image', input: 'i-ui-input', progressbar: 'i-ui-progress', clientsocket: 'i-client-socket', serversocket: 'i-server-socket', peerconnection: 'i-peer', groupconnection: 'i-group' };
+        const counters = { prism: 1, model: 0, script: 0, worldsettings: 1, texture: 1, ball: 0, human: 0, wedge: 0, cylinder: 0, union: 0, sound: 0, highlight: 0, light: 0, frame: 0, text: 0, button: 0, image: 0, input: 0, progressbar: 0, clientsocket: 0, serversocket: 0, peerconnection: 0, groupconnection: 0 };
+        const typeIcon = { prism6: 'i-cube', model: 'i-model', script: 'i-script', viewfinder: 'i-lock', worldsettings: 'i-sun', texture: 'i-grid', ball: 'i-ball', human: 'i-human', player: 'i-human', wedge: 'i-wedge', cylinder: 'i-cylinder', union: 'i-union', sound: 'i-sound', highlight: 'i-highlight', light: 'i-sun', frame: 'i-ui-frame', text: 'i-ui-text', button: 'i-ui-button', image: 'i-ui-image', input: 'i-ui-input', progressbar: 'i-ui-progress', clientsocket: 'i-client-socket', serversocket: 'i-server-socket', peerconnection: 'i-peer', groupconnection: 'i-group' };
 
         let isLightMode = false;
         let accentCol = '#f2b134';

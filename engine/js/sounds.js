@@ -176,7 +176,7 @@
         // Vanillalua is loaded from the shared external interpreter.
         const vlRuntime = VanillaluaShared.createEditorRuntime({
             sceneObjects, physicsVelocity, physicsVelocityFor, spaceOf, preInc, SPACE_KEYS, isShape, isInside,
-            GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, makeUI: (type, spaceId) => makeUI(type, newUIName(type), spaceId),
+            GRAVITY_MAX, makePrism, makeBall, makeWedge, makeCylinder, makeSound, makeHighlight, makeLight, makeUI: (type, spaceId) => makeUI(type, newUIName(type), spaceId),
             makeConnection, CONNECTION_TYPES, makeWorldSettings, defaultHumanStats, dn, counters, newId, pruneOrphans,
             soundChanged: (id, name) => {
                 const h = sceneObjects[id];

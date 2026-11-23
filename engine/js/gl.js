@@ -2545,7 +2545,7 @@ void main() {
             const prisms = [], balls = [], meshes = [], unions = [], highlights = [], lights = [], effects = [];
             for (const [id, o] of Object.entries(sceneObjects)) {
                 if (o.type === 'highlight') { highlights.push([id, o]); continue; }
-                if (id === pc.hideId || spaceOf(o) !== 'world') continue;
+                if (id === pc.hideId || (pc.hideIds && pc.hideIds.has(id)) || spaceOf(o) !== 'world') continue;
                 if (o.type === 'light') lights.push([id, o]);
                 else if (o.type === 'prism6') prisms.push([id, o]);
                 else if (o.type === 'ball') balls.push([id, o]);

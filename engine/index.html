@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.10.1">
+    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.12.3">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
   
 </head>
@@ -592,7 +592,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 10</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 12</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -610,6 +610,7 @@
         </tbody></table>
         <p>Connections cannot be given children and cannot be moved out of Communications. Drag them within the space to reorder them.</p>
         <p><b>Multi-select:</b> hold <kbd>Shift</kbd> and click to add or remove single objects. Hold <kbd>Ctrl</kbd> (<kbd>Cmd</kbd> on Mac) and click to select every object between your last click and the one you click. Copy, cut, paste, delete and dragging then apply to all selected objects.</p>
+        <p><b>Shortcuts:</b> <kbd>Ctrl</kbd>+<kbd>C</kbd>, <kbd>X</kbd> and <kbd>V</kbd> copy, cut and paste; <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> pastes inside the selection; <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicates; <kbd>Ctrl</kbd>+<kbd>A</kbd> selects all; <kbd>Delete</kbd> or <kbd>Backspace</kbd> deletes; <kbd>Space</kbd> renames; <kbd>F</kbd> moves the camera to the selection; <kbd>Ctrl</kbd>+<kbd>M</kbd> groups into a model; <kbd>Ctrl</kbd>+<kbd>U</kbd> unions; <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>U</kbd> intersects; <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes and <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> redoes. Shortcuts pause while you type, while a menu is open and while the simulation is running, so Space still jumps and Backspace never leaves the page. Undo keeps up to 100 world snapshots for editor commands.</p>
         <p>Hover an instance in the Explorer and press the three-dot button for <b>Rename, Copy, Paste, Cut, Delete</b> and <b>Move Camera To</b>.</p>
         <p>A Rectangular Prism also has a <b>Color</b> in its Render section: pick one with the color box or type a hex code such as <code>#ff8800</code>. Turning on <b>Face coloring</b> overrides it, because each face then shows its own debug color.</p>
         <p>Every block, wedge, cylinder and union has an <b>Outline</b> switch in Render for the thin dark line drawn along its edges. The cylinder is treated as one round surface: it gets a single outline around each end rather than a line at every facet, and its Size scales its shading with it.</p>
@@ -986,7 +987,7 @@ if player.Character then setup(player.Character) end</code></pre>
         <p>Listen to an event with <code>:Connect</code> and a function. <code>object:Method(args)</code> is the same call as <code>object.Method(args)</code>. <code>Connect</code> returns a connection, and <code>connection:Disconnect()</code> stops listening. Each time an event fires its function runs as its own task, so it can use <code>wait()</code>. A function can be written without a name right where it is used: <code>function(player) ... end</code>. A script that connects late can read <code>Players.Players</code> to find players who already joined.</p>
         <p><b>Death.</b> When the Health of a Human inside a player's model reaches 0, the player dies. The model's parts are released so they fall apart, then <code>OnPlayerDeath</code> fires. Giving the player a new model removes the old one.</p>
         <p><b>Spawn position.</b> A model spawns with its feet at 0, 5, 0. If one block has <b>Spawnpoint</b> turned on, the model spawns on top of that block instead. Only one block can be the spawnpoint. The editor will not let you pick a second one, and setting a second one in a script prints a warning and is skipped.</p>
-        <p><b>Playing your player.</b> While the simulation runs you control the first player, the one the editor joins as Player1. <b>W A S D</b> move, <b>Space</b> jumps, <b>Shift</b> sprints, and the <b>Up</b> and <b>Down</b> arrow keys zoom the camera. The camera follows the player's head, and you turn the view with the same camera setting as the editor (Right-drag or Drag). Zoomed all the way in you are in first person: the head is hidden and the rest of the body stays. The model swings round to face the way it moves, and its arms and legs swing as it walks, faster when it sprints. In the air its arms trail behind and its legs tuck up. Walking speed comes from the Human's <code>WalkSpeed</code>, sprinting from <code>RunSpeed</code> and jump height from <code>JumpHeight</code>. Sprinting costs <code>RunStaminaLoss</code> every second and each jump costs <code>JumpStaminaLoss</code>. Stamina comes back at <code>StaminaGain</code> per second while you stand on something and are not sprinting. If it runs out you are exhausted: you cannot sprint or jump, and it comes back at 4 per second (or StaminaGain, if that is lower) until it is full. The player is stopped by anything that is Collidable, walks up slopes and steps up to 0.6 Vm high without jumping, and is stopped by anything taller. Falling below the kill layer sets its Health to 0.</p>
+        <p><b>Playing your player.</b> While the simulation runs you control the first player, the one the editor joins as Player1. <b>W A S D</b> move, <b>Space</b> jumps, <b>Shift</b> sprints, and the <b>Up</b> and <b>Down</b> arrow keys zoom the camera. The camera follows the player's head, and you turn the view with the same camera setting as the editor (Right-drag or Drag). Zoomed all the way in you are in first person: the head is hidden and the rest of the body stays. The model swings round to face the way it moves. Its animation blends Idle, Walk, Run, Jump, Fall and Land; the stride is driven by distance travelled, so the feet stay planted when it is blocked, and idle breathing, torso lean, head look and a landing squash are added procedurally. In first person the head and near arms are hidden, with a subtle head bob. In the air its arms trail behind and its legs tuck up. Walking speed comes from the Human's <code>WalkSpeed</code>, sprinting from <code>RunSpeed</code> and jump height from <code>JumpHeight</code>. Sprinting costs <code>RunStaminaLoss</code> every second and each jump costs <code>JumpStaminaLoss</code>. Stamina comes back at <code>StaminaGain</code> per second while you stand on something and are not sprinting. If it runs out you are exhausted: you cannot sprint or jump, and it comes back at 4 per second (or StaminaGain, if that is lower) until it is full. The player is stopped by anything that is Collidable, walks up slopes and steps up to 0.6 Vm high without jumping, and is stopped by anything taller. Falling below the kill layer sets its Health to 0.</p>
         <p><b>Effects.</b> Add a <b>SimpleEffect</b> for a ready-made Smoke, Fire, Steam, Dust, Sparkle / Shine, Explosion, Splash or Embers preset, or an <b>AdvancedEffect</b> when you want to control the sprite, size, colour, gravity and emitter shape yourself. Effects are children of the World or of a shape or model; the Position fields are an offset from that parent. Local space makes the particles turn and follow the parent, while World space leaves them where they were emitted. SimpleEffect scales its preset with Size and Speed, and every effect can emit continuously with Rate or fire a Burst. Scripts can use <code>Play()</code>, <code>Stop()</code> and <code>Emit(count)</code>, and can set <code>Emitting</code> and any of the properties above. Effects animate in the editor and render with the scene during Run.</p>
         <p><b>Materials.</b> Every shape has a Material in Render: Plastic, Glass, Metal, Grass, Brick, Tile, Carpet, Wood, Concrete or Neon. The material changes the surface pattern and how highlights catch it. Color still tints the result, so every material picks up the color you choose. Neon glows when bloom is on, Glass has a bright fresnel edge and Metal is brushed and reflective. A union keeps the material of the first part it was built from. Materials are visual only; they do not change mass or collision.</p>
         <p><b>Physics.</b> Everything has the same density, so a body's mass comes from its volume: a ball by its sphere, a cylinder by its round column and a wedge by half its box. Falling bodies speed up with gravity, and air slows them more the faster they go, so every body has a terminal velocity (a person falls at about 55 Vm/s). Air is thick where gravity is strong and gone on the Moon and in Space, so there bodies keep speeding up. When two bodies collide momentum is conserved, so a heavy body pushes a light one much more than the other way round. Fast impacts bounce and lose energy, and sliding bodies slow down and stop because of friction. A body that comes to rest sits exactly on the surface it landed on, so a stack stays still instead of creeping. Turned blocks collide at their real angle, and a union is tested cell by cell, so a hole cut through it is a hole for falling bodies too. Boxes still do not tip over from a collision. The player collides as a box matching its body's width and depth, and a ball is round for the player as well, so corners and turned walls slide instead of stopping on an invisible square. The player is not a body in the simulation: it is moved directly against the world, so nothing it stands on is weighed down by it, and a loose cylinder underfoot simply falls away with the player riding it down.</p>
@@ -1113,24 +1114,26 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     </div>
   </div>
 
-  <script src="../vanillalua.js?v=4.0.0.0.10.1"></script>
-  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 10';</script>
+  <script src="../vanillalua.js?v=4.0.0.0.12.3"></script>
+  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 12';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/collision.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/scene.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/effects.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/csg.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/version-history.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/player.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/sounds.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/scripting.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/shell.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/files.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/offline.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/explorer.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/properties.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/render.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/gl.js?v=4.0.0.0.10.1"></script>
-  <script defer src="js/main.js?v=4.0.0.0.10.1"></script>
+  <script defer src="js/collision.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/scene.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/effects.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/csg.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/version-history.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/playeranim.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/player.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/sounds.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/scripting.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/shell.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/files.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/offline.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/explorer.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/shortcuts.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/properties.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/render.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/gl.js?v=4.0.0.0.12.3"></script>
+  <script defer src="js/main.js?v=4.0.0.0.12.3"></script>
 </body>
 </html>

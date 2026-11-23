@@ -2,7 +2,7 @@
         // ───────── Player control ─────────
         // While the simulation runs, the player the editor joined as (the lowest-numbered Player) is driven with WASD, Space and Shift.
         // A model is a set of parts, so the whole model moves as one box that is stopped by every collidable block.
-        const pc = { modelId: null, vy: 0, onGround: false, last: 0, zoom: 6, theta: 0, exhausted: false, hideId: null, headId: null, parts: [], pos: { x: 0, y: 0, z: 0 }, hr: 0.5, hw: 0.5, hd: 0.5, hh: 2, phase: 0, gait: 0, sprinting: false, surfaceMaterial: 'plastic' };
+        const pc = { modelId: null, vy: 0, onGround: false, last: 0, zoom: 6, theta: 0, exhausted: false, hideId: null, hideIds: null, headId: null, parts: [], pos: { x: 0, y: 0, z: 0 }, hr: 0.5, hw: 0.5, hd: 0.5, hh: 2, phase: 0, gait: 0, sprinting: false, surfaceMaterial: 'plastic', anim: null, pose: null };
         const PLAYER_ZOOM_MAX = 20, PLAYER_ZOOM_SPEED = 8, FIRST_PERSON_ZOOM = 1.2, PLAYER_TURN_RATE = 14;
         const STAMINA_PENALTY_GAIN = 4;   // per second, while exhausted
         // A person is about 80 kg and falls feet first at roughly 55 Vm/s in Earth air.
@@ -207,10 +207,20 @@
             const m = /^(left|right)?\s*(arm|leg)$/i.exec(String(name).trim());
             if (!m) return null;
             const side = /^left$/i.test(m[1] || '') ? -1 : 1, arm = /arm/i.test(m[2]);
-            return { walk: (arm ? -24 : 30) * side, air: arm ? -45 : 18 * side };
+            return { walk: (arm ? -24 : 30) * side, air: arm ? -45 : 18 * side, role: arm ? 'arm' : 'leg', side };
+        }
+        function partRole(name) {
+            const n = String(name).trim().toLowerCase();
+            if (n === 'head') return 'head';
+            if (n === 'torso' || n === 'body' || n === 'root') return 'torso';
+            const limb = limbPose(n);
+            return limb ? limb.role : 'other';
         }
         // Remember the model as it was spawned. Turning it later is done from these offsets, so nothing drifts.
         function setupPlayerBody(m) {
+            pc.anim = new PlayerAnimator();
+            pc.hideIds = new Set();
+            pc.pose = pc.anim.pose;
             const b = partsBox(m.parts);
             pc.pos = { x: (b.minX + b.maxX) / 2, y: b.minY, z: (b.minZ + b.maxZ) / 2 };
             // Keep the body's own width and depth; a square made from the arm span leaves a large empty strip in
@@ -221,7 +231,7 @@
             pc.hh = b.maxY - b.minY;
             pc.parts = m.parts.map(id => {
                 const o = sceneObjects[id], pose = limbPose(o.name);
-                return { id, dx: o.x - pc.pos.x, dy: o.y - pc.pos.y, dz: o.z - pc.pos.z, rotY: +o.rotY || 0, h: o.height, swing: pose ? pose.walk : 0, air: pose ? pose.air : 0, angle: 0 };
+                return { id, dx: o.x - pc.pos.x, dy: o.y - pc.pos.y, dz: o.z - pc.pos.z, rotY: +o.rotY || 0, h: o.height, swing: pose ? pose.walk : 0, air: pose ? pose.air : 0, angle: 0, role: partRole(o.name), side: pose ? pose.side : 1 };
             });
             let head = null;
             for (const id of m.parts) if (/^head$/i.test(sceneObjects[id].name)) head = id;
@@ -231,18 +241,26 @@
         // Positions every part from the player's position and facing, and swings the limbs. Facing 0 looks along -Z, like the camera does.
         function placePlayerParts(dt) {
             const c = Math.cos(pc.theta), s = Math.sin(pc.theta);
-            const stride = Math.sin(pc.phase) * pc.gait;
+            const pose = pc.pose || (pc.anim && pc.anim.pose) || { stride: 0, breath: 0, lean: 0, headPitch: 0, squash: 0, airArm: 0, airLeg: 0, state: 'Idle' };
+            const stride = pose.stride || 0;
             for (const p of pc.parts) {
                 const o = sceneObjects[p.id];
                 if (!o) continue;
-                // A limb turns about its shoulder or hip, so it pivots around its top rather than its middle.
-                const want = p.swing ? (pc.onGround ? stride * p.swing : p.air) : 0;
+                // A limb turns about its shoulder or hip, so it pivots around its top rather than its middle. Arms receive
+                // the procedural idle breath and the opposite-side swing; the torso and head follow the lean and look.
+                const airborne = !pc.onGround;
+                const air = p.role === 'arm' ? pose.airArm : pose.airLeg;
+                const want = p.swing ? (airborne ? p.air + air : stride * p.swing) : 0;
                 p.angle = dt > 0 ? p.angle + (want - p.angle) * (1 - Math.exp(-18 * dt)) : want;
                 const a = p.angle * Math.PI / 180, lift = p.h * (1 - Math.cos(a)), dz = p.dz - p.h * Math.sin(a);
+                const lean = p.role === 'torso' ? pose.lean * 180 / Math.PI : 0;
+                const look = p.role === 'head' ? pose.headPitch * 180 / Math.PI : 0;
+                const breath = p.role === 'arm' ? pose.breath * 1.2 : p.role === 'torso' ? pose.breath * 0.4 : 0;
+                const squash = (p.role === 'head' || p.role === 'torso' || p.role === 'arm') ? pose.squash * 0.12 : 0;
                 o.x = pc.pos.x + p.dx * c - dz * s;
                 o.z = pc.pos.z + p.dx * s + dz * c;
-                o.y = pc.pos.y + p.dy + lift;
-                o.rotX = p.angle;
+                o.y = pc.pos.y + p.dy + lift - squash + breath * 0.02;
+                o.rotX = p.angle + lean + look;
                 o.rotY = p.rotY - pc.theta * 180 / Math.PI;
                 const v = physicsVelocity.get(p.id); if (v) { v.x = 0; v.y = 0; v.z = 0; }
             }
@@ -258,6 +276,7 @@
             if (m.dead) playerPartIds = null;
             else if (!playerPartIds || playerPartIds.size !== m.parts.length || m.parts.some(id => !playerPartIds.has(id))) playerPartIds = new Set(m.parts);
             if (!m.dead && dt > 0) {
+                const startX = pc.pos.x, startZ = pc.pos.z, wasGround = pc.onGround;
                 const hv = m.human || {};
                 const num = (v, d) => Number.isFinite(v) ? v : d;
                 const walk = num(hv.walkSpeed, 3.5), run = num(hv.runSpeed, 6), jumpH = num(hv.jumpHeight, 1.5);
@@ -276,8 +295,10 @@
                 const len = Math.hypot(mx, mz);
                 if (len > 0) { mx /= len; mz /= len; } else { mx = 0; mz = 0; }
                 // The model swings round to face the way it is going.
+                let turnDelta = 0;
                 if (len > 0) {
                     const d = Math.atan2(Math.sin(Math.atan2(mx, -mz) - pc.theta), Math.cos(Math.atan2(mx, -mz) - pc.theta));
+                    turnDelta = d;
                     pc.theta += d * (1 - Math.exp(-PLAYER_TURN_RATE * dt));
                 }
                 // Sprinting needs stamina and costs RunStaminaLoss every second.
@@ -310,6 +331,13 @@
                 }
                 pc.pos = { x: (b.minX + b.maxX) / 2, y: b.minY, z: (b.minZ + b.maxZ) / 2 };
                 pcRecordTouches(m.modelId, b, cols);
+                // Distance, not time, drives the stride: a player stopped by a wall stops stepping, and a player on ice
+                // or a slope still moves its feet only as far as the body actually travels.
+                const moved = Math.hypot(pc.pos.x - startX, pc.pos.z - startZ);
+                if (pc.anim) pc.pose = pc.anim.step(dt, {
+                    moving: len > 0, sprinting, onGround: pc.onGround, vy: pc.vy, dead: false,
+                    distance: moved, landed: !wasGround && pc.onGround, look: angleX, turn: turnDelta
+                });
                 // Stamina comes back while standing on something and not sprinting. Once emptied it comes back slower, until it is full.
                 if (!sprinting && pc.onGround && !jumped) st += (pc.exhausted ? Math.min(STAMINA_PENALTY_GAIN, gain) : gain) * dt;
                 if (st <= 0) { st = 0; pc.exhausted = true; }
@@ -319,10 +347,7 @@
                     m.human.stamina = st;
                     if (selectedObjectId === m.humanId) { const el = document.getElementById('prop-h-stamina'); if (el && document.activeElement !== el) el.value = Math.round(st * 100) / 100; }
                 }
-                // The limbs swing while the player walks, faster and wider when sprinting, and settle again when standing still.
-                const striding = len > 0 && pc.onGround;
-                pc.gait += ((striding ? (sprinting ? 1 : 0.65) : 0) - pc.gait) * (1 - Math.exp(-12 * dt));
-                if (striding) pc.phase += (sprinting ? 20 : 15) * dt;
+                // The animation controller supplies the stride phase, air pose, lean, look and landing squash.
                 placePlayerParts(dt);
                 // Falling past the kill layer kills the player, like it deletes anything else.
                 if (pc.pos.y < currentKillY() && m.human) m.human.health = 0;
@@ -334,9 +359,17 @@
                 pc.zoom = Math.max(0, Math.min(PLAYER_ZOOM_MAX, pc.zoom));
             }
             const head = sceneObjects[pc.headId];
-            if (!head) { pc.hideId = null; return false; }
-            pc.hideId = pc.zoom < FIRST_PERSON_ZOOM ? pc.headId : null;
-            camPosX = head.x - fwdX * pc.zoom; camPosY = head.y - fwdY * pc.zoom; camPosZ = head.z - fwdZ * pc.zoom;
+            if (!head) { pc.hideId = null; if (pc.hideIds) pc.hideIds.clear(); return false; }
+            const firstPerson = pc.zoom < FIRST_PERSON_ZOOM;
+            pc.hideId = firstPerson ? pc.headId : null;
+            if (pc.hideIds) {
+                pc.hideIds.clear();
+                // In first person the near arms would sit across the camera, so hide them with the head. The rest of the
+                // model still renders when the camera is close enough to see it from outside.
+                if (firstPerson) for (const p of pc.parts) if (p.role === 'arm') pc.hideIds.add(p.id);
+            }
+            const bob = firstPerson && pc.pose ? Math.abs(pc.pose.stride) * 0.045 + pc.pose.breath * 0.008 : 0;
+            camPosX = head.x - fwdX * pc.zoom; camPosY = head.y - fwdY * pc.zoom + bob; camPosZ = head.z - fwdZ * pc.zoom;
             if (typeof audioPlayerStep === 'function') audioPlayerStep(dt);
             return true;
         }

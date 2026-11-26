@@ -1,0 +1,71 @@
+{
+  "format": "VanillaWorld",
+  "formatVersion": 1,
+  "engineVersion": "4.2.0.0",
+  "currentVersion": "4.2.0.0",
+  "createdVersion": "4.2.0.0",
+  "savedAt": "2026-11-26T00:00:00.000Z",
+  "spaces": ["world", "storage", "scripts", "ui", "communications"],
+  "objects": {
+    "WorldSettings1": {
+      "type": "worldsettings",
+      "name": "Settings",
+      "parent": "world",
+      "timeOfDay": 14,
+      "gravity": 9.8,
+      "killY": -5000,
+      "worldName": "Empty Plate",
+      "creator": "Vanilla3D fixtures",
+      "description": "A flat plate and nothing else.",
+      "maxPlayers": 8,
+      "assets": [],
+      "audio": { "master": 0.8, "footsteps": "procedural", "impacts": "procedural", "death": "procedural" },
+      "createdVersion": "4.2.0.0",
+      "currentVersion": "4.2.0.0",
+      "defaults": {
+        "player": {
+          "health": 100,
+          "maxHealth": 100,
+          "walkSpeed": 3.5,
+          "runSpeed": 6,
+          "stamina": 100,
+          "maxStamina": 100,
+          "runStaminaLoss": 3,
+          "jumpHeight": 1.5,
+          "jumpStaminaLoss": 20,
+          "staminaGain": 6.5
+        }
+      }
+    },
+    "Plate1": {
+      "type": "prism6",
+      "name": "Plate",
+      "parent": "world",
+      "x": 0,
+      "y": -1,
+      "z": 0,
+      "length": 50,
+      "width": 50,
+      "height": 1,
+      "rotX": 0,
+      "rotY": 0,
+      "rotZ": 0,
+      "color": "#6f7a5a",
+      "material": "grass",
+      "faceColoring": false,
+      "showLabels": false,
+      "wireframe": false,
+      "locked": false,
+      "reactsToPhysics": false,
+      "collidable": true,
+      "anchored": true
+    },
+    "PlateTexture1": {
+      "type": "texture",
+      "name": "Plate Grid",
+      "parent": "Plate1",
+      "faces": [4],
+      "texture": "grid"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "vanilla3d",
+  "version": "4.2.0",
+  "private": true,
+  "description": "Vanilla3D runs straight from the repository with no build step. This manifest only holds the tools that check and test the shipped files.",
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "fixtures": "node tests/fixtures/make-fixtures.mjs",
+    "test:smoke": "node tests/smoke.mjs",
+    "test": "node scripts/check.mjs && node tests/smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.65.1"
+  }
+}

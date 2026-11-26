@@ -2,6 +2,15 @@
 // Add an entry here whenever ENGINE_VERSION changes. The About dialog and What's new both warn if the running version is missing.
 const VERSION_HISTORY = [
   {
+    version: '4.2.0.0',
+    label: '4.2.0.0',
+    date: '2026-11-26',
+    notes: [
+      'Added the checks that keep this page loading: scripts/check.sh parses every script, compiles the editor scripts together in load order, catches a top-level name that two files both declare, and verifies every icon id and local asset link. The browser smoke test in tests/smoke.mjs opens the editor, adds a block, runs and stops the simulation, opens a .vnw, reads a script\'s output and loads a world in the Player.',
+      'This release has no engine, world format or networking change. Worlds and saves from 4.1.0.0 open exactly as before.'
+    ]
+  },
+  {
     version: '4.1.0.0',
     label: '4.1.0.0',
     date: '2026-11-26',

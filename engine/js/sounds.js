@@ -521,6 +521,7 @@
             for (const k of Object.keys(sceneObjects)) delete sceneObjects[k];
             Object.assign(sceneObjects, JSON.parse(JSON.stringify(simSnapshot.objects)));
             Object.assign(counters, simSnapshot.counters);
+            if (typeof sceneIndexInvalidate === 'function') sceneIndexInvalidate();
             simSnapshot = null;
             if (typeof clearEffectStates === 'function') clearEffectStates();
             physicsVelocity.clear(); ballRot.clear(); ballSpin.clear(); ballContacts.clear();
@@ -563,6 +564,8 @@
                 vlRuntime.sharedGlobals = new Map();
                 restoreSnapshot();
             }
+            markUISceneChanged();
+            sceneIndexInvalidate();
             updateEditorState();
             renderOutput();
             const btn = document.getElementById('run-btn');
@@ -589,7 +592,7 @@
             const pid = players[0][0];
             let moved = false;
             for (const o of Object.values(sceneObjects)) if (isUI(o) && o.parent === 'ui') { o.parent = pid; moved = true; }
-            if (moved) uiDirty = true;
+            if (moved) { uiDirty = true; sceneIndexInvalidate(); markUISceneChanged(); }
         }
 
         // Vanillalua is loaded from the shared external interpreter.
@@ -608,7 +611,8 @@
             soundPlay: (id) => { const h = sceneObjects[id]; if (h && h.type === 'sound') { h.playing = true; startSound(id); } },
             soundStop: (id) => { const h = sceneObjects[id]; if (h && h.type === 'sound') { h.playing = false; stopSound(id); } },
             getSelectedObjectId: () => selectedObjectId, setSelectedObjectId: value => { selectedObjectId = value; },
-            markUIDirty: () => { uiDirty = true; }, markOutputDirty: () => { outputDirty = true; }
+            markUIDirty: () => { uiDirty = true; if (typeof sceneIndexInvalidate === 'function') sceneIndexInvalidate(); if (typeof markUISceneChanged === 'function') markUISceneChanged(); },
+            markOutputDirty: () => { outputDirty = true; }
         });
         const { VL_KEYWORDS, VL_SPACES, VL_MODULES, VL_TYPES, VL_GLOBALS, VLParseError, VLError, vlLex, vlParse, vlAnalyze, jsonDiagnostics, SCRIPT_TEMPLATE, newScriptData, makeHuman, HUMAN_DEFAULTS, makePlayerSetup, makePlayerScript, PLAYER_MANAGEMENT_SOURCE, NETWORKING_SOURCE, makeNetworkingScript, ensureScript, computeDiagnostics, VLFn, VLWait, VLModule, VLSpace, VLInst, VLVec, VLScope, vlInstCache, vlSpaces, vlInst, vlObj, vlRound, vlTypeName, vlStr, vlTruthy, VL_PROPS, vlGetProp, vlSetProp, vlGetMember, vlSetMember, vlCreate, vlDeleteInst, vlGetUID, vlSetUID, vlGetUIDFn, vlSetUIDFn, vlScriptingModule, vlInstanceModule, vlVanilla3D, vlVecFrom, vlRootScope, vlEq, vlBinary, vlEval, vlExec, vlMain, scriptTasks, outputLog, logOutput, vlStartTask, vlRunScript, startSimulationScripts, stepScripts, stopScripts } = vlRuntime;
         function upgradeLegacyPlayerManagement(objects) {

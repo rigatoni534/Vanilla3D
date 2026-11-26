@@ -12,7 +12,7 @@
             for (const o of Object.values(sceneObjects)) if (o.type === 'player' && (!best || o.order < best.order)) best = o;
             if (!best || !best.currentModel || !sceneObjects[best.currentModel]) return null;
             const ids = [], stack = [best.currentModel];
-            while (stack.length) { const cur = stack.pop(); for (const [id, o] of Object.entries(sceneObjects)) if (o.parent === cur) { ids.push(id); stack.push(id); } }
+            while (stack.length) { const cur = stack.pop(); for (const [id] of sceneChildEntries(cur)) { ids.push(id); stack.push(id); } }
             const parts = ids.filter(id => isShape(sceneObjects[id]));
             if (!parts.length) return null;
             const humanId = ids.find(id => sceneObjects[id].type === 'human') || null;

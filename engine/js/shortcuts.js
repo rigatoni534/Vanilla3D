@@ -51,6 +51,7 @@ function shortcutRestore(snapshot) {
     const objects = revive(snapshot.objects);
     for (const id of Object.keys(sceneObjects)) delete sceneObjects[id];
     Object.assign(sceneObjects, objects);
+    if (typeof sceneIndexInvalidate === 'function') sceneIndexInvalidate();
     for (const key of Object.keys(counters)) counters[key] = snapshot.counters[key] || 0;
     physicsVelocity.clear();
     selectedObjectId = snapshot.selected && sceneObjects[snapshot.selected] ? snapshot.selected : null;

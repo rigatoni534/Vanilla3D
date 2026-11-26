@@ -7,7 +7,7 @@ const MP_SYNC_MS = 250;
 const MP_MAX_BATCH = 350000;          // fall back to a complete world above this many bytes of edits
 const mpState = {
     transport: null, role: null, room: '', name: '', color: '', selfId: '', hostId: '',
-    peers: new Map(), roster: [], connected: false, ready: false, lastSync: null, lastPresence: null,
+    peers: new Map(), roster: [], connected: false, ready: false, syncCache: null, lastPresence: null,
     applying: false, worldIn: null, transfers: 0, remoteSelections: new Map(), chatLines: 0,
     worldTimer: null, worldRetries: 0, allowScripts: false, gate: v3dWorldSendGate(5000)
 };
@@ -135,7 +135,7 @@ function mpApplyIncomingOps(ops, from) {
     mpState.applying = true;
     try {
         v3dApplyOps(incoming);
-        mpState.lastSync = JSON.stringify(sceneObjects);
+        mpState.syncCache = v3dWireCache(sceneObjects);
         if (mpState.role === 'host' && mpState.transport) mpState.transport.broadcast({ type: 'ops', ops: incoming }, from);
         mpSetStatus('Updated by ' + (mpState.peers.get(from)?.name || 'a peer') + '.', 'good');
     } catch (err) {
@@ -162,7 +162,7 @@ function mpFinishWorldTransfer() {
             const data = await v3dUnpackWorld(transfer.chunks, transfer.encoding, transfer.size);
             if (simulationRunning) setSimulationRunning(false);
             applyWorldFile(data);
-            mpState.lastSync = JSON.stringify(sceneObjects);
+            mpState.syncCache = v3dWireCache(sceneObjects);
             mpState.ready = true;
             mpState.connected = true;
             mpClearWorldWait();
@@ -227,15 +227,19 @@ async function mpReceive(id, msg) {
     }
 }
 function mpSyncNow() {
+    if (typeof document !== 'undefined' && document.hidden) return;
     if (!mpState.transport || mpState.applying || !mpState.ready || mpState.transfers > 0) return;
     if (simulationRunning) return;
-    if (!mpState.lastSync) { mpState.lastSync = JSON.stringify(sceneObjects); return; }
-    const current = JSON.stringify(sceneObjects);
-    if (current === mpState.lastSync) return;
-    let previous;
-    try { previous = JSON.parse(mpState.lastSync); } catch (e) { mpState.lastSync = current; return; }
-    const ops = v3dDiffObjects(previous, sceneObjects);
-    mpState.lastSync = current;
+    if (!mpState.syncCache) {
+        try { mpState.syncCache = v3dWireCache(sceneObjects); }
+        catch (e) { mpState.syncCache = null; }
+        return;
+    }
+    let diff;
+    try { diff = v3dDiffObjectsFast(mpState.syncCache, sceneObjects); }
+    catch (e) { mpState.syncCache = null; return; }
+    mpState.syncCache = diff.cache;
+    const ops = diff.ops;
     if (!ops.upsert.length && !ops.remove.length) return;
     if (JSON.stringify(ops).length > MP_MAX_BATCH) {
         if (mpState.role === 'host') for (const id of mpState.transport.connections.keys()) mpHostWorld(id);
@@ -280,7 +284,7 @@ async function mpStartHost() {
         error: err => mpSetStatus(v3dNetErrorText(err), 'bad'),
         offline: () => mpSetStatus('Signalling is offline; reconnecting…', 'bad'),
         opened: code => {
-            mpState.lastSync = JSON.stringify(sceneObjects);
+            mpState.syncCache = v3dWireCache(sceneObjects);
             mpRenderSession();
             mpSetStatus('Room open. Share the code; guests can edit with you.', 'good');
             mpAppendChat('', 'Room opened. Share the code with up to 4 guests.', true);
@@ -305,7 +309,7 @@ async function mpJoinRoom() {
         offline: () => mpSetStatus('Signalling is offline; reconnecting…', 'bad'),
         host: host => mpPeerJoined(host.id, host),
         opened: normalized => {
-            mpState.lastSync = JSON.stringify(sceneObjects);
+            mpState.syncCache = v3dWireCache(sceneObjects);
             mpRenderSession();
             mpState.worldRetries = 0;
             mpSetStatus('Waiting for the host to send the world…');
@@ -328,7 +332,7 @@ function mpEndSession(message, quiet) {
     mpState.allowScripts = false;
     if (mpUi.allowScripts) mpUi.allowScripts.checked = false;
     mpClearWorldWait();
-    mpState.ready = false; mpState.worldIn = null; mpState.lastSync = null; mpState.lastPresence = null; mpState.transfers = 0; mpState.worldRetries = 0;
+    mpState.ready = false; mpState.worldIn = null; mpState.syncCache = null; mpState.lastPresence = null; mpState.transfers = 0; mpState.worldRetries = 0;
     mpState.connected = false;
     if (mpUi.session) mpUi.session.classList.add('mp-hidden');
     if (mpUi.dot) mpUi.dot.hidden = true;

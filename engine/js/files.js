@@ -417,6 +417,7 @@
             clearUnionMeshes();
             applyDefaultPlayerStats(activeWorldSettings());
             recountTypes();
+            if (typeof sceneIndexInvalidate === 'function') sceneIndexInvalidate();
             uiDirty = true;
             renderTabs(); renderExplorer(); renderProperties();
         }
@@ -529,6 +530,7 @@
             }
             vlInstCache.clear();
             recountTypes();
+            sceneIndexInvalidate();
             selectedObjectId = remap.get(rootId) || rootId;
             multiSel.clear();
             uiDirty = true; renderTabs(); renderExplorer(); renderProperties();

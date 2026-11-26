@@ -2505,10 +2505,12 @@ void main() {
         }
         let uiDirty = false;
         let outputDirty = false;
+        let lastUISyncRevision = -1;
         let lastEffectsTime = 0;
         function render() {
             if (!width || !height || !Number.isFinite(cx + cy)) { requestAnimationFrame(render); return; }
             const frameStart = performance.now();
+            sceneIndexEnsure();
             const effectDt = lastEffectsTime ? Math.min(0.1, Math.max(0, (frameStart - lastEffectsTime) / 1000)) : 0;
             lastEffectsTime = frameStart;
             // Counting visible faces and scanning the scene for the status bar is done about once a second, not per
@@ -2613,7 +2615,12 @@ void main() {
 
             if (!GL) for (const h of ordered) drawHandle(h);
 
-            uiSyncLayer();
+            // The interface only needs rebuilding when a UI object, the selection, the mode or the simulation
+            // changed. While the simulation runs it is live and must follow every scripted change.
+            if (simulationRunning || uiSceneRevision !== lastUISyncRevision) {
+                lastUISyncRevision = uiSceneRevision;
+                uiSyncLayer();
+            }
 
             const frameEnd = performance.now();
             frameCount++;

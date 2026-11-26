@@ -2,6 +2,16 @@
 // Add an entry here whenever ENGINE_VERSION changes. The About dialog and What's new both warn if the running version is missing.
 const VERSION_HISTORY = [
   {
+    version: '4.4.0.0',
+    label: '4.4.0.0',
+    date: '2026-11-26',
+    notes: [
+      'Large worlds now use a cached parent/child index. The Explorer, UI layer, selection picking, script child lookups and orphan cleanup no longer scan the whole scene for every row or object, so a 1,500-object world opens and redraws without the old quadratic work.',
+      'The interface layer is rebuilt only when the UI, selection, mode or simulation state changes. While the simulation runs it still follows scripted UI changes every frame; an idle editor no longer re-walks and restyles the whole interface each frame.',
+      'Editor and play-mode sync now keep a content revision per object and send only objects whose serialized state changed. Whole-scene JSON remains the fallback baseline, and both sync ticks pause while the tab is hidden, so a 500-object room no longer costs a full scene stringify and parse on every tick.'
+    ]
+  },
+  {
     version: '4.3.1.0',
     label: '4.3.1.0',
     date: '2026-11-26',

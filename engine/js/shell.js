@@ -209,6 +209,7 @@
             const look = document.getElementById('hint-look');
             look.hidden = !settings.leftDrag && !settings.rightClick;
             look.querySelector('kbd').textContent = settings.leftDrag && settings.rightClick ? 'Drag / Right-drag' : settings.rightClick ? 'Right-drag' : 'Drag';
+            if (typeof markUISceneChanged === 'function') markUISceneChanged();
         }
         function saveSettings() {
             applySettings();
@@ -290,6 +291,7 @@
             finally {
                 for (const id of Object.keys(sceneObjects)) delete sceneObjects[id];
                 Object.assign(sceneObjects, live);
+                if (typeof sceneIndexInvalidate === 'function') sceneIndexInvalidate();
             }
         }
         // buildWorldFile stamps every call with the current time, so the comparison ignores savedAt. Without this

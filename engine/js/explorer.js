@@ -6,23 +6,53 @@
         const multiSel = new Set(); let anchorId = null;
         let renamingId = null, menuItemId = null;
 
+        const treeIconCache = new Map();
+        let treeKindCssReady = false;
+        // A mask span renders the same sprite symbol without creating an SVG shadow tree for every row. The loader
+        // installs the per-symbol data URLs once; until then, fall back to the normal external icon.
+        function treeIcon(type) {
+            const iconId = typeIcon[type];
+            let html = treeIconCache.get(type);
+            if (!html) {
+                html = treeKindCssReady ? `<span class="tree-kind-icon tree-kind-${iconId}"></span>` : icon(iconId);
+                treeIconCache.set(type, html);
+            }
+            return html;
+        }
+        function enableTreeIconCss() {
+            treeKindCssReady = true;
+            refreshTreeIcons();
+        }
+        let TREE_CHEVRON_ICON = '', TREE_MORE_ICON = '';
+        function refreshTreeIcons() {
+            TREE_CHEVRON_ICON = icon('i-chev');
+            // A text ellipsis is the same affordance without cloning an SVG into every row.
+            TREE_MORE_ICON = '<span class="item-more-dots" aria-hidden="true">⋯</span>';
+            treeIconCache.clear();
+        }
         function rowHtml(id, o, depth) {
-            const kids = Object.entries(sceneObjects).filter(([, k]) => k.parent === id);
+            const out = [];
+            rowHtmlInto(id, o, depth, out);
+            return out.join('');
+        }
+        function rowHtmlInto(id, o, depth, out) {
+            const kids = sceneChildEntries(id);
             const open = !collapsed.has(id);
-            let h = `<div class="tree-item${id === selectedObjectId || multiSel.has(id) ? ' selected' : ''}${id === menuItemId ? ' menu-open' : ''}" style="--depth:${depth}" role="treeitem" ${o.readOnly ? '' : 'draggable="true"'} tabindex="0" data-id="${id}">
-                ${kids.length ? `<button class="tree-twist${open ? ' open' : ''}" data-twist="${id}" tabindex="-1" aria-label="${open ? 'Collapse' : 'Expand'} children">${icon('i-chev')}</button>` : '<span class="tree-twist"></span>'}${icon(typeIcon[o.type])}${id === renamingId
+            out.push(`<div class="tree-item${id === selectedObjectId || multiSel.has(id) ? ' selected' : ''}${id === menuItemId ? ' menu-open' : ''}" style="--depth:${depth}" role="treeitem" ${o.readOnly ? '' : 'draggable="true"'} tabindex="0" data-id="${id}">
+                ${kids.length ? `<button class="tree-twist${open ? ' open' : ''}" data-twist="${id}" tabindex="-1" aria-label="${open ? 'Collapse' : 'Expand'} children">${TREE_CHEVRON_ICON}</button>` : '<span class="tree-twist"></span>'}${treeIcon(o.type)}${id === renamingId
                     ? `<input class="rename-input" type="text" maxlength="48" value="${esc(o.name)}" aria-label="Rename">`
                     : `<span class="tree-name">${esc(settings.showUid ? id : o.name)}</span>`}${o.type === 'viewfinder' ? '' : `<span class="tree-id">${o.type}</span>`}${o.readOnly ? ''
-                    : `<button class="item-more" data-more="${id}" aria-label="More options for ${esc(o.name)}" aria-haspopup="menu" title="More options">${icon('i-more')}</button>`}
-            </div>`;
-            if (kids.length && open) for (const [k, c] of kids) h += rowHtml(k, c, depth + 1);
-            return h;
+                    : `<button class="item-more" data-more="${id}" aria-label="More options for ${esc(o.name)}" aria-haspopup="menu" title="More options">${TREE_MORE_ICON}</button>`}
+            </div>`);
+            if (kids.length && open) for (const [k, c] of kids) rowHtmlInto(k, c, depth + 1, out);
         }
         function renderExplorer() {
+            if (!TREE_CHEVRON_ICON) refreshTreeIcons();
+            markUISceneChanged();
             for (const k of [...multiSel]) if (!sceneObjects[k]) multiSel.delete(k);
             if (!selectedObjectId) multiSel.clear();
             explorerEl.innerHTML = Object.entries(spaces).map(([sid, sp]) => {
-                const kids = Object.entries(sceneObjects).filter(([, o]) => o.parent === sid);
+                const kids = sceneChildEntries(sid);
                 const open = !collapsed.has(sid);
                 const rows = kids.length ? kids.map(([id, o]) => rowHtml(id, o, 0)).join('')
                     : `<div class="tree-empty">${sid === 'scripts' ? 'No scripts yet' : sid === 'ui' ? 'No interface yet' : sid === 'players' ? 'Players join when the simulation runs' : sid === 'communications' ? 'No connections yet' : 'Empty'}</div>`;
@@ -280,6 +310,7 @@
             const name = dn('model') + (n === 1 ? '' : ' ' + n);
             sceneObjects[modelId] = { type: 'model', name, parent: parentSpace };
             for (const id of roots) sceneObjects[id].parent = modelId;
+            sceneIndexInvalidate();
             collapsed.delete(parentSpace); collapsed.delete(modelId);
             selectItem(modelId);
             toast('Grouped ' + roots.length + ' item' + (roots.length === 1 ? '' : 's') + ' into ' + name + '.');
@@ -290,9 +321,10 @@
             const o = sceneObjects[id];
             if (!o || o.type !== 'model' || o.readOnly) return;
             const parent = o.parent;
-            const kids = Object.entries(sceneObjects).filter(([, c]) => c.parent === id).map(([k]) => k);
+            const kids = sceneChildEntries(id).map(([k]) => k);
             for (const cid of kids) sceneObjects[cid].parent = parent;
             delete sceneObjects[id];
+            sceneIndexInvalidate();
             physicsVelocity.delete(id);
             pruneOrphans();
             multiSel.clear(); for (const cid of kids) multiSel.add(cid);
@@ -311,7 +343,7 @@
             renderExplorer();
             renderProperties();
         }
-        function collectTree(id) { const out = []; (function w(i) { for (const [k, o] of Object.entries(sceneObjects)) if (o.parent === i) { out.push([k, cloneData(o)]); w(k); } })(id); return out; }
+        function collectTree(id) { const out = []; (function w(i) { for (const [k, o] of sceneChildEntries(i)) { out.push([k, cloneData(o)]); w(k); } })(id); return out; }
         function reparent(id, target) {
             const o = sceneObjects[id], t = SPACE_KEYS.includes(target) ? true : sceneObjects[target];
             if (!o || !t || o.readOnly || target === 'players' || id === target || isInside(target, id) || (sceneObjects[target] && sceneObjects[target].readOnly) || o.parent === target) return;
@@ -320,7 +352,7 @@
             else if (target === 'communications' || isConnection(sceneObjects[target])) return;
             // UI lives in the UI space and inside other UI; the 3D world and the interface never mix.
             if (isUI(o) ? (SPACE_KEYS.includes(target) ? target !== 'ui' : !isUI(sceneObjects[target])) : target === 'ui') return;
-            o.parent = target; collapsed.delete(target); renderExplorer(); renderProperties();
+            o.parent = target; sceneIndexInvalidate(); collapsed.delete(target); renderExplorer(); renderProperties();
         }
         function pasteInto(space) {
             const c = clipboard;
@@ -354,6 +386,7 @@
             sceneObjects[id] = data;
             const map = { [c.rootId]: id };
             for (const [oldId, kd] of (c.kids || [])) { const nid = newId(); const d = cloneData(kd); d.parent = map[kd.parent] || id; map[oldId] = nid; sceneObjects[nid] = d; }
+            sceneIndexInvalidate();
             if (c.cut) clipboard = null;
             collapsed.delete(space);
             selectItem(id);
@@ -443,6 +476,7 @@
             rest.splice(at, 0, ...moved);
             for (const k of Object.keys(sceneObjects)) delete sceneObjects[k];
             for (const [k, o] of rest) sceneObjects[k] = o;
+            sceneIndexInvalidate();
             collapsed.delete(info.target); roots.forEach(k => multiSel.add(k));
             renderExplorer(); renderProperties();
         }

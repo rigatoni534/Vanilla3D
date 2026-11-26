@@ -168,6 +168,31 @@ function v3dDiffObjects(previous, current) {
     for (const id of Object.keys(previous)) if (!current[id] && v3dValidNetObject(id, previous[id])) remove.push(id);
     return { upsert, remove };
 }
+// A content revision per object: the cache holds the last wire JSON sent for each id, so a snapshot tick only
+// stringifies the current scene and compares each object once. The old diff parsed the previous whole-scene JSON and
+// stringified both sides of every object; this is roughly half the work and never needs the full scene string.
+function v3dDiffObjectsFast(cache, current) {
+    const upsert = [], remove = [], next = new Map();
+    for (const [id, obj] of Object.entries(current)) {
+        if (!v3dValidNetObject(id, obj)) continue;
+        const after = v3dWireObject(obj);
+        const text = JSON.stringify(after);
+        next.set(id, text);
+        if (!cache || cache.get(id) !== text) upsert.push([id, after]);
+    }
+    if (cache) for (const id of cache.keys()) {
+        if (!Object.prototype.hasOwnProperty.call(current, id)) remove.push(id);
+    }
+    return { ops: { upsert, remove }, cache: next };
+}
+function v3dWireCache(current) {
+    const cache = new Map();
+    for (const [id, obj] of Object.entries(current)) {
+        if (!v3dValidNetObject(id, obj)) continue;
+        cache.set(id, JSON.stringify(v3dWireObject(obj)));
+    }
+    return cache;
+}
 function v3dValidOps(ops, current) {
     if (!ops || typeof ops !== 'object') return false;
     if (!Array.isArray(ops.upsert) || !Array.isArray(ops.remove)) return false;
@@ -253,6 +278,7 @@ function v3dApplyOps(ops) {
         changed++;
     }
     if (typeof recountTypes === 'function') recountTypes();
+    if (typeof sceneIndexInvalidate === 'function') sceneIndexInvalidate();
     if (typeof vlInstCache !== 'undefined' && vlInstCache.clear) vlInstCache.clear();
     if (typeof renderExplorer === 'function') renderExplorer();
     if (typeof renderProperties === 'function') renderProperties();

@@ -3,7 +3,7 @@
 // the live snapshot stream in a read-only view; the editor's own multiplayer file handles co-editing separately.
 const playNet = {
     transport: null, role: null, room: '', name: 'Player', color: '', selfId: '', hostId: '',
-    peers: new Map(), roster: [], ready: false, worldIn: null, transfers: 0, lastSnapshot: null, closed: false,
+    peers: new Map(), roster: [], ready: false, worldIn: null, transfers: 0, snapshotCache: null, closed: false,
     avatars: new Map(), inputs: new Map(), followModel: '', lastFollow: 0, keys: {},
     worldTimer: null, worldRetries: 0, gate: v3dWorldSendGate(5000)
 };
@@ -330,7 +330,7 @@ async function playReceive(id, msg) {
             playSetStatus(who + ' has the world.');
             // A snapshot may have gone out while this guest was still unpacking the world and was ignored. Start
             // the diff again so the next tick sends the current scene instead of leaving the guest on initial data.
-            playNet.lastSnapshot = '';
+            playNet.snapshotCache = null;
         }
         return;
     }
@@ -390,7 +390,7 @@ async function playStartHost(name) {
         error: err => playSetStatus(v3dNetErrorText(err)),
         opened: code => {
             playNet.color = v3dNetColor(playNet.selfId);
-            playNet.lastSnapshot = JSON.stringify(sceneObjects);
+            playNet.snapshotCache = v3dWireCache(sceneObjects);
             playShow('host', code);
             playSetStatus('Room open. Guests join with ' + code + '.');
             playAppendChat('', 'Room opened. Guests join with ' + code + '.', true);
@@ -424,14 +424,18 @@ async function playStartGuest(room, name) {
     });
 }
 function playSnapshotTick() {
+    if (typeof document !== 'undefined' && document.hidden) return;
     if (playNet.role !== 'host' || !playNet.transport || !simulationRunning || !playNet.ready || playNet.transfers > 0) return;
-    const current = JSON.stringify(sceneObjects);
-    if (!playNet.lastSnapshot) { playNet.lastSnapshot = current; return; }
-    if (current === playNet.lastSnapshot) return;
-    let previous;
-    try { previous = JSON.parse(playNet.lastSnapshot); } catch (e) { playNet.lastSnapshot = current; return; }
-    const ops = v3dDiffObjects(previous, sceneObjects);
-    playNet.lastSnapshot = current;
+    if (!playNet.snapshotCache) {
+        try { playNet.snapshotCache = v3dWireCache(sceneObjects); }
+        catch (e) { playNet.snapshotCache = null; }
+        return;
+    }
+    let diff;
+    try { diff = v3dDiffObjectsFast(playNet.snapshotCache, sceneObjects); }
+    catch (e) { playNet.snapshotCache = null; return; }
+    playNet.snapshotCache = diff.cache;
+    const ops = diff.ops;
     if (!ops.upsert.length && !ops.remove.length) return;
     if (JSON.stringify(ops).length > 350000) {
         for (const id of playNet.transport.connections.keys()) playHostWorld(id);

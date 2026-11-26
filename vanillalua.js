@@ -590,7 +590,7 @@ function vlTouchTargets(id) {
     let model = o.type === 'model' ? id : vlTopModelOf(id);
     if (model && sceneObjects[model]) {
         out.add(model);
-        for (const [cid, c] of Object.entries(sceneObjects)) if (c.parent === model && c.type === 'human') out.add(cid);
+        for (const [cid, c] of vlChildren(model)) if (c.type === 'human') out.add(cid);
     }
     return [...out];
 }
@@ -631,11 +631,17 @@ function vlVelocityTarget(id) {
     });
     return proxy;
 }
+// Direct children come from the shared scene index in the editor; the standalone playground has no index.
+function vlChildren(id) {
+    return typeof sceneChildEntries === 'function'
+        ? sceneChildEntries(id)
+        : Object.entries(sceneObjects).filter(([, o]) => o.parent === id);
+}
 // A dot also reads a direct child by display name: frame.hp. A name that is both a property and a child is ambiguous.
 function vlChildNamed(id, name, line) {
     let found = null;
-    for (const [cid, c] of Object.entries(sceneObjects)) {
-        if (c.parent !== id || c.name !== name) continue;
+    for (const [cid, c] of vlChildren(id)) {
+        if (c.name !== name) continue;
         if (found) throw new VLError('More than one child is named "' + name + '". Rename one of them, or reach it with its UID.', line);
         found = cid;
     }
@@ -695,8 +701,8 @@ function vlGetOwnProp(inst, name, line) {
         const t = new VLTable(), stack = [inst.id];
         while (stack.length) {
             const cur = stack.pop();
-            for (const [id, c] of Object.entries(sceneObjects)) {
-                if (c.parent !== cur || !VL_UI_TYPES.includes(c.type)) continue;
+            for (const [id, c] of vlChildren(cur)) {
+                if (!VL_UI_TYPES.includes(c.type)) continue;
                 t.set(c.name, vlInst(id));
                 stack.push(id);
             }
@@ -983,7 +989,7 @@ let vlPendingJoinId = null, vlPlayerJoinCounter = 0;
 const vlPlayerEntries = () => Object.entries(sceneObjects).filter(([, o]) => o.type === 'player').sort((a, b) => a[1].order - b[1].order);
 function vlDescendants(rootId) {
     const out = [], stack = [rootId];
-    while (stack.length) { const cur = stack.pop(); for (const [id, o] of Object.entries(sceneObjects)) if (o.parent === cur) { out.push(id); stack.push(id); } }
+    while (stack.length) { const cur = stack.pop(); for (const [id] of vlChildren(cur)) { out.push(id); stack.push(id); } }
     return out;
 }
 function vlFindHuman(modelId) { return vlDescendants(modelId).find(id => sceneObjects[id].type === 'human') || null; }

@@ -1,6 +1,6 @@
 // Vanilla Engine — scene data, UI instances, unions and shape makers. Loaded in order by index.html; all files share one global scope.
         // Every icon comes from the shared sprite, so the engine and the site share one 24px set.
-        const ICON_SPRITE = '../assets/icons.svg';
+        let ICON_SPRITE = '../assets/icons.svg';
         const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="${ICON_SPRITE}#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
@@ -15,9 +15,10 @@
         };
         // ── Childing: an instance's parent is a space id or another instance's UID ──
         const SPACE_KEYS = ['world', 'storage', 'scripts', 'ui', 'communications', 'players'];
-        function spaceOf(o) { let n = 0; while (o && !SPACE_KEYS.includes(o.parent) && n++ < 64) o = sceneObjects[o.parent]; return o ? o.parent : null; }
+        function spaceOf(o) { if (typeof sceneSpaceOf === 'function') return sceneSpaceOf(o); let n = 0; while (o && !SPACE_KEYS.includes(o.parent) && n++ < 64) o = sceneObjects[o.parent]; return o ? o.parent : null; }
         function isInside(id, ancestorId) { let o = sceneObjects[id], n = 0; while (o && n++ < 64) { if (o.parent === ancestorId) return true; o = sceneObjects[o.parent]; } return false; }
         function pruneOrphans() {
+            if (typeof scenePruneOrphans === 'function') return scenePruneOrphans();
             let changed = true;
             while (changed) { changed = false; for (const [id, o] of Object.entries(sceneObjects)) if (o.parent !== 'engine' && !SPACE_KEYS.includes(o.parent) && !sceneObjects[o.parent]) { delete sceneObjects[id]; physicsVelocity.delete(id); vlInstCache.delete(id); if (selectedObjectId === id) selectedObjectId = null; changed = true; } }
         }

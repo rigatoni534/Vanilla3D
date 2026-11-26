@@ -9,3 +9,6 @@ test-results/
 playwright-report/
 
 .DS_Store
+
+# Private implementation plan; never publish this file.
+PLAN.md

@@ -264,8 +264,42 @@
             if (PLAY_ROLE === 'host') playStartHost(PLAY_NAME);
             return true;
         }
+        // The editor builds thousands of icon references while rendering a large Explorer. Referencing the external
+        // sprite once per row makes the browser resolve the same file thousands of times; inlining the sprite and
+        // using local fragment ids keeps that work to the initial page parse.
+        async function loadIconSprite() {
+            try {
+                const response = await fetch(ICON_SPRITE);
+                if (!response.ok) return;
+                const text = await response.text();
+                if (!text.includes('<symbol')) return;
+                const holder = document.createElement('div');
+                holder.id = 'icon-sprite';
+                holder.hidden = true;
+                holder.innerHTML = text;
+                document.body.prepend(holder);
+                ICON_SPRITE = '#';
+                // Explorer rows use a mask class instead of an SVG element. One rule per symbol keeps a 1,500-row
+                // tree from cloning 1,500 SVG shadow trees while preserving the same icons.
+                const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+                let css = '';
+                for (const symbol of doc.querySelectorAll('symbol[id]')) {
+                    const viewBox = symbol.getAttribute('viewBox') || '0 0 24 24';
+                    const data = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + viewBox + '">' + symbol.innerHTML + '</svg>');
+                    css += '.tree-kind-' + symbol.id + '{--tree-icon:url("' + data + '")}\n';
+                }
+                if (css) {
+                    const rules = document.createElement('style');
+                    rules.id = 'tree-icon-rules';
+                    rules.textContent = css;
+                    document.head.appendChild(rules);
+                    if (typeof enableTreeIconCss === 'function') enableTreeIconCss();
+                }
+            } catch (e) {}
+        }
         async function bootEditor() {
             autosaveSuppressed = PLAY_MODE;   // play mode must not restore or overwrite the editor's own save
+            await loadIconSprite();
             initGL();
             applySettings();
             // A new world starts with the DefaultPlayer model in Storage and the PlayerManagement script.

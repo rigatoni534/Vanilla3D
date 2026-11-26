@@ -106,6 +106,8 @@
     border-radius: 5px; color: var(--text-2); cursor: pointer;
   }
   .tree-item .ic { color: var(--muted); }
+  .tree-item .tree-kind-icon { width: 14px; height: 14px; flex: none; color: var(--muted); background: currentColor; -webkit-mask: var(--tree-icon) center / contain no-repeat; mask: var(--tree-icon) center / contain no-repeat; }
+  .tree-item.selected .tree-kind-icon { color: var(--accent); }
   .tree-item .tree-id { margin-left: auto; font: 11px var(--mono); color: var(--muted); }
   .tree-item:hover { background: var(--hover); color: var(--text); }
   .tree-item.selected { background: var(--accent-soft); color: var(--text); }
@@ -397,6 +399,7 @@
     background: transparent; border: 0; border-radius: 5px; color: var(--text-2); cursor: pointer;
   }
   .tree-item .item-more .ic { color: inherit; stroke-width: 2.4; }
+  .tree-item .item-more .item-more-dots { font: 700 16px/1 var(--ui); transform: translateY(-1px); }
   .tree-item .item-more:hover { background: var(--hover); color: var(--text); }
   .tree-item:hover .item-more, .tree-item:focus-within .item-more, .tree-item.menu-open .item-more { display: grid; }
   .tree-item:hover .tree-id, .tree-item:focus-within .tree-id, .tree-item.menu-open .tree-id { display: none; }

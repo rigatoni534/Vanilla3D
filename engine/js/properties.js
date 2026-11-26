@@ -924,6 +924,7 @@
         }
         function setMode(m) {
             mode = m;
+            markUISceneChanged();
             document.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
             applyModeHint();
             hoverKey = null;

@@ -552,7 +552,7 @@
         // The top-most element under a point. Later objects draw over earlier ones, so the last match wins.
         function uiPickAt(x, y, containers) {
             let hit = null;
-            for (const [id, o] of Object.entries(sceneObjects)) {
+            for (const [id, o] of sceneIndexEnsure().all) {
                 if (!isUI(o) || !containers.includes(uiContainerOf(id)) || uiHidden(o)) continue;
                 const r = uiLayout(o);
                 if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) hit = id;
@@ -684,6 +684,7 @@
         }
         function uiSyncLayer() {
             if (!uiLayerEl) return;
+            const index = sceneIndexEnsure();
             const containers = uiRenderContainers();
             uiLayerEl.classList.toggle('live', simulationRunning && containers.length > 0);
             const wanted = new Set();
@@ -694,9 +695,9 @@
                 if (!node || node.type !== o.type) { if (node) node.el.remove(); node = uiBuildNode(id, o); uiNodes.set(id, node); }
                 if (node.el.parentElement !== parentEl) parentEl.appendChild(node.el);
                 uiApplyStyle(node, o, ++z);
-                for (const [kidId, kid] of Object.entries(sceneObjects)) if (kid.parent === id && isUI(kid) && kid.visible !== false) place(kidId, node.kids, kid);
+                for (const [kidId, kid] of index.children.get(id) || []) if (isUI(kid) && kid.visible !== false) place(kidId, node.kids, kid);
             };
-            for (const [id, o] of Object.entries(sceneObjects)) if (isUI(o) && containers.includes(o.parent) && o.visible !== false) place(id, uiLayerEl, o);
+            for (const [id, o] of index.all) if (isUI(o) && containers.includes(o.parent) && o.visible !== false) place(id, uiLayerEl, o);
             for (const [id, node] of [...uiNodes]) if (!wanted.has(id)) { node.el.remove(); uiNodes.delete(id); }
             uiSyncChrome(containers);
         }
@@ -772,11 +773,13 @@
         function uiStartMove(o, m) {
             uiDragging = { kind: 'move', o, sx: m.x, sy: m.y, box: uiParentBox(o), start: { posX: o.posX, posY: o.posY } };
             uiGuides = [];
+            markUISceneChanged();
             canvas.style.cursor = 'grabbing';
         }
         function uiStartScale(o, corner, m) {
             uiDragging = { kind: 'scale', o, corner, sx: m.x, sy: m.y, box: uiParentBox(o), start: { posX: o.posX, posY: o.posY, sizeX: o.sizeX, sizeY: o.sizeY } };
             uiGuides = [];
+            markUISceneChanged();
             canvas.style.cursor = 'grabbing';
         }
         function uiUpdateDrag(m) {
@@ -794,6 +797,7 @@
                 o.posX = r.posX; o.posY = r.posY; o.sizeX = r.sizeX; o.sizeY = r.sizeY;
                 uiGuides = r.guides;
             }
+            markUISceneChanged();
             syncUIPropInputs();
         }
         function uiMouseDown(m) {

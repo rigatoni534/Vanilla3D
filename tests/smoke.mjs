@@ -408,6 +408,41 @@ try {
         assert.equal(report.local, null, 'the migrated tab-close copy should be removed from localStorage');
     });
 
+    await step('scene index follows add, reparent and orphan cleanup', async () => {
+        stage = 'scene-index';
+        const report = await page.evaluate(() => {
+            const rootId = 'IndexRoot', childId = 'IndexChild', grandId = 'IndexGrand';
+            const cleanup = () => { for (const id of [rootId, childId, grandId]) delete sceneObjects[id]; sceneIndexInvalidate(); };
+            cleanup();
+            sceneObjects[rootId] = { type: 'model', name: 'Index Root', parent: 'world' };
+            sceneObjects[childId] = { type: 'model', name: 'Index Child', parent: rootId };
+            sceneObjects[grandId] = { type: 'prism6', name: 'Index Grand', parent: childId, x: 0, y: 0, z: 0, length: 1, width: 1, height: 1 };
+            sceneIndexInvalidate();
+            const worldChildren = sceneChildEntries('world').map(([id]) => id);
+            const rootChildren = sceneChildEntries(rootId).map(([id]) => id);
+            const descendants = [], stack = [rootId];
+            while (stack.length) { const cur = stack.pop(); for (const [id] of sceneChildEntries(cur)) { descendants.push(id); stack.push(id); } }
+            const worldSpace = spaceOf(sceneObjects[grandId]);
+            sceneObjects[childId].parent = 'storage';
+            sceneIndexInvalidate();
+            const storageChildren = sceneChildEntries('storage').map(([id]) => id);
+            const storageSpace = spaceOf(sceneObjects[grandId]);
+            sceneObjects[grandId].parent = 'missing-parent';
+            pruneOrphans();
+            const orphanGone = !sceneObjects[grandId];
+            cleanup();
+            return { worldChildren, rootChildren, descendants, worldSpace, storageChildren, storageSpace, orphanGone };
+        });
+        assert.equal(report.worldChildren.includes('IndexRoot'), true, 'a new root must appear under its space');
+        assert.deepEqual(report.rootChildren, ['IndexChild']);
+        assert.deepEqual(report.descendants.sort(), ['IndexChild', 'IndexGrand']);
+        assert.equal(report.worldSpace, 'world');
+        assert.equal(report.storageChildren.includes('IndexChild'), true, 'a reparented object must move to its new space');
+        assert.equal(report.storageChildren.includes('IndexGrand'), false, 'its descendant must move with it');
+        assert.equal(report.storageSpace, 'storage');
+        assert.equal(report.orphanGone, true, 'an object whose parent disappeared must still be pruned');
+    });
+
     await step('multiplayer rejects parent cycles and keeps assets out of edit batches', async () => {
         stage = 'multiplayer-protocol';
         const report = await page.evaluate(() => {
@@ -427,6 +462,13 @@ try {
             const next = JSON.parse(JSON.stringify(previous));
             next[wsId].gravity = 1.23;
             const ops = v3dDiffObjects(previous, next);
+            const fast = v3dDiffObjectsFast(v3dWireCache(previous), next);
+            const fastSame = JSON.stringify(fast.ops) === JSON.stringify(ops);
+            const diffBefore = { A: shape('A', 'world'), B: shape('B', 'A') };
+            const diffAfter = { A: { ...diffBefore.A, x: 7 }, C: shape('C', 'A') };
+            const oldDiff = v3dDiffObjects(JSON.parse(JSON.stringify(diffBefore)), diffAfter);
+            const fastDiff = v3dDiffObjectsFast(v3dWireCache(diffBefore), diffAfter);
+            const fastDiffSame = JSON.stringify(fastDiff.ops) === JSON.stringify(oldDiff);
             const wsOp = ops.upsert.find(([id]) => id === wsId);
             const opBytes = wsOp ? JSON.stringify(wsOp[1]).length : -1;
             const opsValid = v3dValidOps(ops, sceneObjects);
@@ -447,7 +489,7 @@ try {
             gate.clear();
             const afterClear = gate.begin('guest');
             return {
-                cycle, unknownRoot, normal, selfParent, wsOp: !!wsOp, opBytes, opsValid, applied,
+                cycle, unknownRoot, normal, selfParent, wsOp: !!wsOp, opBytes, opsValid, applied, fastSame, fastDiffSame,
                 filteredBlocked: filtered.blocked, filteredUpserts: filtered.ops.upsert.length,
                 wsFilteredBlocked: wsFiltered.blocked, netVersion: V3D_NET_VERSION,
                 first, during, cooling, other, afterClear
@@ -461,6 +503,8 @@ try {
         assert.ok(report.opBytes < 256 * 1024, 'assets must not count against the World Settings edit: ' + report.opBytes + ' bytes');
         assert.equal(report.opsValid, true);
         assert.equal(report.applied, true, 'applying a settings edit must keep the receiver\'s assets');
+        assert.equal(report.fastSame, true, 'the revision-cache diff must match the whole-scene diff');
+        assert.equal(report.fastDiffSame, true, 'the revision-cache diff must report the same changed and removed ids');
         assert.equal(report.filteredBlocked, 1, 'a guest script edit must be blocked with scripts off');
         assert.equal(report.filteredUpserts, 1, 'the guest\'s ordinary shape edit must still go through');
         assert.equal(report.wsFilteredBlocked, 1, 'World Settings must stay host-only even when scripts are allowed');

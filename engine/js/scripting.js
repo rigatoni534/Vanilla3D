@@ -271,6 +271,7 @@
             if (UI_TYPES.includes(kind)) {
                 obj = makeUI(kind, newUIName(kind), space);
                 sceneObjects[id] = obj;
+                sceneIndexInvalidate();
                 collapsed.delete(space);
                 selectItem(id);
                 return;
@@ -331,6 +332,7 @@
                 obj = newScriptData(n === 1 ? dn('script') : dn('script') + ' ' + n, space, isUI(sceneObjects[space]) ? 'Local' : 'Server');
             }
             sceneObjects[id] = obj;
+            sceneIndexInvalidate();
             collapsed.delete(space);
             selectItem(id);
         }

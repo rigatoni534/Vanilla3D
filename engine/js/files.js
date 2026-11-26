@@ -172,7 +172,11 @@
             if (db) {
                 const stored = await saveDbPut(s.id, json);
                 if (typeof stored !== 'undefined') {
-                    try { localStorage.removeItem(s.key); } catch (e) {}
+                    // Never remove a tab-close copy that is newer than the write that just finished.
+                    try {
+                        const local = localStorage.getItem(s.key);
+                        if (!local || local === json) localStorage.removeItem(s.key);
+                    } catch (e) {}
                     return true;
                 }
             }
@@ -218,8 +222,11 @@
                 try { legacy = localStorage.getItem(s.key) || ''; } catch (e) {}
                 if (!legacy) continue;
                 const existing = await saveDbGet(s.id);
-                if (typeof existing !== 'string' || !existing) {
-                    const stored = await saveDbPut(s.id, legacy);
+                const hasExisting = typeof existing === 'string' && existing;
+                // A tab-close copy is often newer than the IndexedDB save. Keep whichever was saved last.
+                const newer = !hasExisting || slotSavedAt(legacy) >= slotSavedAt(existing) ? legacy : existing;
+                if (!hasExisting || newer !== existing) {
+                    const stored = await saveDbPut(s.id, newer);
                     if (typeof stored === 'undefined') continue;   // keep the key when the copy failed
                 }
                 try { localStorage.removeItem(s.key); } catch (e) {}

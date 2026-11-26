@@ -2,6 +2,17 @@
 // Add an entry here whenever ENGINE_VERSION changes. The About dialog and What's new both warn if the running version is missing.
 const VERSION_HISTORY = [
   {
+    version: '4.2.2.0',
+    label: '4.2.2.0',
+    date: '2026-11-26',
+    notes: [
+      'Closing the tab, reloading or hiding the editor now writes the Autosave synchronously before the page can go away, so the newest edit survives even if IndexedDB never finishes. The next open migrates that copy into IndexedDB.',
+      'Closing during Run saves the world Run started from, not the moving simulated objects.',
+      'If a tab-close copy is newer than the IndexedDB Autosave, opening the editor keeps the newer one instead of discarding it during migration.',
+      'Worlds too large for localStorage still start the IndexedDB write immediately on exit, and play mode and guests still never touch this save.'
+    ]
+  },
+  {
     version: '4.2.1.0',
     label: '4.2.1.0',
     date: '2026-11-26',

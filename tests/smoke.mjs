@@ -86,6 +86,13 @@ async function openWorldFile(name) {
     if (await confirm.isVisible({ timeout: 3000 }).catch(() => false)) await confirm.click();
 }
 
+async function waitForEditorBoot() {
+    await page.waitForFunction(() => {
+        const loader = document.getElementById('boot-loader');
+        return loader && loader.hidden === true;
+    }, null, { timeout: 30000 });
+}
+
 const results = [];
 async function step(name, fn) {
     const started = Date.now();
@@ -305,6 +312,80 @@ try {
         assert.equal(report.warningsAfterSecond, 1);
         assert.equal(report.recovered, true, 'autosave should recover when writing works again');
         assert.equal(report.chipAfterRecovery, false, 'the chip should clear after a successful autosave');
+    });
+
+    await step('a tab close writes the world synchronously and the next open restores it', async () => {
+        stage = 'close-save';
+        const saved = await page.evaluate(() => {
+            const id = newId();
+            sceneObjects[id] = makePrism('Close Test', 'world', { x: 8, y: 3, z: 0, length: 1, width: 1, height: 1, anchored: true });
+            recountTypes(); renderExplorer();
+            const ok = autosaveSync();
+            const raw = localStorage.getItem('vanilla-engine-slot-autosave-v1') || '';
+            return { ok, hasTest: raw.includes('Close Test'), bytes: raw.length };
+        });
+        assert.equal(saved.ok, true, 'the synchronous tab-close save should report a write');
+        assert.equal(saved.hasTest, true, 'the complete world must be in localStorage before the page can close');
+        // A change made after that save is carried out by the real pagehide handler.
+        await page.evaluate(() => {
+            const id = newId();
+            sceneObjects[id] = makePrism('Exit Test', 'world', { x: -8, y: 3, z: 0, length: 1, width: 1, height: 1, anchored: true });
+            recountTypes(); renderExplorer();
+        });
+        await page.goto(base + '/player/index.html', { waitUntil: 'load' });
+        await page.goto(base + '/engine/index.html', { waitUntil: 'load' });
+        await waitForEditorBoot();
+        const restored = await page.evaluate(() => Object.values(sceneObjects)
+            .filter((o) => o.name === 'Close Test' || o.name === 'Exit Test')
+            .map((o) => o.name).sort());
+        assert.deepEqual(restored, ['Close Test', 'Exit Test'], 'the closed tab world should reopen from its exit save');
+    });
+
+    await step('closing during Run saves the world Run started from', async () => {
+        stage = 'close-run';
+        const startY = await page.evaluate(() => {
+            const id = newId();
+            sceneObjects[id] = makePrism('Fall Test', 'world', { x: 0, y: 24, z: 0, length: 2, width: 2, height: 2, anchored: false });
+            recountTypes(); renderExplorer();
+            return sceneObjects[id].y;
+        });
+        await page.click('#run-btn');
+        await page.waitForSelector('#canvas-container.simulating');
+        await page.waitForTimeout(900);
+        const droppedY = await page.evaluate(() => {
+            const o = Object.values(sceneObjects).find((item) => item.name === 'Fall Test');
+            return o ? o.y : null;
+        });
+        assert.ok(droppedY !== null && droppedY < startY - 0.01, 'the test block should have moved during Run, got y=' + droppedY);
+        await page.goto(base + '/player/index.html', { waitUntil: 'load' });
+        await page.goto(base + '/engine/index.html', { waitUntil: 'load' });
+        await waitForEditorBoot();
+        const restoredY = await page.evaluate(() => {
+            const o = Object.values(sceneObjects).find((item) => item.name === 'Fall Test');
+            return o ? o.y : null;
+        });
+        assert.ok(restoredY !== null && Math.abs(restoredY - startY) < 0.001,
+            'the saved world should be the pre-Run snapshot, got y=' + restoredY);
+    });
+
+    await step('a newer tab-close copy replaces an older IndexedDB save', async () => {
+        stage = 'close-migrate';
+        await page.evaluate(async () => {
+            const current = JSON.stringify(buildWorldFile());
+            const older = JSON.parse(current);
+            for (const [id, o] of Object.entries(older.objects)) if (o.name === 'Fall Test') delete older.objects[id];
+            older.savedAt = '2000-01-01T00:00:00.000Z';
+            await writeSlot('autosave', JSON.stringify(older));
+            localStorage.setItem('vanilla-engine-slot-autosave-v1', current);
+        });
+        await page.reload({ waitUntil: 'load' });
+        await waitForEditorBoot();
+        const report = await page.evaluate(() => ({
+            hasFall: Object.values(sceneObjects).some((o) => o.name === 'Fall Test'),
+            local: localStorage.getItem('vanilla-engine-slot-autosave-v1')
+        }));
+        assert.equal(report.hasFall, true, 'the newer tab-close copy must win over the older IndexedDB save');
+        assert.equal(report.local, null, 'the migrated tab-close copy should be removed from localStorage');
     });
 
     await step('play mode neither restores nor writes the editor autosave', async () => {

@@ -279,6 +279,19 @@
             autosaveFailureNotified = true;
             toast('Autosave failed. ' + storageFailureText() + ' Your latest edit is not saved; download a .vnw to keep it.', 'bad');
         }
+        // The tab-close path saves the world the editor owns, not a live simulation: while Run is active, the saved
+        // world is the snapshot Run took. The live objects are put back immediately after the file is built.
+        function worldFileJsonForSave() {
+            if (!simulationRunning || !simSnapshot) return JSON.stringify(buildWorldFile());
+            const live = {};
+            for (const id of Object.keys(sceneObjects)) { live[id] = sceneObjects[id]; delete sceneObjects[id]; }
+            Object.assign(sceneObjects, simSnapshot.objects);
+            try { return JSON.stringify(buildWorldFile()); }
+            finally {
+                for (const id of Object.keys(sceneObjects)) delete sceneObjects[id];
+                Object.assign(sceneObjects, live);
+            }
+        }
         // buildWorldFile stamps every call with the current time, so the comparison ignores savedAt. Without this
         // every timer tick and every tab close would rewrite an unchanged world just to update the timestamp.
         function autosaveFingerprint(json) {
@@ -298,9 +311,35 @@
             if (!fileMenu.hidden) refreshFileStatus();
             return true;
         }
-        const saveOnExit = () => { try { autosaveNow(); } catch (e) {} };
+        // A closing tab cannot wait for IndexedDB. localStorage writes are synchronous, so this copy is complete before
+        // the page can go away; the next open migrates it into IndexedDB. A world too large for localStorage starts the
+        // IndexedDB write immediately instead.
+        function autosaveSync() {
+            if (autosaveSuppressed) return false;
+            let json; try { json = worldFileJsonForSave(); } catch (e) { return false; }
+            const fingerprint = autosaveFingerprint(json);
+            if (!json || fingerprint === autosaveBase) return false;
+            try {
+                localStorage.setItem(slotOf('autosave').key, json);
+            } catch (e) {
+                lastSlotWriteError = e;
+                writeSlot('autosave', json).then(ok => {
+                    if (ok) { autosaveBase = fingerprint; setAutosaveFailure(false); }
+                    else setAutosaveFailure(true);
+                }).catch(() => setAutosaveFailure(true));
+                return false;
+            }
+            autosaveBase = fingerprint;
+            setAutosaveFailure(false);
+            // Deliberately no IndexedDB write here: an async commit must never be able to delete this copy while the
+            // tab is closing. The next open migrates it, and a later autosave replaces it once the world changes.
+            return true;
+        }
+        const saveOnExit = () => { try { autosaveSync(); } catch (e) {} };
         window.addEventListener('pagehide', saveOnExit);
         window.addEventListener('beforeunload', saveOnExit);
+        // Mobile browsers can discard a hidden tab without a pagehide, so hiding the tab saves as well.
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnExit(); });
         document.getElementById('opt-uid').addEventListener('change', (e) => { settings.showUid = e.target.checked; saveSettings(); renderExplorer(); });
         document.getElementById('opt-syntax').addEventListener('change', (e) => { settings.syntax = e.target.checked; saveSettings(); reCheckEditor(); });
         ['prism6', 'ball', 'model', 'human', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el) el.addEventListener('change', () => { const v = el.value.trim().slice(0, 24); if (v) settings.defaultNames[t] = v; else delete settings.defaultNames[t]; el.value = dn(t); saveSettings(); }); });

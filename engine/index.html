@@ -5,13 +5,118 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/base.css?v=4.0.0.0.golden.1">
-    <link rel="stylesheet" href="../assets/engine.css?v=4.0.0.0.golden.1">
+    <link rel="stylesheet" href="../assets/base.css?v=4.1.0.0.1">
+    <link rel="stylesheet" href="../assets/engine.css?v=4.1.0.0.2">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
+    <script>if (new URLSearchParams(location.search).get('play') === '1') document.documentElement.classList.add('boot-skip');</script>
+    <script>
+      // If the splash script itself fails, do not leave the editor behind a frozen overlay.
+      setTimeout(function () {
+        if (window.VanillaLoader) return;
+        var boot = document.getElementById('boot-loader');
+        if (boot) boot.hidden = true;
+        ['toolbar', 'workspace', 'statusbar'].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          el.inert = false;
+          el.removeAttribute('aria-hidden');
+        });
+      }, 8000);
+    </script>
 
 </head>
 <body>
 
+  <!-- Golden boot loader: rendered before the deferred engine scripts run. -->
+  <div id="boot-loader" class="boot-loader" role="dialog" aria-modal="true" aria-labelledby="boot-title" aria-describedby="boot-status" tabindex="-1">
+    <div class="boot-scene" aria-hidden="true">
+      <div class="boot-grid"></div>
+      <span class="boot-glow boot-glow-a"></span>
+      <span class="boot-glow boot-glow-b"></span>
+      <span class="boot-stars"></span>
+    </div>
+
+    <header class="boot-head">
+      <h1 id="boot-title">Loading Editor<span class="boot-dots">..</span></h1>
+    </header>
+
+    <div class="boot-graphic" aria-hidden="true">
+      <div class="boot-art">
+        <svg viewBox="0 0 460 460" focusable="false">
+            <defs>
+              <linearGradient id="boot-gold" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#ffe6a8"/>
+                <stop offset=".46" stop-color="#f2b134"/>
+                <stop offset="1" stop-color="#b96c10"/>
+              </linearGradient>
+              <linearGradient id="boot-blue" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#a8cbff"/>
+                <stop offset="1" stop-color="#4b78c5"/>
+              </linearGradient>
+              <linearGradient id="boot-green" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#a7ecc3"/>
+                <stop offset="1" stop-color="#3c9d70"/>
+              </linearGradient>
+              <radialGradient id="boot-sun">
+                <stop offset="0" stop-color="#f2b134" stop-opacity=".48"/>
+                <stop offset=".55" stop-color="#f2b134" stop-opacity=".1"/>
+                <stop offset="1" stop-color="#f2b134" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <circle class="boot-aura" cx="330" cy="132" r="142" fill="url(#boot-sun)"/>
+            <g class="boot-orbit">
+              <ellipse cx="230" cy="248" rx="190" ry="66" transform="rotate(-24 230 248)" fill="none" stroke="rgba(242,177,52,.26)" stroke-width="1.2" stroke-dasharray="3 9"/>
+              <ellipse cx="230" cy="248" rx="150" ry="49" transform="rotate(-24 230 248)" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+              <circle cx="390" cy="188" r="5" fill="#f2b134"/>
+              <circle cx="82" cy="302" r="3.5" fill="#7db4ff"/>
+              <circle cx="282" cy="324" r="2.5" fill="#f7fbff" opacity=".8"/>
+            </g>
+            <text class="boot-40" x="230" y="298" text-anchor="middle" fill="url(#boot-gold)">4.1</text>
+            <g class="boot-floor">
+              <path d="M78 344 L230 274 L384 344 L230 418 Z" fill="rgba(242,177,52,.05)" stroke="rgba(242,177,52,.26)"/>
+              <path d="M105 353 L230 295 L355 353 M136 366 L230 322 L326 366 M167 379 L230 349 L293 379" fill="none" stroke="rgba(255,255,255,.11)"/>
+            </g>
+            <g class="boot-float boot-float-a">
+              <path d="M230 316 L282 342 L230 368 L178 342 Z" fill="#f7c45f"/>
+              <path d="M178 342 L230 368 L230 416 L178 390 Z" fill="#b96c10"/>
+              <path d="M282 342 L230 368 L230 416 L282 390 Z" fill="#e59b24"/>
+              <path d="M178 342 L230 368 L282 342" fill="none" stroke="rgba(255,255,255,.28)"/>
+            </g>
+            <g class="boot-float boot-float-b">
+              <path d="M122 345 L160 364 L122 383 L84 364 Z" fill="#b8d4ff"/>
+              <path d="M84 364 L122 383 L122 415 L84 396 Z" fill="#426da9"/>
+              <path d="M160 364 L122 383 L122 415 L160 396 Z" fill="#6c9dde"/>
+            </g>
+            <g class="boot-float boot-float-c">
+              <path d="M330 350 L366 368 L330 386 L294 368 Z" fill="#b8efcb"/>
+              <path d="M294 368 L330 386 L330 416 L294 398 Z" fill="#327f5b"/>
+              <path d="M366 368 L330 386 L330 416 L366 398 Z" fill="#5ab482"/>
+            </g>
+            <g class="boot-star-field" fill="#fff">
+              <circle cx="104" cy="124" r="1.5" opacity=".8"/>
+              <circle cx="354" cy="86" r="1.2" opacity=".6"/>
+              <circle cx="396" cy="284" r="1.5" opacity=".7"/>
+              <circle cx="74" cy="376" r="1.1" opacity=".55"/>
+              <circle cx="300" cy="70" r="1" opacity=".5"/>
+              <circle cx="416" cy="224" r="1" opacity=".45"/>
+            </g>
+          </svg>
+      </div>
+    </div>
+
+    <section class="boot-progress" aria-label="Loading progress">
+      <p class="boot-current"><span class="boot-pulse" aria-hidden="true"></span><span id="boot-current">Preparing the editor…</span></p>
+      <div id="boot-progress" class="boot-track" role="progressbar" aria-label="Loading editor assets" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <i id="boot-fill"></i><span class="boot-track-scan"></span>
+      </div>
+      <div class="boot-meta">
+        <span id="boot-status" role="status" aria-live="polite">Starting the Golden runtime…</span>
+        <span class="boot-numbers"><b id="boot-percent">0%</b><span id="boot-count">0 / 0 scripts</span></span>
+      </div>
+    </section>
+
+    <div class="boot-exit-glow" aria-hidden="true"></div>
+  </div>
 
   <!-- Toolbar -->
   <header id="toolbar">
@@ -437,7 +542,7 @@
             <div class="version-list">
               <div class="version-row"><span>Created</span><code id="world-created-version">Unknown</code></div>
               <div class="version-row"><span>Current</span><code id="world-current-version">Unknown</code></div>
-              <div class="version-row"><span>Latest</span><code id="world-latest-version">4.0.0.0</code></div>
+              <div class="version-row"><span>Latest</span><code id="world-latest-version">4.1.0.0</code></div>
             </div>
             <button class="btn btn-primary" id="world-migrate" type="button" style="width:100%;justify-content:center;margin-top:10px">Up to date</button>
             <div class="field-note" id="world-version-note"></div>
@@ -530,7 +635,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 Golden</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.1.0.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -1155,31 +1260,32 @@ vanilla3D.Size(1, 2, 1)</code></pre>
   </div>
 
   <script src="../assets/peerjs.min.js"></script>
-  <script src="../vanillalua.js?v=4.0.0.0.golden.1"></script>
-  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 Golden';</script>
+  <script src="../vanillalua.js?v=4.1.0.0.1"></script>
+  <script>const ENGINE_VERSION = '4.1.0.0'; const ENGINE_RELEASE = '4.1.0.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/collision.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/scene.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/effects.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/csg.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/version-history.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/playeranim.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/player.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/sounds.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/scripting.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/shell.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/files.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/offline.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/explorer.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/shortcuts.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/properties.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/protocol.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/net.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/multiplayer.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/playmultiplayer.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/render.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/gl.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="../assets/release.js?v=4.0.0.0.golden.1"></script>
-  <script defer src="js/main.js?v=4.0.0.0.golden.1"></script>
+  <script defer src="js/loader.js?v=4.1.0.0.1"></script>
+  <script defer src="js/collision.js?v=4.1.0.0.1"></script>
+  <script defer src="js/scene.js?v=4.1.0.0.1"></script>
+  <script defer src="js/effects.js?v=4.1.0.0.1"></script>
+  <script defer src="js/csg.js?v=4.1.0.0.1"></script>
+  <script defer src="js/version-history.js?v=4.1.0.0.1"></script>
+  <script defer src="js/playeranim.js?v=4.1.0.0.1"></script>
+  <script defer src="js/player.js?v=4.1.0.0.1"></script>
+  <script defer src="js/sounds.js?v=4.1.0.0.1"></script>
+  <script defer src="js/scripting.js?v=4.1.0.0.1"></script>
+  <script defer src="js/shell.js?v=4.1.0.0.1"></script>
+  <script defer src="js/files.js?v=4.1.0.0.1"></script>
+  <script defer src="js/offline.js?v=4.1.0.0.1"></script>
+  <script defer src="js/explorer.js?v=4.1.0.0.1"></script>
+  <script defer src="js/shortcuts.js?v=4.1.0.0.1"></script>
+  <script defer src="js/properties.js?v=4.1.0.0.1"></script>
+  <script defer src="js/protocol.js?v=4.1.0.0.1"></script>
+  <script defer src="js/net.js?v=4.1.0.0.1"></script>
+  <script defer src="js/multiplayer.js?v=4.1.0.0.1"></script>
+  <script defer src="js/playmultiplayer.js?v=4.1.0.0.1"></script>
+  <script defer src="js/render.js?v=4.1.0.0.1"></script>
+  <script defer src="js/gl.js?v=4.1.0.0.1"></script>
+  <script defer src="../assets/release.js?v=4.1.0.0.1"></script>
+  <script defer src="js/main.js?v=4.1.0.0.1"></script>
 </body>
 </html>

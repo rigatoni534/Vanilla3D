@@ -373,7 +373,12 @@
 
   if (pending) {
     const show = () => window.setTimeout(open, reduceMotion ? 0 : 420);
-    if (document.readyState === 'complete') show();
-    else window.addEventListener('load', show, { once: true });
+    if (window.VanillaLoader && window.VanillaLoader.active) {
+      window.addEventListener('vanilla-loader-done', show, { once: true });
+    } else if (document.readyState === 'complete') {
+      show();
+    } else {
+      window.addEventListener('load', show, { once: true });
+    }
   }
 })();

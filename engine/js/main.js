@@ -299,3 +299,4 @@
       }
     }
   }
+if (window.VanillaLoader && typeof window.VanillaLoader.ready === 'function') window.VanillaLoader.ready();

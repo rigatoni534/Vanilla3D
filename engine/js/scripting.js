@@ -58,6 +58,15 @@
             if (activeTab === id) { activeTab = openTabs[Math.min(i, openTabs.length - 1)] || 'world'; applyActiveTab(); }
             renderTabs();
         }
+        // A new world has no script tabs from the old one, and no editor should keep the removed script loaded.
+        function resetScriptTabs() {
+            openTabs.length = 0;
+            openTabs.push('world');
+            activeTab = 'world';
+            editorScriptId = null;
+            applyActiveTab();
+            renderTabs();
+        }
         tabbarEl.addEventListener('click', (e) => {
             const close = e.target.closest('[data-close-tab]');
             if (close) { closeTab(close.dataset.closeTab); return; }

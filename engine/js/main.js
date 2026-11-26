@@ -264,22 +264,31 @@
             if (PLAY_ROLE === 'host') playStartHost(PLAY_NAME);
             return true;
         }
-        initGL();
-        applySettings();
-        // A new world starts with the DefaultPlayer model in Storage and the PlayerManagement script.
-        for (const [id, o] of makePlayerSetup(newId)) sceneObjects[id] = o;
-        bootRestore();
-        if (PLAY_MODE) installPlayMode();
-        // The autosave baseline is the world as it is now, so an untouched world is never written over your save.
-        try { autosaveBase = JSON.stringify(buildWorldFile()); } catch (e) { autosaveBase = ''; }
-        refreshTheme();
-        renderVersionHistory();
-        if (!PLAY_MODE) maybeShowWhatsNew();
-        renderExplorer();
-        renderProperties();
-        setMode('select');
-        requestAnimationFrame(render);
-        if (PLAY_MODE && PLAY_ROLE !== 'guest') setSimulationRunning(true);
+        async function bootEditor() {
+            autosaveSuppressed = PLAY_MODE;   // play mode must not restore or overwrite the editor's own save
+            initGL();
+            applySettings();
+            // A new world starts with the DefaultPlayer model in Storage and the PlayerManagement script.
+            for (const [id, o] of makePlayerSetup(newId)) sceneObjects[id] = o;
+            // Only the editor restores the browser save. A guest gets the host's world instead of its own flashing first.
+            if (!PLAY_MODE) {
+                await migrateLegacySlots();
+                await bootRestore();
+            }
+            if (PLAY_MODE) installPlayMode();
+            // The autosave baseline is the world as it is now, so an untouched world is never written over your save.
+            try { autosaveBase = autosaveFingerprint(JSON.stringify(buildWorldFile())); } catch (e) { autosaveBase = ''; }
+            refreshTheme();
+            renderVersionHistory();
+            if (!PLAY_MODE) maybeShowWhatsNew();
+            renderExplorer();
+            renderProperties();
+            setMode('select');
+            requestAnimationFrame(render);
+            if (PLAY_MODE && PLAY_ROLE !== 'guest') setSimulationRunning(true);
+            if (window.VanillaLoader && typeof window.VanillaLoader.ready === 'function') window.VanillaLoader.ready();
+        }
+        bootEditor();
     // Replace the embedded language-reference section with the canonical shared docs.
   if (window.VanillaluaShared) {
     const article = document.getElementById('docs-article');
@@ -299,4 +308,3 @@
       }
     }
   }
-if (window.VanillaLoader && typeof window.VanillaLoader.ready === 'function') window.VanillaLoader.ready();

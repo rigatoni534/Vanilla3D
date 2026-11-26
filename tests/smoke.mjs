@@ -173,6 +173,19 @@ try {
         }
     });
 
+    await step('opening a world clears undo and redo from the previous world', async () => {
+        stage = 'history-reset';
+        const report = await page.evaluate(() => ({
+            undo: shortcutHistory.undo.length,
+            redo: shortcutHistory.redo.length,
+            reverted: shortcutUndo()
+        }));
+        assert.equal(report.undo, 0, 'loading a world must not leave an undo step behind');
+        assert.equal(report.redo, 0);
+        assert.equal(report.reverted, false);
+        assert.equal(await page.evaluate(WORLD_CHILDREN), 5, 'undo must not change the world that was just opened');
+    });
+
     await step('a scripted world reports no problems, runs and prints', async () => {
         stage = 'script';
         await openWorldFile('scripted.vnw');
@@ -188,6 +201,128 @@ try {
             null, { timeout: 8000 });
         await page.click('#run-btn');
         await page.waitForFunction(() => !document.getElementById('canvas-container').classList.contains('simulating'));
+    });
+
+    await step('loading another world closes script tabs and clears history', async () => {
+        stage = 'tabs-reset';
+        await page.evaluate(() => {
+            const script = Object.keys(sceneObjects).find((id) => sceneObjects[id].type === 'script');
+            sceneObjects[script].name = 'Changed Before Load';
+            shortcutPushHistory();
+        });
+        await openWorldFile('three-objects.vnw');
+        const report = await page.evaluate(() => ({
+            tabs: openTabs.slice(),
+            active: activeTab,
+            undo: shortcutHistory.undo.length,
+            editorHidden: document.getElementById('script-editor').hidden,
+            tabNames: [...document.querySelectorAll('#tabbar .tab-name')].map((el) => el.textContent)
+        }));
+        assert.deepEqual(report.tabs, ['world'], 'the removed script must not stay open');
+        assert.equal(report.active, 'world');
+        assert.equal(report.undo, 0);
+        assert.equal(report.editorHidden, true);
+        assert.deepEqual(report.tabNames, ['World']);
+    });
+
+    await step('undo snapshots share asset payloads and stay under the byte budget', async () => {
+        stage = 'undo-assets';
+        const report = await page.evaluate(() => {
+            const settingsId = Object.keys(sceneObjects).find((id) => sceneObjects[id].type === 'worldsettings');
+            const payload = 'data:image/png;base64,' + 'A'.repeat(3 * 1024 * 1024);
+            sceneObjects[settingsId].assets = [{ name: 'large.png', type: 'image/png', size: payload.length, url: payload }];
+            shortcutResetHistory();
+            for (let i = 0; i < 60; i++) {
+                sceneObjects[settingsId].timeOfDay = i % 24;
+                shortcutPushHistory();
+            }
+            const snapshots = shortcutHistory.undo;
+            const cost = snapshots.reduce((total, snapshot) => total + snapshot.bytes, 0);
+            const visible = JSON.stringify(snapshots.map((snapshot) => snapshot.objects)).length;
+            const kept = snapshots.length;
+            shortcutUndo();
+            const restored = sceneObjects[settingsId].assets[0].url === payload;
+            shortcutResetHistory();
+            return { kept, cost, visible, restored };
+        });
+        assert.equal(report.kept, 60, 'a 3 MB asset must not push 60 edits out of the history');
+        assert.ok(report.visible < 1024 * 1024, 'snapshots still hold raw asset data: ' + report.visible + ' bytes');
+        assert.ok(report.cost < 32 * 1024 * 1024, 'history should stay under the byte cap: ' + report.cost);
+        assert.equal(report.restored, true, 'undo must put the asset back');
+    });
+
+    await step('browser saves use IndexedDB and migrate legacy slots', async () => {
+        stage = 'indexeddb';
+        const saved = await page.evaluate(async () => {
+            const ok = await saveToSlot('slot1', true);
+            const restored = await readSlot('slot1');
+            const legacy = localStorage.getItem('vanilla-engine-slot-1-v1');
+            localStorage.setItem('vanilla-engine-slot-2-v1', JSON.stringify(buildWorldFile()));
+            return { ok, restored: !!restored, legacy, count: restored ? Object.keys(restored.objects).length : 0 };
+        });
+        assert.equal(saved.ok, true);
+        assert.equal(saved.restored, true);
+        assert.ok(saved.count > 0);
+        assert.equal(saved.legacy, null, 'an IndexedDB save must not also live in localStorage');
+        const slotLabel = await page.evaluate(async () => {
+            await refreshFileStatus();
+            return document.querySelector('[data-slot="slot1"]').textContent;
+        });
+        assert.match(slotLabel, /\d+(\.\d+)? (KB|MB)/, 'the File menu should show the save size, got: ' + slotLabel);
+        await page.reload({ waitUntil: 'load' });
+        await page.waitForFunction(() => document.getElementById('boot-loader').hidden === true, null, { timeout: 30000 });
+        const migrated = await page.evaluate(async () => ({
+            slot1: !!(await readSlot('slot1')),
+            slot2: !!(await readSlot('slot2')),
+            legacy2: localStorage.getItem('vanilla-engine-slot-2-v1')
+        }));
+        assert.equal(migrated.slot1, true, 'the IndexedDB save should survive a reload');
+        assert.equal(migrated.slot2, true, 'the old localStorage slot should be migrated');
+        assert.equal(migrated.legacy2, null, 'the migrated key should be removed');
+    });
+
+    await step('a failed autosave warns once and keeps a status chip', async () => {
+        stage = 'autosave-failure';
+        const report = await page.evaluate(async () => {
+            const realWrite = writeSlot;
+            writeSlot = async () => false;
+            autosaveBase = '';
+            const first = await autosaveNow();
+            const chip = document.getElementById('autosave-warning');
+            const chipVisible = !!chip && !chip.hidden;
+            const warnings = [...document.querySelectorAll('#toast-host .toast')].filter((el) => /Autosave failed/.test(el.textContent)).length;
+            const second = await autosaveNow();
+            const warningsAfterSecond = [...document.querySelectorAll('#toast-host .toast')].filter((el) => /Autosave failed/.test(el.textContent)).length;
+            writeSlot = realWrite;
+            autosaveBase = '';
+            const recovered = await autosaveNow();
+            return { first, second, recovered, chipVisible, warnings, warningsAfterSecond, chipAfterRecovery: !chip.hidden };
+        });
+        assert.equal(report.first, false);
+        assert.equal(report.second, false);
+        assert.equal(report.chipVisible, true, 'the failing autosave should show its status chip');
+        assert.equal(report.warnings, 1, 'the warning appears once per failure, not on every tick');
+        assert.equal(report.warningsAfterSecond, 1);
+        assert.equal(report.recovered, true, 'autosave should recover when writing works again');
+        assert.equal(report.chipAfterRecovery, false, 'the chip should clear after a successful autosave');
+    });
+
+    await step('play mode neither restores nor writes the editor autosave', async () => {
+        stage = 'play-autosave';
+        const before = await page.evaluate(async () => {
+            localStorage.setItem('vanilla-player-world-v1', JSON.stringify(buildWorldFile()));
+            return await readSlotText('autosave');
+        });
+        await page.goto(base + '/engine/index.html?play=1', { waitUntil: 'load' });
+        await page.waitForFunction(() => document.body.classList.contains('play-mode'));
+        const after = await page.evaluate(async () => ({
+            suppressed: autosaveSuppressed,
+            autosave: await readSlotText('autosave'),
+            written: await autosaveNow()
+        }));
+        assert.equal(after.suppressed, true, 'play mode must suppress Autosave');
+        assert.equal(after.written, false, 'play mode must never write the Autosave slot');
+        assert.equal(after.autosave, before, 'the editor autosave must be byte-identical after a play session');
     });
 
     // ── Player ──

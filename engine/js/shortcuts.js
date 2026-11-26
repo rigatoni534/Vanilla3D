@@ -2,7 +2,9 @@
 // Shortcuts are captured before the viewport and explorer handlers, and edit commands are refused while typing, while a
 // modal or menu is open, and while the simulation owns the keyboard. Space still jumps in Run because the edit path is off.
 const shortcutHistory = { undo: [], redo: [] };
-const SHORTCUT_LIMIT = 100;
+const SHORTCUT_BYTE_LIMIT = 32 * 1024 * 1024;   // history is capped by the memory it holds, not by an entry count
+const SHORTCUT_ASSET_PREFIX = '\u0000asset:';
+const SHORTCUT_ASSET_MIN = 512;
 
 function shortcutSelection() {
     const ids = multiSel.size ? [...multiSel] : (selectedObjectId ? [selectedObjectId] : []);
@@ -11,18 +13,44 @@ function shortcutSelection() {
 function shortcutEditableSelection() {
     return shortcutSelection().filter(id => !sceneObjects[id].locked);
 }
+function shortcutIsAssetPayload(value) {
+    return typeof value === 'string' && value.length >= SHORTCUT_ASSET_MIN && value.startsWith('data:');
+}
+// Snapshots do not duplicate asset payloads: a data: string is stored once in the snapshot's shared asset list and a
+// token takes its place in the copied objects. Restoring puts the original string back. The snapshot's cost is its
+// tokenised JSON, so the history cap measures the memory actually added, not the size of the world's assets.
 function shortcutSnapshot() {
+    const assets = [], seen = new Map();
+    const text = JSON.stringify(sceneObjects, (key, value) => {
+        if (!shortcutIsAssetPayload(value)) return value;
+        let token = seen.get(value);
+        if (!token) { token = SHORTCUT_ASSET_PREFIX + assets.length; seen.set(value, token); assets.push(value); }
+        return token;
+    });
     return {
-        objects: JSON.parse(JSON.stringify(sceneObjects)),
+        objects: JSON.parse(text),
+        assets,
         selected: selectedObjectId,
         multi: [...multiSel],
-        counters: JSON.parse(JSON.stringify(counters))
+        counters: JSON.parse(JSON.stringify(counters)),
+        bytes: text.length
     };
 }
 function shortcutRestore(snapshot) {
     if (!snapshot) return;
+    const revive = (value) => {
+        if (typeof value === 'string' && value.startsWith(SHORTCUT_ASSET_PREFIX)) {
+            const index = Number(value.slice(SHORTCUT_ASSET_PREFIX.length));
+            const asset = snapshot.assets && snapshot.assets[index];
+            return typeof asset === 'string' ? asset : value;
+        }
+        if (Array.isArray(value)) { for (let i = 0; i < value.length; i++) value[i] = revive(value[i]); }
+        else if (value && typeof value === 'object') { for (const key of Object.keys(value)) value[key] = revive(value[key]); }
+        return value;
+    };
+    const objects = revive(snapshot.objects);
     for (const id of Object.keys(sceneObjects)) delete sceneObjects[id];
-    Object.assign(sceneObjects, snapshot.objects);
+    Object.assign(sceneObjects, objects);
     for (const key of Object.keys(counters)) counters[key] = snapshot.counters[key] || 0;
     physicsVelocity.clear();
     selectedObjectId = snapshot.selected && sceneObjects[snapshot.selected] ? snapshot.selected : null;
@@ -31,23 +59,45 @@ function shortcutRestore(snapshot) {
     renderExplorer(); renderProperties();
     if (typeof host !== 'undefined' && host.markUIDirty) host.markUIDirty();
 }
+function shortcutHistoryBytes() {
+    let total = 0;
+    for (const snapshot of shortcutHistory.undo) total += snapshot.bytes || 0;
+    for (const snapshot of shortcutHistory.redo) total += snapshot.bytes || 0;
+    return total;
+}
+// Drop the oldest steps first when the history is over its budget. The newest step is always kept.
+function shortcutTrimHistory() {
+    let total = shortcutHistoryBytes();
+    while (total > SHORTCUT_BYTE_LIMIT && shortcutHistory.undo.length + shortcutHistory.redo.length > 1) {
+        const dropped = shortcutHistory.undo.length ? shortcutHistory.undo.shift() : shortcutHistory.redo.shift();
+        total -= dropped.bytes || 0;
+    }
+}
+function shortcutResetHistory() {
+    shortcutHistory.undo.length = 0;
+    shortcutHistory.redo.length = 0;
+}
 function shortcutPushHistory() {
     shortcutHistory.undo.push(shortcutSnapshot());
-    if (shortcutHistory.undo.length > SHORTCUT_LIMIT) shortcutHistory.undo.shift();
     shortcutHistory.redo.length = 0;
+    shortcutTrimHistory();
 }
 function shortcutUndo() {
     if (!shortcutHistory.undo.length) return false;
     const current = shortcutSnapshot();
-    shortcutRestore(shortcutHistory.undo.pop());
+    const previous = shortcutHistory.undo.pop();
+    shortcutRestore(previous);
     shortcutHistory.redo.push(current);
+    shortcutTrimHistory();
     return true;
 }
 function shortcutRedo() {
     if (!shortcutHistory.redo.length) return false;
     const current = shortcutSnapshot();
-    shortcutRestore(shortcutHistory.redo.pop());
+    const next = shortcutHistory.redo.pop();
+    shortcutRestore(next);
     shortcutHistory.undo.push(current);
+    shortcutTrimHistory();
     return true;
 }
 function shortcutRename() {

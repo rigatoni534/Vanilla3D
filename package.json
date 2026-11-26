@@ -1,6 +1,6 @@
 {
   "name": "vanilla3d",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "private": true,
   "description": "Vanilla3D runs straight from the repository with no build step. This manifest only holds the tools that check and test the shipped files.",
   "scripts": {

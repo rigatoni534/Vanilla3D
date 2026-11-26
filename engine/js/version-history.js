@@ -2,6 +2,18 @@
 // Add an entry here whenever ENGINE_VERSION changes. The About dialog and What's new both warn if the running version is missing.
 const VERSION_HISTORY = [
   {
+    version: '4.2.1.0',
+    label: '4.2.1.0',
+    date: '2026-11-26',
+    notes: [
+      'Play mode and multiplayer guests no longer read or write the editor\'s Autosave slot, so joining a room or opening a world in the Player cannot replace your own world with the host\'s.',
+      'Opening a world now clears undo and redo and closes script tabs from the previous world, so a late Ctrl+Z cannot replay an old edit onto the new one.',
+      'A failed autosave now says why: a one-time warning names a full or blocked browser store, a persistent Autosave Failing chip stays in the status bar, and the File menu lists each browser save\'s size.',
+      'Undo snapshots share asset payloads instead of copying them, and history is capped by about 32 MB of snapshot data instead of 100 entries, so large images no longer multiply memory.',
+      'Browser saves now live in IndexedDB, which has room for worlds that contain assets. Saves from 4.2.0.0 are migrated once on first open and removed from localStorage; a browser without IndexedDB keeps using localStorage.'
+    ]
+  },
+  {
     version: '4.2.0.0',
     label: '4.2.0.0',
     date: '2026-11-26',

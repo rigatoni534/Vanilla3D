@@ -92,23 +92,138 @@
                 ov.classList.add('active'); no.focus();
             });
         }
-        function readSlot(id) { const s = slotOf(id); if (!s) return null; try { return JSON.parse(localStorage.getItem(s.key) || 'null'); } catch (e) { return null; } }
-        function writeSlot(id, json) { const s = slotOf(id); if (!s) return false; try { localStorage.setItem(s.key, json); return true; } catch (e) { return false; } }
-        function slotTime(id) {
-            const saved = readSlot(id);
-            if (!saved || !saved.savedAt) return '';
-            const d = new Date(saved.savedAt);
-            return Number.isNaN(d.getTime()) ? '' : d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        // Browser saves live in IndexedDB, which has room for worlds with assets. localStorage remains a fallback for a
+        // browser that blocks IndexedDB, and older saves are migrated there once on boot.
+        const SAVE_DB_NAME = 'vanilla-engine-saves-v1';
+        const SAVE_DB_STORE = 'slots';
+        let saveDbPromise = null;
+        let lastSlotWriteError = null;
+        let saveMigrationDone = false;
+        function saveDbOpen() {
+            if (!('indexedDB' in window)) return Promise.resolve(null);
+            if (saveDbPromise) return saveDbPromise;
+            saveDbPromise = new Promise(resolve => {
+                let request;
+                try { request = indexedDB.open(SAVE_DB_NAME, 1); } catch (e) { resolve(null); return; }
+                request.onupgradeneeded = () => { const db = request.result; if (!db.objectStoreNames.contains(SAVE_DB_STORE)) db.createObjectStore(SAVE_DB_STORE); };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => resolve(null);
+                request.onblocked = () => resolve(null);
+            });
+            return saveDbPromise;
         }
-        function refreshFileStatus() {
+        function saveDbGet(id) {
+            return saveDbOpen().then(db => new Promise(resolve => {
+                if (!db) { resolve(undefined); return; }
+                let tx;
+                try { tx = db.transaction(SAVE_DB_STORE, 'readonly'); } catch (e) { resolve(undefined); return; }
+                let request;
+                try { request = tx.objectStore(SAVE_DB_STORE).get(id); } catch (e) { resolve(undefined); return; }
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => resolve(undefined);
+                tx.onabort = () => resolve(undefined);
+            }));
+        }
+        function saveDbPut(id, json) {
+            return saveDbOpen().then(db => new Promise(resolve => {
+                if (!db) { resolve(undefined); return; }
+                let tx;
+                try { tx = db.transaction(SAVE_DB_STORE, 'readwrite'); } catch (e) { resolve(undefined); return; }
+                try { tx.objectStore(SAVE_DB_STORE).put(json, id); } catch (e) { resolve(undefined); return; }
+                tx.oncomplete = () => resolve(id);
+                tx.onerror = () => resolve(undefined);
+                tx.onabort = () => resolve(undefined);
+            }));
+        }
+        // Names the cause of a failed write: the quota message is actionable, a blocked store usually is not.
+        function storageFailureText() {
+            const err = lastSlotWriteError;
+            const quota = err && (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED' || err.code === 22 || err.code === 1014);
+            return quota ? 'Browser storage is full.' : 'Browser storage is blocked or disabled.';
+        }
+        function slotSavedAt(text) {
+            try {
+                const saved = JSON.parse(text);
+                const time = saved && saved.savedAt ? Date.parse(saved.savedAt) : NaN;
+                return Number.isFinite(time) ? time : 0;
+            } catch (e) { return 0; }
+        }
+        async function readSlotText(id) {
+            const s = slotOf(id);
+            if (!s) return '';
+            const stored = await saveDbGet(s.id);
+            const fromDb = typeof stored === 'string' ? stored : '';
+            let fromLocal = '';
+            try { fromLocal = localStorage.getItem(s.key) || ''; } catch (e) {}
+            // A localStorage fallback write can be newer than the IndexedDB copy, so the later save wins.
+            if (fromDb && fromLocal) return slotSavedAt(fromLocal) > slotSavedAt(fromDb) ? fromLocal : fromDb;
+            return fromDb || fromLocal;
+        }
+        async function readSlot(id) {
+            const text = await readSlotText(id);
+            if (!text) return null;
+            try { return JSON.parse(text); } catch (e) { return null; }
+        }
+        async function writeSlot(id, json) {
+            const s = slotOf(id);
+            if (!s) return false;
+            lastSlotWriteError = null;
+            const db = await saveDbOpen();
+            if (db) {
+                const stored = await saveDbPut(s.id, json);
+                if (typeof stored !== 'undefined') {
+                    try { localStorage.removeItem(s.key); } catch (e) {}
+                    return true;
+                }
+            }
+            try { localStorage.setItem(s.key, json); return true; }
+            catch (e) { lastSlotWriteError = e; return false; }
+        }
+        async function slotStats(id) {
+            const text = await readSlotText(id);
+            if (!text) return { has: false, when: '', bytes: 0 };
+            let saved = null;
+            try { saved = JSON.parse(text); } catch (e) {}
+            let when = '';
+            if (saved && saved.savedAt) {
+                const d = new Date(saved.savedAt);
+                if (!Number.isNaN(d.getTime())) when = d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            }
+            return { has: true, when, bytes: text.length };
+        }
+        function formatSlotBytes(bytes) {
+            if (!bytes) return '';
+            return bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(bytes / 1024)) + ' KB';
+        }
+        async function refreshFileStatus() {
             const stamps = [];
             for (const s of SAVE_SLOTS) {
-                const saved = readSlot(s.id), when = slotTime(s.id);
-                fileMenu.querySelectorAll('[data-slot="' + s.id + '"]').forEach(el => el.textContent = when || 'empty');
-                fileMenu.querySelectorAll('[data-file-act="open-' + s.id + '"]').forEach(el => el.disabled = !saved);
-                stamps.push(s.label + ': ' + (when || 'empty'));
+                const info = await slotStats(s.id), size = formatSlotBytes(info.bytes);
+                const label = info.has ? (info.when || 'saved') + (size ? ' · ' + size : '') : 'empty';
+                fileMenu.querySelectorAll('[data-slot="' + s.id + '"]').forEach(el => el.textContent = label);
+                fileMenu.querySelectorAll('[data-file-act="open-' + s.id + '"]').forEach(el => el.disabled = !info.has);
+                stamps.push(s.label + ': ' + (info.when || 'empty'));
             }
             fileStatus.textContent = stamps.join('  ·  ');
+        }
+        // Move the saves 4.2.0.0 and older wrote to localStorage into IndexedDB. The key is only removed after the
+        // IndexedDB copy is safely stored, so an interrupted migration loses nothing.
+        async function migrateLegacySlots() {
+            if (saveMigrationDone) return;
+            saveMigrationDone = true;
+            const db = await saveDbOpen();
+            if (!db) return;
+            for (const s of SAVE_SLOTS) {
+                let legacy = '';
+                try { legacy = localStorage.getItem(s.key) || ''; } catch (e) {}
+                if (!legacy) continue;
+                const existing = await saveDbGet(s.id);
+                if (typeof existing !== 'string' || !existing) {
+                    const stored = await saveDbPut(s.id, legacy);
+                    if (typeof stored === 'undefined') continue;   // keep the key when the copy failed
+                }
+                try { localStorage.removeItem(s.key); } catch (e) {}
+            }
         }
         function toggleFileMenu(force) {
             const show = typeof force === 'boolean' ? force : fileMenu.hidden;
@@ -199,6 +314,9 @@
             // untouched default in place so existing saved worlds get Player1 and guest models too.
             if (typeof upgradeLegacyPlayerManagement === 'function') upgradeLegacyPlayerManagement(data.objects);
             clearAsk();
+            // Undo and redo belong to the world that was open; they must never replay onto a different one.
+            if (typeof shortcutResetHistory === 'function') shortcutResetHistory();
+            if (typeof resetScriptTabs === 'function') resetScriptTabs();
             loadedWorldMeta = {
                 currentVersion: normalizeWorldVersion(raw.currentVersion) || normalizeWorldVersion(raw.engineVersion) || '',
                 createdVersion: normalizeWorldVersion(raw.createdVersion) || normalizeWorldVersion(raw.engineVersion) || '',
@@ -307,20 +425,21 @@
             a.href = url; a.download = worldFileName(); document.body.appendChild(a); a.click(); a.remove();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
-        function saveToSlot(id, quiet) {
+        async function saveToSlot(id, quiet) {
             const s = slotOf(id);
             if (!s) return false;
+            if (id === 'autosave' && autosaveSuppressed) return false;   // play mode and guests never write the editor's save
             let json; try { json = JSON.stringify(buildWorldFile()); } catch (e) { json = ''; }
             if (!json) { toast('Could not build the save.', 'bad'); return false; }
-            if (!writeSlot(id, json)) { toast('Could not save: browser storage is full or disabled.', 'bad'); return false; }
-            if (id === 'autosave') autosaveBase = json;
+            if (!(await writeSlot(id, json))) { toast('Could not save: ' + storageFailureText(), 'bad'); return false; }
+            if (id === 'autosave') autosaveBase = autosaveFingerprint(json);
             if (!quiet) { toast('Saved to ' + s.label + '.'); refreshFileStatus(); }
             return true;
         }
         async function openSlot(id) {
             const s = slotOf(id);
             if (!s) return;
-            const saved = readSlot(id);
+            const saved = await readSlot(id);
             if (!saved) { toast('Nothing saved in ' + s.label + ' yet.', 'warn'); return; }
             try { validateWorldFile(saved); } catch (err) { toast(s.label + ' is damaged: ' + err.message, 'bad'); return; }
             if (!(await confirmDialog('Open ' + s.label + '?', 'This replaces everything in World, Storage and Scripts. Unsaved changes will be lost.', 'Open', true))) return;
@@ -331,9 +450,9 @@
             if (action === 'docs') { openDocs('file'); return; }
             if (action === 'offline') { downloadOfflineCopy(); return; }   // read-only, so it works during a simulation too
             if (simulationRunning) { toast('Stop the simulation first. Stop restores your world.', 'warn'); return; }
-            if (action === 'save-autosave') saveToSlot('autosave');
-            else if (action === 'save-slot1') saveToSlot('slot1');
-            else if (action === 'save-slot2') saveToSlot('slot2');
+            if (action === 'save-autosave') await saveToSlot('autosave');
+            else if (action === 'save-slot1') await saveToSlot('slot1');
+            else if (action === 'save-slot2') await saveToSlot('slot2');
             else if (action === 'save-file') { downloadWorldFile(); toast('Downloaded ' + worldFileName() + '.'); }
             else if (action === 'open-file') vnwInput.click();
             else if (action === 'add-vanilla') vanillaInput.click();
@@ -465,8 +584,9 @@
             document.getElementById('mu-ver').textContent = 'A newer ' + found + ' is available. You are on engine ' + ENGINE_VERSION + (loadedVl ? ' with Vanillalua ' + loadedVl : '') + '.';
             openModal('modal-update', '#mu-reload');
         }
-        document.getElementById('mu-reload').addEventListener('click', () => {
-            if (!simulationRunning) { autosaveNow(); saveToSlot('autosave', true); }   // keep the world, changed or not
+        document.getElementById('mu-reload').addEventListener('click', async () => {
+            // Keep the world, changed or not - except in play mode, where this page does not own the Autosave slot.
+            if (!simulationRunning && !autosaveSuppressed) { await autosaveNow(); await saveToSlot('autosave', true); }
             try { localStorage.setItem(VN_RELOAD_RESTORE_KEY, 'autosave'); } catch (e) {}
             closeModals();
             const base = location.href.split('#')[0];
@@ -475,13 +595,13 @@
         setInterval(checkForUpdates, UPDATE_CHECK_MS);
 
         // Puts the world back after the reload button, and opens your autosave when the editor loads.
-        function bootRestore() {
+        async function bootRestore() {
             let pending = '';
             try { pending = localStorage.getItem(VN_RELOAD_RESTORE_KEY) || ''; } catch (e) {}
             if (pending) { try { localStorage.removeItem(VN_RELOAD_RESTORE_KEY); } catch (e) {} }
             const slotId = pending && slotOf(pending) ? pending : (settings.autosave > 0 ? 'autosave' : '');
             if (!slotId) return;
-            const saved = readSlot(slotId);
+            const saved = await readSlot(slotId);
             if (!saved) return;
             try { validateWorldFile(saved); applyWorldFile(saved); }
             catch (e) { if (pending) toast('Could not restore the last save: ' + e.message, 'bad'); return; }

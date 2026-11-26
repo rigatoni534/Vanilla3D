@@ -212,6 +212,8 @@
   .stat { display: inline-flex; gap: 6px; white-space: nowrap; }
   .stat-label { color: var(--muted); }
   .stat-value { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat-value[data-state="bad"] { color: var(--bad); }
+  #autosave-warning[hidden] { display: none; }
   #stat-fps::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; background: var(--good); }
   #stat-fps[data-state="warn"]::before { background: var(--warn); }
   #stat-fps[data-state="bad"]::before { background: var(--bad); }

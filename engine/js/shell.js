@@ -52,6 +52,7 @@
         }
         const settings = defaultSettings();
         let autosaveTimer = null, autosaveMins = -1, autosaveBase = '';
+        let autosaveSuppressed = false, autosaveFailureNotified = false;
         // Accent colors: each preset has a dark-theme and a light-theme shade.
         const ACCENT_PRESETS = [
             { id: 'vanilla', name: 'Vanilla yellow', dark: '#f2b134', light: '#b86f00' },
@@ -265,17 +266,35 @@
         });
         function setupAutosave() {
             clearInterval(autosaveTimer); autosaveTimer = null;
+            if (autosaveSuppressed) return;                  // play mode owns its own world, not the editor's save
             if (!(settings.autosave > 0)) return;
             autosaveTimer = setInterval(() => autosaveNow(), settings.autosave * 60000);
         }
+        // A failed write is shown once as a toast and stays visible as a status-bar chip until a write succeeds.
+        function setAutosaveFailure(failed) {
+            const chip = document.getElementById('autosave-warning');
+            if (chip) chip.hidden = !failed;
+            if (!failed) { autosaveFailureNotified = false; return; }
+            if (autosaveFailureNotified) return;
+            autosaveFailureNotified = true;
+            toast('Autosave failed. ' + storageFailureText() + ' Your latest edit is not saved; download a .vnw to keep it.', 'bad');
+        }
+        // buildWorldFile stamps every call with the current time, so the comparison ignores savedAt. Without this
+        // every timer tick and every tab close would rewrite an unchanged world just to update the timestamp.
+        function autosaveFingerprint(json) {
+            return typeof json === 'string' ? json.replace(/"savedAt":"[^"]*"/, '') : '';
+        }
         // Writes the Autosave slot when the world has changed since the last autosave. The timer, the tab closing and
         // the reload button on the update prompt all come through here.
-        function autosaveNow() {
+        async function autosaveNow() {
+            if (autosaveSuppressed) return false;            // play mode and guests must never touch the editor's save
             if (simulationRunning) return false;             // a running simulation is a snapshot, not the saved world
             let json; try { json = JSON.stringify(buildWorldFile()); } catch (e) { return false; }
-            if (!json || json === autosaveBase) return false;
-            if (!writeSlot('autosave', json)) return false;
-            autosaveBase = json;
+            const fingerprint = autosaveFingerprint(json);
+            if (!json || fingerprint === autosaveBase) return false;
+            if (!(await writeSlot('autosave', json))) { setAutosaveFailure(true); return false; }
+            autosaveBase = fingerprint;
+            setAutosaveFailure(false);
             if (!fileMenu.hidden) refreshFileStatus();
             return true;
         }

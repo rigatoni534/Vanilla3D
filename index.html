@@ -1,96 +1,400 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#202021">
-    <meta name="description" content="Learn about Vanilla3D, a browser-based 3D game engine and world-building playground.">
-    <title>Vanilla3D</title>
-    <link rel="stylesheet" href="https://rigatoni534.github.io/style.css">
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" id="favicon">
-    <style>
-      .name-logo { display: block; width: 191px; height: 100px; color: var(--accent, #fc8116); }
-      @media (max-width: 640px) { .name-logo { width: 138px; height: 72px; } }
-    </style>
-    <script>
-      addEventListener('load', function () {
-        const root = getComputedStyle(document.documentElement);
-        const accent = (root.getPropertyValue('--accent') || '#fc8116').trim();
-        const panel = (root.getPropertyValue('--panel') || '#1d212a').trim();
-        const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="13" fill="' + panel + '"/><path d="M11 13h8l13 29 13-29h8L39 51H25z" fill="' + accent + '"/><rect x="11" y="55" width="42" height="4" rx="2" fill="' + accent + '"/></svg>';
-        document.getElementById('favicon').href = 'data:image/svg+xml,' + encodeURIComponent(svg);
-      });
-    </script>
-  </head>
-  <body>
-    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-      <symbol id="vanilla-logo" viewBox="0 0 900 470">
-        <path d="M24 24h78l88 296 88-296h78L232 400h-84z" fill="currentColor"/>
-        <text x="380" y="140" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="104" font-weight="750" letter-spacing="-3" fill="currentColor">anilla</text>
-        <text x="380" y="392" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="236" font-weight="800" letter-spacing="-8" fill="currentColor">3D</text>
-        <rect x="24" y="414" width="780" height="22" rx="4" fill="currentColor"/>
-        <text x="816" y="466" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="84" font-weight="700" fill="currentColor">4</text>
-      </symbol>
-    </svg>
-    <header class="site-header" id="home">
-      <nav class="site-nav" aria-label="Vanilla3D">
-        <a class="nav-brand" href="#home">Vanilla3D</a>
-        <div class="nav-links">
-          <a href="#editor">Editor</a>
-          <a href="#language">Language</a>
-          <a href="#toolbox">Toolbox</a>
-          <a href="#player">Player</a>
-          <a class="nav-launch" href="https://rigatoni534.github.io/Vanilla3D/engine/" target="_blank" rel="noopener noreferrer">Launch editor <span aria-hidden="true">↗</span></a>
-        </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#14171e">
+  <meta name="description" content="Vanilla3D is a lightweight 3D game engine and world builder that runs entirely in your browser.">
+  <title>Vanilla3D — build 3D worlds in a tab</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" id="favicon">
+  <script>document.documentElement.classList.add('has-js');</script>
+  <link rel="stylesheet" href="assets/base.css?v=4.0.0.0.17.2">
+  <link rel="stylesheet" href="assets/site.css?v=4.0.0.0.17.2">
+  <script>
+    addEventListener('load', function () {
+      const root = getComputedStyle(document.documentElement);
+      const accent = (root.getPropertyValue('--accent') || '#f2b134').trim();
+      const panel = (root.getPropertyValue('--panel') || '#1b1f28').trim();
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="13" fill="' + panel + '"/><path d="M11 13h8l13 29 13-29h8L39 51H25z" fill="' + accent + '"/><rect x="11" y="55" width="42" height="4" rx="2" fill="' + accent + '"/></svg>';
+      const link = document.getElementById('favicon');
+      if (link) link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+    });
+  </script>
+</head>
+<body class="site">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="shell nav-shell">
+      <a class="brand" href="index.html" aria-label="Vanilla3D home">
+        <svg class="brand-mark" aria-hidden="true"><use href="assets/icons.svg#i-vanilla-mark"/></svg>
+        <span class="brand-name">Vanilla<span class="accent">3D</span></span>
+        <span class="brand-tag">4.0</span>
+      </a>
+      <nav class="site-nav" id="site-nav" aria-label="Vanilla3D">
+        <a href="engine/">Editor</a>
+        <a href="language/">Language</a>
+        <a href="toolbox/">Toolbox</a>
+        <a href="player/">Player</a>
       </nav>
-      <p class="name"><svg class="name-logo" role="img" aria-label="Vanilla3D"><use href="#vanilla-logo"/></svg></p>
-      <h1>The Web Based 3D Game Engine<span class="period">.</span></h1>
-      <p class="header-copy">A lightweight, open-source 3D game engine that runs right in your browser.</p>
-    </header>
+      <div class="nav-actions">
+        <a class="btn btn-ghost" href="language/">Playground</a>
+        <a class="btn btn-primary" href="engine/">
+          Open editor
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-arrow-up-right"/></svg>
+        </a>
+        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-menu"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
 
-    <main>
-      <section class="section" aria-labelledby="about-heading">
-        <h2 class="section-title" id="about-heading">About Vanilla3D</h2>
-        <div class="about-card">
-          <div>
-            <p>Vanilla3D, is a light, HTML based 3D game engine made for creating and SOON playing 3D games. Vanilla has a capable editor that will allow you to make good games for anyone to play in the browser using the eventual player site.</p>
+  <main class="page" id="main">
+    <section class="hero">
+      <div class="shell">
+        <div class="hero-grid">
+          <div class="page-load">
+            <span class="eyebrow">Browser-native 3D</span>
+            <h1 class="hero-title">
+              <span class="line">Build worlds.</span>
+              <span class="line"><span class="accent">Play</span> <span class="outline">instantly.</span></span>
+            </h1>
+            <p class="hero-copy">Vanilla3D is a 3D game engine that lives in a browser tab. Build a scene, write Vanillalua, run it with your friends, and share the file. No download, no install, no build step.</p>
+            <div class="hero-actions">
+              <a class="btn btn-primary btn-lg" href="engine/">
+                Launch the editor
+                <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-arrow-up-right"/></svg>
+              </a>
+              <a class="btn btn-outline btn-lg" href="player/">
+                <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-play"/></svg>
+                Play a world
+              </a>
+            </div>
+            <div class="hero-meta">
+              <span><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-monitor"/></svg> WebGL2 with a 2D fallback</span>
+              <span><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-wifi"/></svg> Peer-to-peer multiplayer</span>
+            </div>
           </div>
-          <a class="primary-link" href="https://rigatoni534.github.io/Vanilla3D/engine/" target="_blank" rel="noopener noreferrer">
-            Launch Vanilla3D <span aria-hidden="true">↗</span>
-          </a>
-        </div>
-      </section>
 
-      <section class="section" aria-labelledby="features-heading">
-        <h2 class="section-title" id="features-heading">Explore</h2>
-        <div class="features">
-          <article class="feature" id="editor">
-            <h3>Editor</h3>
-            <p>The Vanilla3D editor is a powerful game-building tool that runs in your browser and requires minimal system resources. Its interface and building system are similar to Roblox Studio, while keeping things simple and useful.</p>
-            <a href="https://rigatoni534.github.io/Vanilla3D/engine/" target="_blank" rel="noopener noreferrer">Try it <span aria-hidden="true">↗</span></a>
+          <div class="stage" role="img" aria-label="The Vanilla3D editor with a small island scene open">
+            <div class="stage-bar">
+              <span class="dots"><i></i><i></i><i></i></span>
+              <span class="stage-title">vanilla-world.vnw</span>
+              <span class="stage-run"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-play"/></svg> Running</span>
+            </div>
+            <div class="stage-body">
+              <div class="stage-tools">
+                <span><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-pointer"/></svg></span>
+                <span><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-move"/></svg></span>
+                <span><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-scale"/></svg></span>
+                <span><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-rotate"/></svg></span>
+                <span><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-sun"/></svg></span>
+              </div>
+              <div class="stage-scene">
+                <svg viewBox="0 0 420 330" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="heroSky" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="#243049"/>
+                      <stop offset="0.55" stop-color="#3d4a63"/>
+                      <stop offset="1" stop-color="#8c7f74"/>
+                    </linearGradient>
+                    <linearGradient id="heroTop" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stop-color="#a8703f"/>
+                      <stop offset="1" stop-color="#7d5029"/>
+                    </linearGradient>
+                    <linearGradient id="heroLeft" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="#6b4426"/>
+                      <stop offset="1" stop-color="#4c301a"/>
+                    </linearGradient>
+                    <linearGradient id="heroRight" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="#5a3a20"/>
+                      <stop offset="1" stop-color="#3e2814"/>
+                    </linearGradient>
+                  </defs>
+                  <rect width="420" height="330" fill="url(#heroSky)"/>
+                  <circle cx="330" cy="64" r="30" fill="#ffe3ad" opacity="0.9"/>
+                  <circle cx="330" cy="64" r="52" fill="#ffe3ad" opacity="0.12"/>
+                  <path d="M0 196 88 150 158 186 232 138 310 182 420 148V330H0Z" fill="#2c3948" opacity="0.7"/>
+                  <path d="M0 214 96 176 190 208 284 168 420 206V330H0Z" fill="#33463c" opacity="0.82"/>
+                  <g stroke="#ffffff" stroke-opacity="0.06">
+                    <path d="M-40 250 210 178 460 250M-40 282 210 210 460 282M-40 314 210 242 460 314"/>
+                    <path d="M52 330 184 178M132 330 214 178M212 330 244 178M292 330 274 178M372 330 304 178M452 330 334 178"/>
+                  </g>
+                  <g>
+                    <path d="M116 262 210 234 304 262 210 290Z" fill="url(#heroTop)"/>
+                    <path d="M116 262 210 290V314L116 286Z" fill="url(#heroLeft)"/>
+                    <path d="M304 262 210 290V314L304 286Z" fill="url(#heroRight)"/>
+                  </g>
+                  <g>
+                    <path d="M164 222 196 212 228 222 196 232Z" fill="#f2b134"/>
+                    <path d="M164 222 196 232V266L164 256Z" fill="#d8951f"/>
+                    <path d="M228 222 196 232V266L228 256Z" fill="#b87c14"/>
+                    <path d="M164 222 196 212 228 222 196 232Z" fill="none" stroke="#ffe6ae" stroke-width="1.5"/>
+                  </g>
+                  <g>
+                    <path d="M232 244 258 236 284 244 258 252Z" fill="#5fb3f0"/>
+                    <path d="M232 244 258 252V276L232 268Z" fill="#3f8fca"/>
+                    <path d="M284 244 258 252V276L284 268Z" fill="#2f72a8"/>
+                  </g>
+                  <g>
+                    <path d="M138 250 154 245 170 250 154 255Z" fill="#4ed08a"/>
+                    <path d="M138 250 154 255V270L138 265Z" fill="#35a86b"/>
+                    <path d="M170 250 154 255V270L170 265Z" fill="#267f50"/>
+                  </g>
+                  <g opacity="0.9">
+                    <path d="M188 186 210 178 232 186 210 194Z" fill="#ffe3ad"/>
+                    <path d="M188 186 210 194V218L188 210Z" fill="#e9c78a"/>
+                    <path d="M232 186 210 194V218L232 210Z" fill="#caa870"/>
+                    <path d="M188 186 210 178 232 186 210 194Z" fill="none" stroke="#f2b134" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  </g>
+                  <g fill="#ffffff" opacity="0.55">
+                    <circle cx="74" cy="92" r="1.4"/><circle cx="106" cy="70" r="1"/><circle cx="58" cy="128" r="1.2"/>
+                    <circle cx="146" cy="58" r="1.1"/><circle cx="382" cy="110" r="1.2"/><circle cx="356" cy="140" r="0.9"/>
+                  </g>
+                </svg>
+                <span class="stage-chip stage-float-1"><span class="dot"></span> <b>Player1</b> joined</span>
+                <span class="stage-chip stage-float-2"><svg class="ic" style="width:13px;height:13px" aria-hidden="true"><use href="assets/icons.svg#i-layers"/></svg> 6 objects</span>
+              </div>
+              <div class="stage-side">
+                <div class="row accent"></div>
+                <div class="row short"></div>
+                <div class="slot"></div>
+                <div class="slot"></div>
+                <div class="row"></div>
+                <div class="row short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="shell">
+      <div class="metrics" data-reveal>
+        <div class="metric"><b>0 installs</b><span>Runs in the tab</span></div>
+        <div class="metric"><b>15 materials</b><span>Procedural surfaces</span></div>
+        <div class="metric"><b>5 spaces</b><span>One shared scene</span></div>
+        <div class="metric"><b>8 guests</b><span>Per play room</span></div>
+      </div>
+    </div>
+
+    <section class="section" aria-labelledby="surfaces-heading">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <div>
+            <span class="eyebrow">One engine, five surfaces</span>
+            <h2 id="surfaces-heading">Everything from block-out to lobby.</h2>
+          </div>
+          <p class="lede">The editor, the language, the catalogue and the player all share one scene format, so a world moves from a first cube to a live room without a conversion step.</p>
+        </div>
+
+        <article class="feature" id="editor">
+          <div class="feature-copy" data-reveal>
+            <span class="eyebrow">01 — Editor</span>
+            <h2>A world builder that feels like a tool, not a demo.</h2>
+            <p>Place prisms, balls, wedges, cylinders and real boolean unions. Scrub the sun, hang lights, paint 15 procedural materials, and test physics without leaving the viewport. Runs on WebGL2 and falls back to a 2D renderer.</p>
+            <ul class="feature-list">
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Explorer, properties, tabs and a 100-step undo</li>
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Materials, lights, effects, textures and UI instances</li>
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Autosave to three browser slots or a portable .vnw file</li>
+            </ul>
+            <a class="feature-cta" href="engine/">Open the editor <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-arrow-up-right"/></svg></a>
+          </div>
+          <div class="feature-visual" data-reveal data-reveal-delay="80">
+            <div class="visual-head"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-layers"/></svg> Explorer <span class="spacer"></span><span class="pill">World</span></div>
+            <div class="mock-editor">
+              <div class="mock-tree">
+                <div class="mock-node"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-chev"/></svg><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-world"/></svg> World</div>
+                <div class="mock-node child"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-cube"/></svg> Ground</div>
+                <div class="mock-node child on"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-cube"/></svg> SpawnBlock</div>
+                <div class="mock-node child"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-sun"/></svg> Key light</div>
+                <div class="mock-node child"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-script"/></svg> DayCycle</div>
+                <div class="mock-node"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-folder"/></svg> Storage</div>
+                <div class="mock-node"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-ui-frame"/></svg> UI</div>
+              </div>
+              <div class="mock-props">
+                <div class="label"></div>
+                <div class="field hot"></div>
+                <div class="field"></div>
+                <div class="field"></div>
+                <div class="label"></div>
+                <div class="field"></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="feature flip" id="language">
+          <div class="feature-copy" data-reveal>
+            <span class="eyebrow">02 — Language</span>
+            <h2>Vanillalua, a scripting language you can read.</h2>
+            <p>Familiar syntax, a real interpreter, and live output in the editor. Spawn parts, read touches, drive UI, play sounds, and split work across server and local scripts — then try the same code in the standalone playground.</p>
+            <ul class="feature-list">
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Spaces, instances, events and threads</li>
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Server, local and manual execution</li>
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> A full language reference with search</li>
+            </ul>
+            <a class="feature-cta" href="language/">Try the playground <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-arrow-up-right"/></svg></a>
+          </div>
+          <div class="feature-visual" data-reveal data-reveal-delay="80">
+            <div class="visual-head"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-script"/></svg> DayCycle.vlua <span class="spacer"></span><span class="pill">Running</span></div>
+            <div class="code-card">
+              <div class="code-head"><span class="dotfile"></span> Server · simulation</div>
+              <pre class="code-body"><code><span class="tok-kw">call</span> Scripts
+<span class="tok-kw">call</span> World
+<span class="tok-kw">get</span> Instance
+
+<span class="tok-kw">local</span> block = <span class="tok-bi">Instance.create</span>(<span class="tok-str">"prism6"</span>, World)
+block.Position = <span class="tok-bi">vanilla3D.Position</span>(<span class="tok-num">0</span>, <span class="tok-num">2</span>, <span class="tok-num">0</span>)
+block.Color = <span class="tok-str">"#f2b134"</span>
+block.Material = <span class="tok-str">"neon"</span>
+
+<span class="tok-kw">for</span> step <span class="tok-kw">in</span> <span class="tok-num">1</span>, <span class="tok-num">3</span> <span class="tok-kw">do</span>
+    block.Position.Y = block.Position.Y + <span class="tok-num">1</span>
+    <span class="tok-bi">wait</span>(<span class="tok-num">0.5</span>)
+<span class="tok-kw">end</span>
+<span class="tok-com"># That is the whole loop.</span></code></pre>
+            </div>
+            <div class="code-note"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Run stopped: the world restores exactly as it was.</div>
+          </div>
+        </article>
+
+        <article class="feature" id="toolbox">
+          <div class="feature-copy" data-reveal>
+            <span class="eyebrow">03 — Toolbox</span>
+            <h2>Start from something that already works.</h2>
+            <p>Download a premade script, interface or model as a .vanilla file and add it beside your own work. Nothing is replaced, and every item ships with its source visible.</p>
+            <ul class="feature-list">
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Daylight cycles, platform movers and checkpoints</li>
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Player HUD with live health and stamina bars</li>
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Searchable, tagged and downloadable without an account</li>
+            </ul>
+            <a class="feature-cta" href="toolbox/">Browse the toolbox <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-arrow-up-right"/></svg></a>
+          </div>
+          <div class="feature-visual" data-reveal data-reveal-delay="80">
+            <div class="visual-head"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-box"/></svg> Catalogue <span class="spacer"></span><span class="pill">6 items</span></div>
+            <div class="mock-tools">
+              <div class="mock-tool"><div class="tile gold"></div><div class="line"></div><div class="line short"></div></div>
+              <div class="mock-tool"><div class="tile blue"></div><div class="line"></div><div class="line short"></div></div>
+              <div class="mock-tool"><div class="tile"></div><div class="line"></div><div class="line short"></div></div>
+              <div class="mock-tool"><div class="tile gold"></div><div class="line"></div><div class="line short"></div></div>
+            </div>
+            <div class="code-note"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-download"/></svg> One click downloads a .vanilla instance, not a whole world.</div>
+          </div>
+        </article>
+
+        <article class="feature flip" id="player">
+          <div class="feature-copy" data-reveal>
+            <span class="eyebrow">04 — Player</span>
+            <h2>Open a world and press play.</h2>
+            <p>The Player loads a .vnw from your computer, a URL or the last world you played. Play solo, host a lobby, or join with a five-character code. Guests receive the host's world and play together.</p>
+            <ul class="feature-list">
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> File picker, drag-and-drop and https URLs</li>
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Trust prompt before any script runs</li>
+              <li><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check"/></svg> Host and join lobbies over WebRTC</li>
+            </ul>
+            <a class="feature-cta" href="player/">Open the player <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-arrow-up-right"/></svg></a>
+          </div>
+          <div class="feature-visual" data-reveal data-reveal-delay="80">
+            <div class="visual-head"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-users"/></svg> Lobby <span class="spacer"></span><span class="pill">Live</span></div>
+            <div class="mock-player">
+              <div class="mock-lobby">
+                <div class="muted" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase">Room code</div>
+                <div class="code">FSVLG</div>
+                <div class="muted" style="font-size:11.5px">Island Test · 3 players · 12 instances</div>
+                <div class="people"><span>B</span><span>J</span><span>M</span><span>+</span></div>
+              </div>
+            </div>
+            <div class="code-note"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-wifi"/></svg> The host runs the simulation; guests jump straight in.</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section section-rule" aria-labelledby="modules-heading">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <div>
+            <span class="eyebrow">Under the hood</span>
+            <h2 id="modules-heading">Small engine. Real pieces.</h2>
+          </div>
+        </div>
+        <div class="modules">
+          <article class="module" data-reveal>
+            <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-gauge"/></svg>
+            <h3>Fast by default</h3>
+            <p>Six graphics presets, pooled particle sims and a renderer that stays usable on low-end machines.</p>
           </article>
-          <article class="feature" id="language">
-            <h3>Language</h3>
-            <p>Vanilla3D uses Vanillalua, a custom scripting language based on Lua and Roblox Luau. It aims to balance simplicity, capability, and efficiency.</p>
-            <a href="https://rigatoni534.github.io/Vanilla3D/language/" target="_blank" rel="noopener noreferrer">Try it <span aria-hidden="true">↗</span></a>
+          <article class="module" data-reveal data-reveal-delay="60">
+            <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-shield"/></svg>
+            <h3>Yours to keep</h3>
+            <p>Worlds are plain JSON. Save to the browser, export a .vnw, or take the whole editor offline as a ZIP.</p>
           </article>
-          <article class="feature" id="toolbox">
-            <h3>Toolbox</h3>
-            <p>Premade scripts, models and interfaces to drop into your own world. Each one downloads as a .vanilla file and is added from the editor's File menu, so nothing you have built is replaced.</p>
-            <a href="https://rigatoni534.github.io/Vanilla3D/toolbox/" target="_blank" rel="noopener noreferrer">Browse <span aria-hidden="true">↗</span></a>
+          <article class="module" data-reveal data-reveal-delay="120">
+            <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-wifi"/></svg>
+            <h3>Peer to peer</h3>
+            <p>Five-character rooms, validated edit batches and a host-authoritative play mode. No backend to run.</p>
           </article>
-          <article class="feature" id="player">
-            <h3>Player</h3>
-            <p>A standalone way to play Vanilla3D games in the browser is planned for the future, once the engine can support playable games.</p>
-            <a href="https://rigatoni534.github.io/Vanilla3D/player/" target="_blank" rel="noopener noreferrer">See the placeholder <span aria-hidden="true">↗</span></a>
+          <article class="module" data-reveal data-reveal-delay="180">
+            <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-terminal"/></svg>
+            <h3>Built on the web</h3>
+            <p>No plugins and no native dependencies. A modern browser, a canvas and a few hundred kilobytes of JavaScript.</p>
           </article>
         </div>
-      </section>
-    </main>
 
-    <footer class="site-footer">
-      <span>VANILLA3D</span>
-      <span>goated engine btw</span>
-    </footer>
-  </body>
+        <div class="cta-band" style="margin-top:52px" data-reveal>
+          <div>
+            <h2>Start with an empty plate.</h2>
+            <p>The editor opens with a world ready to build in. Bring a friend when it is ready.</p>
+          </div>
+          <div class="hero-actions" style="margin:0">
+            <a class="btn btn-primary btn-lg" href="engine/">Launch editor <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-arrow-up-right"/></svg></a>
+            <a class="btn btn-outline btn-lg" href="toolbox/">Get a head start</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="index.html">
+          <svg class="brand-mark" aria-hidden="true"><use href="assets/icons.svg#i-vanilla-mark"/></svg>
+          <span class="brand-name">Vanilla<span class="accent">3D</span></span>
+        </a>
+        <p>A lightweight, open-source 3D game engine that runs right in your browser.</p>
+        <div class="footer-social">
+          <a href="https://github.com/rigatoni534/Vanilla3D" aria-label="Vanilla3D on GitHub" rel="noopener"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-code"/></svg></a>
+          <a href="engine/" aria-label="Open the editor"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-monitor"/></svg></a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h3>Build</h3>
+        <a href="engine/">Editor</a>
+        <a href="language/">Playground</a>
+        <a href="toolbox/">Toolbox</a>
+        <a href="player/">Player</a>
+      </div>
+      <div class="footer-col">
+        <h3>Learn</h3>
+        <a href="engine/">Engine guide</a>
+        <a href="language/">Language reference</a>
+        <a href="toolbox/">Premade items</a>
+      </div>
+      <div class="footer-col">
+        <h3>Project</h3>
+        <a href="https://github.com/rigatoni534/Vanilla3D" rel="noopener">GitHub</a>
+        <a href="README.md">Readme</a>
+      </div>
+    </div>
+    <div class="shell footer-meta">
+      <span>© <span id="footer-year">2026</span> Vanilla3D. Built for the open web.</span>
+      <span class="mono">v4.0.0.0 · no downloads required</span>
+    </div>
+  </footer>
+
+  <script defer src="assets/site.js?v=4.0.0.0.17.2"></script>
+</body>
 </html>

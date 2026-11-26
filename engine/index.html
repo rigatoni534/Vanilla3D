@@ -5,149 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vanilla Engine – Editor</title>
 
-    <link rel="stylesheet" href="../assets/vanilla.css?v=4.0.0.0.16.9">
+    <link rel="stylesheet" href="../assets/base.css?v=4.0.0.0.17.2">
+    <link rel="stylesheet" href="../assets/engine.css?v=4.0.0.0.17.2">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
-    <style>
-      /* Play mode is the same engine and world loader with the editor chrome removed. */
-      body.play-mode #toolbar, body.play-mode #tabbar, body.play-mode #sidebar, body.play-mode #statusbar,
-      body.play-mode #tools, body.play-mode #hint, body.play-mode #viewfinder-container, body.play-mode #script-editor,
-      body.play-mode #sim-badge { display: none !important; }
-      body.play-mode #workspace { position: fixed; inset: 0; height: 100vh; }
-      body.play-mode #main-column { height: 100vh; }
-      body.play-mode #canvas-container { height: 100vh; }
-      #play-menu { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; background: rgba(7,10,16,.66); backdrop-filter: blur(8px); }
-      #play-menu[hidden] { display: none; }
-      #play-menu .play-card { width: min(360px, calc(100vw - 32px)); padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: 0 30px 80px rgba(0,0,0,.45); }
-      #play-menu h2 { margin: 0 0 6px; font-size: 20px; }
-      #play-menu p { margin: 0 0 18px; color: var(--text-2); font-size: 13px; line-height: 1.55; }
-      #play-menu .play-actions { display: flex; flex-direction: column; gap: 8px; }
-      #play-menu .play-actions .btn { justify-content: center; height: 36px; }
-      #play-net { position: fixed; z-index: 450; top: 12px; right: 12px; width: min(330px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--line); border-radius: 11px; background: color-mix(in srgb, var(--panel) 92%, transparent); box-shadow: 0 18px 50px rgba(0,0,0,.35); color: var(--text); font-size: 11.5px; }
-      #play-net[hidden] { display: none; }
-      #play-net .pn-top { display: flex; align-items: center; gap: 7px; }
-      #play-net .pn-role { font-weight: 700; }
-      #play-net .pn-code { margin-left: auto; color: var(--accent); font: 700 14px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; }
-      #play-net .pn-btn { height: 25px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--rail); color: var(--text); font: inherit; font-size: 11px; cursor: pointer; }
-      #play-net .pn-btn:hover { background: var(--hover); }
-      #play-net .pn-status { min-height: 16px; margin-top: 6px; color: var(--text-2); line-height: 1.4; }
-      #play-net .pn-roster { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-      #play-net .pn-person { display: inline-flex; align-items: center; gap: 4px; color: var(--text-2); }
-      #play-net .pn-person i { width: 7px; height: 7px; border-radius: 50%; }
-      #play-net .pn-chat { display: flex; flex-direction: column; gap: 4px; height: 100px; overflow: auto; margin-top: 7px; padding: 6px; border: 1px solid var(--line-soft); border-radius: 6px; background: rgba(0,0,0,.12); }
-      #play-net .pn-chat .sys { color: var(--muted); font-style: italic; }
-      #play-net .pn-chat .who { color: var(--muted); }
-      #play-net .pn-input { width: 100%; height: 28px; margin-top: 6px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; font-size: 11.5px; }
-      .mp-dot { width: 7px; height: 7px; margin-left: 4px; border-radius: 50%; background: #5bd6a2; box-shadow: 0 0 0 3px rgba(91,214,162,.14); }
-      .mp-card { width: min(520px, calc(100vw - 28px)); }
-      .mp-body { display: flex; flex-direction: column; gap: 14px; }
-      .mp-field { display: flex; flex-direction: column; gap: 5px; color: var(--text-2); font-size: 11.5px; }
-      .mp-field input { height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--text); font: inherit; font-size: 12.5px; }
-      .mp-field input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
-      .mp-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-      .mp-row .btn { height: 34px; }
-      .mp-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .mp-box { padding: 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); }
-      .mp-box h3 { margin: 0 0 8px; font-size: 12px; color: var(--text); }
-      .mp-box p { margin: 0 0 9px; font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
-      .mp-code { display: inline-flex; align-items: center; height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--accent); font: 700 17px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .14em; }
-      .mp-status { min-height: 18px; color: var(--text-2); font-size: 11.5px; line-height: 1.45; }
-      .mp-status.bad { color: var(--danger, #e66); }
-      .mp-status.good { color: #5bd6a2; }
-      .mp-roster { display: flex; flex-direction: column; gap: 5px; max-height: 130px; overflow: auto; }
-      .mp-person { display: flex; align-items: center; gap: 7px; font-size: 11.5px; }
-      .mp-person i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-      .mp-chat { display: flex; flex-direction: column; gap: 5px; height: 128px; overflow: auto; padding: 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); font-size: 11.5px; line-height: 1.4; }
-      .mp-chat .who { color: var(--muted); }
-      .mp-chat .sys { color: var(--muted); font-style: italic; }
-      .mp-chat input { margin-top: 6px; height: 30px; width: 100%; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; font-size: 12px; }
-      .mp-hidden { display: none !important; }
-      @media (max-width: 520px) { .mp-split { grid-template-columns: 1fr; } }
-    </style>
+
 </head>
 <body>
-  <!-- Icon sprite -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <symbol id="i-vanilla-mark" viewBox="0 0 64 64"><path d="M10 12h9l13 30 13-30h9L40 54H24z"/><rect x="10" y="57" width="44" height="4" rx="2"/></symbol>
-    <symbol id="i-vanilla-logo" viewBox="0 0 900 470">
-      <path d="M24 24h78l88 296 88-296h78L232 400h-84z" fill="currentColor" stroke="none"/>
-      <text x="380" y="140" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="104" font-weight="750" letter-spacing="-3" fill="currentColor" stroke="none">anilla</text>
-      <text x="380" y="392" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="236" font-weight="800" letter-spacing="-8" fill="currentColor" stroke="none">3D</text>
-      <rect x="24" y="414" width="780" height="22" rx="4" fill="currentColor" stroke="none"/>
-      <text x="816" y="466" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="84" font-weight="700" fill="currentColor" stroke="none">4</text>
-    </symbol>
-    <symbol id="i-save" viewBox="0 0 16 16"><path d="M3 2.5h8l2.5 2.5v8.5a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5z"/><path d="M5 2.5v3.5h5V2.5M5 13.5v-4h6v4"/></symbol>
-    <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.5v7.5M4.75 7.25 8 10.5l3.25-3.25M3 13h10"/></symbol>
-    <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V3M4.75 5.75 8 2.5l3.25 3.25M3 13h10"/></symbol>
-    <symbol id="i-book" viewBox="0 0 16 16"><path d="M3 3.75A1.75 1.75 0 0 1 4.75 2H13v9.5H4.75A1.75 1.75 0 0 0 3 13.25z"/><path d="M3 13.25A1.75 1.75 0 0 0 4.75 15H13v-3.5"/></symbol>
-    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
-    <symbol id="i-cube" viewBox="0 0 16 16"><path d="M8 1.5 14 4.75v6.5L8 14.5 2 11.25v-6.5z"/><path d="M2 4.75 8 8l6-3.25M8 8v6.5"/></symbol>
-    <symbol id="i-model" viewBox="0 0 16 16"><path d="M5.5 1.75 9.5 4v4.25L5.5 10.5 1.5 8.25V4z"/><path d="M1.5 4l4 2.25L9.5 4M5.5 6.25v4.25"/><path d="M10.5 5.75 14.5 8v4.25L10.5 14.5 6.5 12.25V8z"/><path d="M6.5 8l4 2.25 4-2.25M10.5 10.25v4.25"/></symbol>
-    <symbol id="i-play" viewBox="0 0 16 16"><path d="M4.5 2.75v10.5L13 8z"/></symbol>
-    <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.25"/><path d="M8 7.25v4M8 4.75v.01"/></symbol>
-    <symbol id="i-sliders" viewBox="0 0 16 16"><path d="M2.5 5h5.5M11.5 5h2M2.5 11h2M8 11h5.5"/><circle cx="9.75" cy="5" r="1.75"/><circle cx="6.25" cy="11" r="1.75"/></symbol>
-    <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5.25a2.5 2.5 0 0 1 5 0V7"/></symbol>
-    <symbol id="i-chev" viewBox="0 0 16 16"><path d="m6 3.5 4.5 4.5L6 12.5"/></symbol>
-    <symbol id="i-world" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.8 1.8 2.7 3.9 2.7 6.25S9.8 12.45 8 14.25C6.2 12.45 5.3 10.35 5.3 8S6.2 3.55 8 1.75z"/></symbol>
-    <symbol id="i-folder" viewBox="0 0 16 16"><path d="M2 4.5a1 1 0 0 1 1-1h3l1.5 1.75H13a1 1 0 0 1 1 1V11.5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/></symbol>
-    <symbol id="i-script" viewBox="0 0 16 16"><path d="M4.5 2.5h5l3 3v8h-8z"/><path d="M9.5 2.5v3h3M6.5 8.5h4M6.5 11h4"/></symbol>
-    <symbol id="i-close" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
-    <symbol id="i-pointer" viewBox="0 0 16 16"><path d="m3.5 2.5 8.5 4.2-3.6 1.2L7.2 11.7z"/></symbol>
-    <symbol id="i-list" viewBox="0 0 16 16"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></symbol>
-    <symbol id="i-grid" viewBox="0 0 16 16"><path d="M2.5 2.5h11v11h-11zM2.5 6.17h11M2.5 9.83h11M6.17 2.5v11M9.83 2.5v11"/></symbol>
-    <symbol id="i-ball" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c-2.2 1.7-2.2 9.3 0 11M8 2.5c2.2 1.7 2.2 9.3 0 11"/></symbol>
-    <symbol id="i-players" viewBox="0 0 16 16"><circle cx="5.6" cy="5" r="2"/><path d="M2 12.6c0-2.2 1.6-3.8 3.6-3.8s3.6 1.6 3.6 3.8"/><circle cx="11.2" cy="5.6" r="1.7"/><path d="M10.4 9.2c2 0 3.6 1.4 3.6 3.4"/></symbol>
-    <symbol id="i-human" viewBox="0 0 16 16"><circle cx="8" cy="4.6" r="2.4"/><path d="M3.4 13.6c0-2.7 2-4.6 4.6-4.6s4.6 1.9 4.6 4.6"/></symbol>
-    <symbol id="i-rotate" viewBox="0 0 16 16"><path d="M13.2 8a5.2 5.2 0 1 1-1.7-3.85"/><path d="M13.3 2.4v3.1h-3.1"/></symbol>
-    <symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.75"/><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.05 1.05M11.55 11.55l1.05 1.05M3.4 12.6l1.05-1.05M11.55 4.45l1.05-1.05"/></symbol>
-    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
-    <symbol id="i-move" viewBox="0 0 16 16"><path d="M8 1.75v12.5M1.75 8h12.5M8 1.75 6.25 3.5M8 1.75 9.75 3.5M8 14.25 6.25 12.5M8 14.25 9.75 12.5M1.75 8 3.5 6.25M1.75 8 3.5 9.75M14.25 8 12.5 6.25M14.25 8 12.5 9.75"/></symbol>
-    <symbol id="i-scale" viewBox="0 0 16 16"><rect x="2.5" y="6.5" width="7" height="7" rx="1"/><path d="M8.5 7.5 13 3M9 3h4v4"/></symbol>
-    <symbol id="i-more" viewBox="0 0 16 16"><path d="M8 3.25h.01M8 8h.01M8 12.75h.01"/></symbol>
-    <symbol id="i-edit" viewBox="0 0 16 16"><path d="m10.5 2.5 3 3-8 8H2.5v-3z M9 4l3 3"/></symbol>
-    <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5"/></symbol>
-    <symbol id="i-paste" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5"/><path d="M6 3v-.5h4V3M6 7.5h4M6 10.5h4"/></symbol>
-    <symbol id="i-cut" viewBox="0 0 16 16"><circle cx="4.5" cy="11.5" r="1.75"/><circle cx="11.5" cy="11.5" r="1.75"/><path d="M5.6 10 12.5 2.5M10.4 10 3.5 2.5"/></symbol>
-    <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5M7 7v4M9 7v4"/></symbol>
-    <symbol id="i-target" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.75"/><circle cx="8" cy="8" r="1.25"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/></symbol>
-    <symbol id="i-ruler" viewBox="0 0 16 16"><path d="M2 10.5 10.5 2 14 5.5 5.5 14z M5 8l1.5 1.5M7 6l1.5 1.5M9 4l1.5 1.5"/></symbol>
-    <symbol id="i-err" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.75"/><path d="M8 4.9v3.6M8 10.9h.01"/></symbol>
-    <symbol id="i-wedge" viewBox="0 0 16 16"><path d="M2.5 13h11V3.5z"/><path d="M2.5 13V9.75"/></symbol>
-    <symbol id="i-cylinder" viewBox="0 0 16 16"><ellipse cx="8" cy="4" rx="4.75" ry="1.9"/><path d="M3.25 4v8c0 1.05 2.13 1.9 4.75 1.9s4.75-.85 4.75-1.9V4"/></symbol>
-    <symbol id="i-sound" viewBox="0 0 16 16"><path d="M2.75 6.25h2.5L8.75 3.5v9L5.25 9.75h-2.5z"/><path d="M11 6.1a3 3 0 0 1 0 3.8M12.8 4.5a5.4 5.4 0 0 1 0 7"/></symbol>
-    <symbol id="i-highlight" viewBox="0 0 16 16"><path d="M8 2.25l1.6 4.15L13.75 8l-4.15 1.6L8 13.75 6.4 9.6 2.25 8 6.4 6.4z"/></symbol>
-    <symbol id="i-union" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="7.5" height="7.5" rx="1.25"/><rect x="6" y="6" width="7.5" height="7.5" rx="1.25"/></symbol>
-    <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 2.5 14.2 13H1.8z M8 6.6v3M8 11.4h.01"/></symbol>
-    <symbol id="i-engine" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1.5"/><path d="M6.5 1.75V4M9.5 1.75V4M6.5 12v2.25M9.5 12v2.25M1.75 6.5H4M1.75 9.5H4M12 6.5h2.25M12 9.5h2.25"/></symbol>
-    <symbol id="i-ui-frame" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/></symbol>
-    <symbol id="i-ui-text" viewBox="0 0 16 16"><path d="M3.5 4.5V3h9v1.5M8 3v10M6 13h4"/></symbol>
-    <symbol id="i-ui-button" viewBox="0 0 16 16"><rect x="2" y="5" width="12" height="6" rx="3"/><path d="M6 8h4"/></symbol>
-    <symbol id="i-ui-image" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><circle cx="6" cy="6.5" r="1"/><path d="m3.5 11.5 3-3 2.5 2.5L11 8.5l2 3"/></symbol>
-    <symbol id="i-ui-input" viewBox="0 0 16 16"><rect x="2" y="4.5" width="12" height="7" rx="1.5"/><path d="M5 6.5v3M4.25 6.5h1.5M4.25 9.5h1.5"/></symbol>
-    <symbol id="i-ui-progress" viewBox="0 0 16 16"><rect x="2" y="6" width="12" height="4" rx="2"/><path d="M4 8h5"/></symbol>
-    <symbol id="i-comms" viewBox="0 0 16 16"><path d="M2.75 5.5h7.5M8 3.25 10.25 5.5 8 7.75"/><path d="M13.25 10.5h-7.5M8 8.25 5.75 10.5 8 12.75"/></symbol>
-    <symbol id="i-client-socket" viewBox="0 0 16 16"><rect x="2" y="3" width="8" height="7" rx="1.5"/><path d="M4.5 13h3M11.5 9.5v4M9.75 12l1.75 1.75L13.25 12"/></symbol>
-    <symbol id="i-server-socket" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="7" height="4" rx="1"/><rect x="2.5" y="9" width="7" height="4" rx="1"/><path d="M12 9.5v-4M10.25 7 12 5.25 13.75 7"/></symbol>
-    <symbol id="i-peer" viewBox="0 0 16 16"><circle cx="3.5" cy="8" r="1.75"/><circle cx="12.5" cy="8" r="1.75"/><path d="M5.25 8h5.5"/></symbol>
-    <symbol id="i-group" viewBox="0 0 16 16"><circle cx="8" cy="8" r="1.75"/><circle cx="2.75" cy="4" r="1.1"/><circle cx="13.25" cy="4" r="1.1"/><circle cx="8" cy="13.25" r="1.1"/><path d="M3.6 4.8 6.6 6.9M12.4 4.8 9.4 6.9M8 9.75v2.4"/></symbol>
-  </svg>
+
 
   <!-- Toolbar -->
   <header id="toolbar">
-    <div class="brand">
-      <svg class="ic mark logo-mark"><use href="#i-vanilla-mark"/></svg>
+    <a class="brand" href="../index.html" title="Back to the Vanilla3D site">
+      <svg class="ic mark logo-mark"><use href="../assets/icons.svg#i-vanilla-mark"/></svg>
       <span class="brand-name">Vanilla Engine</span>
       <span class="brand-sub">Editor</span>
-    </div>
+    </a>
     <div class="run-group">
       <button id="run-btn" class="btn btn-primary" title="Run the simulation.">
-        <svg class="ic fill"><use href="#i-play"/></svg><span class="label">Run</span>
+        <svg class="ic fill"><use href="../assets/icons.svg#i-play"/></svg><span class="label">Run</span>
       </button>
       <label class="offset-field" title="Offset: how far the Move and Scale gizmos step, in Vanillameters (0 = free)">
-        <svg class="ic"><use href="#i-ruler"/></svg><span class="offset-label">Offset</span>
+        <svg class="ic"><use href="../assets/icons.svg#i-ruler"/></svg><span class="offset-label">Offset</span>
         <input type="number" id="offset-input" min="0" step="0.1" value="0.5" aria-label="Gizmo offset in Vanillameters">
       </label>
       <label class="offset-field" title="Rotation: how many degrees the Rotate gizmo steps (0 = free)">
-        <svg class="ic"><use href="#i-rotate"/></svg><span class="offset-label">Rotation</span>
+        <svg class="ic"><use href="../assets/icons.svg#i-rotate"/></svg><span class="offset-label">Rotation</span>
         <input type="number" id="rot-offset-input" min="0" step="5" value="45" aria-label="Rotation step in degrees">
       </label>
     </div>
@@ -156,34 +38,34 @@
         <button id="world-btn" class="btn" type="button" aria-haspopup="menu" aria-expanded="false" title="World settings">World <span aria-hidden="true">▾</span></button>
         <div id="world-menu" class="menu file-menu" role="menu" aria-label="World" hidden>
           <div class="menu-title">World</div>
-          <button class="menu-item" role="menuitem" data-world-act="settings"><svg class="ic"><use href="#i-sliders"/></svg>Settings<span class="menu-meta">Name, version, players, assets</span></button>
+          <button class="menu-item" role="menuitem" data-world-act="settings"><svg class="ic"><use href="../assets/icons.svg#i-sliders"/></svg>Settings<span class="menu-meta">Name, version, players, assets</span></button>
         </div>
       </div>
       <div class="file-menu-wrap">
         <button id="file-btn" class="btn" type="button" aria-haspopup="menu" aria-expanded="false" title="Save, open or start a Vanilla World">File <span aria-hidden="true">▾</span></button>
         <div id="file-menu" class="menu file-menu" role="menu" aria-label="File" hidden>
           <div class="menu-title">Save</div>
-          <button class="menu-item" role="menuitem" data-file-act="save-autosave"><svg class="ic"><use href="#i-save"/></svg>Autosave<span class="menu-meta" data-slot="autosave">empty</span></button>
-          <button class="menu-item" role="menuitem" data-file-act="save-slot1"><svg class="ic"><use href="#i-save"/></svg>Browser Slot 1<span class="menu-meta" data-slot="slot1">empty</span></button>
-          <button class="menu-item" role="menuitem" data-file-act="save-slot2"><svg class="ic"><use href="#i-save"/></svg>Browser Slot 2<span class="menu-meta" data-slot="slot2">empty</span></button>
-          <button class="menu-item" role="menuitem" data-file-act="save-file"><svg class="ic"><use href="#i-download"/></svg>Download as .vnw<span class="menu-meta">Ctrl Shift S</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="save-autosave"><svg class="ic"><use href="../assets/icons.svg#i-save"/></svg>Autosave<span class="menu-meta" data-slot="autosave">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="save-slot1"><svg class="ic"><use href="../assets/icons.svg#i-save"/></svg>Browser Slot 1<span class="menu-meta" data-slot="slot1">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="save-slot2"><svg class="ic"><use href="../assets/icons.svg#i-save"/></svg>Browser Slot 2<span class="menu-meta" data-slot="slot2">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="save-file"><svg class="ic"><use href="../assets/icons.svg#i-download"/></svg>Download as .vnw<span class="menu-meta">Ctrl Shift S</span></button>
           <div class="menu-separator"></div>
           <div class="menu-title">Open</div>
-          <button class="menu-item" role="menuitem" data-file-act="open-autosave"><svg class="ic"><use href="#i-folder"/></svg>Autosave<span class="menu-meta" data-slot="autosave">empty</span></button>
-          <button class="menu-item" role="menuitem" data-file-act="open-slot1"><svg class="ic"><use href="#i-folder"/></svg>Browser Slot 1<span class="menu-meta" data-slot="slot1">empty</span></button>
-          <button class="menu-item" role="menuitem" data-file-act="open-slot2"><svg class="ic"><use href="#i-folder"/></svg>Browser Slot 2<span class="menu-meta" data-slot="slot2">empty</span></button>
-          <button class="menu-item" role="menuitem" data-file-act="open-file"><svg class="ic"><use href="#i-upload"/></svg>Open .vnw file…</button>
-          <button class="menu-item" role="menuitem" data-file-act="add-vanilla"><svg class="ic"><use href="#i-plus"/></svg>Add .vanilla instance…</button>
-          <button class="menu-item" role="menuitem" data-file-act="offline"><svg class="ic"><use href="#i-download"/></svg>Offline mode<span class="menu-meta">Download ZIP</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="open-autosave"><svg class="ic"><use href="../assets/icons.svg#i-folder"/></svg>Autosave<span class="menu-meta" data-slot="autosave">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="open-slot1"><svg class="ic"><use href="../assets/icons.svg#i-folder"/></svg>Browser Slot 1<span class="menu-meta" data-slot="slot1">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="open-slot2"><svg class="ic"><use href="../assets/icons.svg#i-folder"/></svg>Browser Slot 2<span class="menu-meta" data-slot="slot2">empty</span></button>
+          <button class="menu-item" role="menuitem" data-file-act="open-file"><svg class="ic"><use href="../assets/icons.svg#i-upload"/></svg>Open .vnw file…</button>
+          <button class="menu-item" role="menuitem" data-file-act="add-vanilla"><svg class="ic"><use href="../assets/icons.svg#i-plus"/></svg>Add .vanilla instance…</button>
+          <button class="menu-item" role="menuitem" data-file-act="offline"><svg class="ic"><use href="../assets/icons.svg#i-download"/></svg>Offline mode<span class="menu-meta">Download ZIP</span></button>
           <div class="menu-separator"></div>
-          <button class="menu-item danger" role="menuitem" data-file-act="new-world"><svg class="ic"><use href="#i-plus"/></svg>New empty world</button>
-          <button class="menu-item" role="menuitem" data-file-act="docs"><svg class="ic"><use href="#i-book"/></svg>Documentation</button>
+          <button class="menu-item danger" role="menuitem" data-file-act="new-world"><svg class="ic"><use href="../assets/icons.svg#i-plus"/></svg>New empty world</button>
+          <button class="menu-item" role="menuitem" data-file-act="docs"><svg class="ic"><use href="../assets/icons.svg#i-book"/></svg>Documentation</button>
           <div class="fm-foot" id="file-status">No saves yet</div>
         </div>
       </div>
-      <button id="version-btn" class="btn" title="Version info"><svg class="ic"><use href="#i-info"/></svg><span class="label">Version</span></button>
-      <button id="mp-btn" class="btn" title="Multiplayer"><svg class="ic"><use href="#i-players"/></svg><span class="label">Multiplayer</span><span id="mp-dot" class="mp-dot" hidden></span></button>
-      <button id="settings-btn" class="btn" title="Settings"><svg class="ic"><use href="#i-sliders"/></svg><span class="label">Settings</span></button>
+      <button id="version-btn" class="btn" title="Version info"><svg class="ic"><use href="../assets/icons.svg#i-info"/></svg><span class="label">Version</span></button>
+      <button id="mp-btn" class="btn" title="Multiplayer"><svg class="ic"><use href="../assets/icons.svg#i-players"/></svg><span class="label">Multiplayer</span><span id="mp-dot" class="mp-dot" hidden></span></button>
+      <button id="settings-btn" class="btn" title="Settings"><svg class="ic"><use href="../assets/icons.svg#i-sliders"/></svg><span class="label">Settings</span></button>
     </div>
   </header>
   <input id="vnw-file-input" type="file" accept=".vnw,application/json" hidden>
@@ -195,7 +77,7 @@
       <div id="canvas-container">
         <div id="script-editor" hidden>
           <div class="se-head">
-            <svg class="ic"><use href="#i-script"/></svg><span id="se-title" class="se-title"></span><span id="se-lang" class="se-chip"></span>
+            <svg class="ic"><use href="../assets/icons.svg#i-script"/></svg><span id="se-title" class="se-title"></span><span id="se-lang" class="se-chip"></span>
             <span id="se-note" class="se-note" hidden>Read-only while the simulation runs</span>
             <span class="se-spacer"></span><span id="se-counts"></span>
           </div>
@@ -218,10 +100,10 @@
         <div id="ui-layer" aria-live="off"></div>
 
         <div id="tools" role="toolbar" aria-label="Edit mode">
-          <button class="tool" data-mode="select" aria-pressed="true" title="Select (1)"><svg class="ic"><use href="#i-pointer"/></svg><span class="tool-key">1</span></button>
-          <button class="tool" data-mode="move" aria-pressed="false" title="Move (2)"><svg class="ic"><use href="#i-move"/></svg><span class="tool-key">2</span></button>
-          <button class="tool" data-mode="scale" aria-pressed="false" title="Scale (3)"><svg class="ic"><use href="#i-scale"/></svg><span class="tool-key">3</span></button>
-          <button class="tool" data-mode="rotate" aria-pressed="false" title="Rotate (4)"><svg class="ic"><use href="#i-rotate"/></svg><span class="tool-key">4</span></button>
+          <button class="tool" data-mode="select" aria-pressed="true" title="Select (1)"><svg class="ic"><use href="../assets/icons.svg#i-pointer"/></svg><span class="tool-key">1</span></button>
+          <button class="tool" data-mode="move" aria-pressed="false" title="Move (2)"><svg class="ic"><use href="../assets/icons.svg#i-move"/></svg><span class="tool-key">2</span></button>
+          <button class="tool" data-mode="scale" aria-pressed="false" title="Scale (3)"><svg class="ic"><use href="../assets/icons.svg#i-scale"/></svg><span class="tool-key">3</span></button>
+          <button class="tool" data-mode="rotate" aria-pressed="false" title="Rotate (4)"><svg class="ic"><use href="../assets/icons.svg#i-rotate"/></svg><span class="tool-key">4</span></button>
         </div>
 
         <div id="sim-badge" aria-live="polite">Simulating – Stop restores the world</div>
@@ -239,12 +121,12 @@
 
     <aside id="sidebar">
       <section class="pane" id="explorer-pane">
-        <div class="pane-header"><svg class="ic"><use href="#i-list"/></svg>Explorer</div>
+        <div class="pane-header"><svg class="ic"><use href="../assets/icons.svg#i-list"/></svg>Explorer</div>
         <div class="pane-content" id="explorer-content" role="tree"></div>
       </section>
 
       <section class="pane" id="properties-pane">
-        <div class="pane-header"><svg class="ic"><use href="#i-sliders"/></svg>Properties</div>
+        <div class="pane-header"><svg class="ic"><use href="../assets/icons.svg#i-sliders"/></svg>Properties</div>
         <div class="pane-content" id="properties-content"></div>
       </section>
     </aside>
@@ -269,46 +151,46 @@
   <!-- Instance creator -->
   <div id="add-menu" class="menu" role="menu" hidden>
     <div class="menu-title" id="add-menu-title">Add</div>
-    <button class="menu-item" role="menuitem" data-kind="prism6"><svg class="ic"><use href="#i-cube"/></svg>Rectangular Prism<span class="menu-meta">prism6</span></button>
-    <button class="menu-item" role="menuitem" data-kind="ball"><svg class="ic"><use href="#i-ball"/></svg>Ball<span class="menu-meta">ball</span></button>
-    <button class="menu-item" role="menuitem" data-kind="wedge"><svg class="ic"><use href="#i-wedge"/></svg>Wedge<span class="menu-meta">wedge</span></button>
-    <button class="menu-item" role="menuitem" data-kind="cylinder"><svg class="ic"><use href="#i-cylinder"/></svg>Cylinder<span class="menu-meta">cylinder</span></button>
-    <button class="menu-item" role="menuitem" data-kind="sound"><svg class="ic"><use href="#i-sound"/></svg>Sound<span class="menu-meta">sound</span></button>
-    <button class="menu-item" role="menuitem" data-kind="highlight"><svg class="ic"><use href="#i-highlight"/></svg>Highlight<span class="menu-meta">highlight</span></button>
-    <button class="menu-item" role="menuitem" data-kind="light"><svg class="ic"><use href="#i-sun"/></svg>Light<span class="menu-meta">light</span></button>
-    <button class="menu-item" role="menuitem" data-kind="simpleeffect"><svg class="ic"><use href="#i-highlight"/></svg>SimpleEffect<span class="menu-meta">simpleeffect</span></button>
-    <button class="menu-item" role="menuitem" data-kind="advancedeffect"><svg class="ic"><use href="#i-highlight"/></svg>AdvancedEffect<span class="menu-meta">advancedeffect</span></button>
-    <button class="menu-item" role="menuitem" data-kind="frame"><svg class="ic"><use href="#i-ui-frame"/></svg>Frame<span class="menu-meta">frame</span></button>
-    <button class="menu-item" role="menuitem" data-kind="text"><svg class="ic"><use href="#i-ui-text"/></svg>Text<span class="menu-meta">text</span></button>
-    <button class="menu-item" role="menuitem" data-kind="button"><svg class="ic"><use href="#i-ui-button"/></svg>Button<span class="menu-meta">button</span></button>
-    <button class="menu-item" role="menuitem" data-kind="image"><svg class="ic"><use href="#i-ui-image"/></svg>Image<span class="menu-meta">image</span></button>
-    <button class="menu-item" role="menuitem" data-kind="input"><svg class="ic"><use href="#i-ui-input"/></svg>Input<span class="menu-meta">input</span></button>
-    <button class="menu-item" role="menuitem" data-kind="progressbar"><svg class="ic"><use href="#i-ui-progress"/></svg>ProgressBar<span class="menu-meta">progressbar</span></button>
-    <button class="menu-item" role="menuitem" data-kind="texture"><svg class="ic"><use href="#i-grid"/></svg>Texture<span class="menu-meta">texture</span></button>
-    <button class="menu-item" role="menuitem" data-kind="model"><svg class="ic"><use href="#i-model"/></svg>Model<span class="menu-meta">model</span></button>
-    <button class="menu-item" role="menuitem" data-kind="human"><svg class="ic"><use href="#i-human"/></svg>Human<span class="menu-meta">human</span></button>
-    <button class="menu-item" role="menuitem" data-kind="worldsettings"><svg class="ic"><use href="#i-sun"/></svg>World Settings</button>
-    <button class="menu-item" role="menuitem" data-kind="script"><svg class="ic"><use href="#i-script"/></svg>Script</button>
-    <button class="menu-item" role="menuitem" data-kind="clientsocket"><svg class="ic"><use href="#i-client-socket"/></svg>ClientSocket<span class="menu-meta">clientsocket</span></button>
-    <button class="menu-item" role="menuitem" data-kind="serversocket"><svg class="ic"><use href="#i-server-socket"/></svg>ServerSocket<span class="menu-meta">serversocket</span></button>
-    <button class="menu-item" role="menuitem" data-kind="peerconnection"><svg class="ic"><use href="#i-peer"/></svg>PeerConnection<span class="menu-meta">peerconnection</span></button>
-    <button class="menu-item" role="menuitem" data-kind="groupconnection"><svg class="ic"><use href="#i-group"/></svg>GroupConnection<span class="menu-meta">groupconnection</span></button>
+    <button class="menu-item" role="menuitem" data-kind="prism6"><svg class="ic"><use href="../assets/icons.svg#i-cube"/></svg>Rectangular Prism<span class="menu-meta">prism6</span></button>
+    <button class="menu-item" role="menuitem" data-kind="ball"><svg class="ic"><use href="../assets/icons.svg#i-ball"/></svg>Ball<span class="menu-meta">ball</span></button>
+    <button class="menu-item" role="menuitem" data-kind="wedge"><svg class="ic"><use href="../assets/icons.svg#i-wedge"/></svg>Wedge<span class="menu-meta">wedge</span></button>
+    <button class="menu-item" role="menuitem" data-kind="cylinder"><svg class="ic"><use href="../assets/icons.svg#i-cylinder"/></svg>Cylinder<span class="menu-meta">cylinder</span></button>
+    <button class="menu-item" role="menuitem" data-kind="sound"><svg class="ic"><use href="../assets/icons.svg#i-sound"/></svg>Sound<span class="menu-meta">sound</span></button>
+    <button class="menu-item" role="menuitem" data-kind="highlight"><svg class="ic"><use href="../assets/icons.svg#i-highlight"/></svg>Highlight<span class="menu-meta">highlight</span></button>
+    <button class="menu-item" role="menuitem" data-kind="light"><svg class="ic"><use href="../assets/icons.svg#i-sun"/></svg>Light<span class="menu-meta">light</span></button>
+    <button class="menu-item" role="menuitem" data-kind="simpleeffect"><svg class="ic"><use href="../assets/icons.svg#i-highlight"/></svg>SimpleEffect<span class="menu-meta">simpleeffect</span></button>
+    <button class="menu-item" role="menuitem" data-kind="advancedeffect"><svg class="ic"><use href="../assets/icons.svg#i-highlight"/></svg>AdvancedEffect<span class="menu-meta">advancedeffect</span></button>
+    <button class="menu-item" role="menuitem" data-kind="frame"><svg class="ic"><use href="../assets/icons.svg#i-ui-frame"/></svg>Frame<span class="menu-meta">frame</span></button>
+    <button class="menu-item" role="menuitem" data-kind="text"><svg class="ic"><use href="../assets/icons.svg#i-ui-text"/></svg>Text<span class="menu-meta">text</span></button>
+    <button class="menu-item" role="menuitem" data-kind="button"><svg class="ic"><use href="../assets/icons.svg#i-ui-button"/></svg>Button<span class="menu-meta">button</span></button>
+    <button class="menu-item" role="menuitem" data-kind="image"><svg class="ic"><use href="../assets/icons.svg#i-ui-image"/></svg>Image<span class="menu-meta">image</span></button>
+    <button class="menu-item" role="menuitem" data-kind="input"><svg class="ic"><use href="../assets/icons.svg#i-ui-input"/></svg>Input<span class="menu-meta">input</span></button>
+    <button class="menu-item" role="menuitem" data-kind="progressbar"><svg class="ic"><use href="../assets/icons.svg#i-ui-progress"/></svg>ProgressBar<span class="menu-meta">progressbar</span></button>
+    <button class="menu-item" role="menuitem" data-kind="texture"><svg class="ic"><use href="../assets/icons.svg#i-grid"/></svg>Texture<span class="menu-meta">texture</span></button>
+    <button class="menu-item" role="menuitem" data-kind="model"><svg class="ic"><use href="../assets/icons.svg#i-model"/></svg>Model<span class="menu-meta">model</span></button>
+    <button class="menu-item" role="menuitem" data-kind="human"><svg class="ic"><use href="../assets/icons.svg#i-human"/></svg>Human<span class="menu-meta">human</span></button>
+    <button class="menu-item" role="menuitem" data-kind="worldsettings"><svg class="ic"><use href="../assets/icons.svg#i-sun"/></svg>World Settings</button>
+    <button class="menu-item" role="menuitem" data-kind="script"><svg class="ic"><use href="../assets/icons.svg#i-script"/></svg>Script</button>
+    <button class="menu-item" role="menuitem" data-kind="clientsocket"><svg class="ic"><use href="../assets/icons.svg#i-client-socket"/></svg>ClientSocket<span class="menu-meta">clientsocket</span></button>
+    <button class="menu-item" role="menuitem" data-kind="serversocket"><svg class="ic"><use href="../assets/icons.svg#i-server-socket"/></svg>ServerSocket<span class="menu-meta">serversocket</span></button>
+    <button class="menu-item" role="menuitem" data-kind="peerconnection"><svg class="ic"><use href="../assets/icons.svg#i-peer"/></svg>PeerConnection<span class="menu-meta">peerconnection</span></button>
+    <button class="menu-item" role="menuitem" data-kind="groupconnection"><svg class="ic"><use href="../assets/icons.svg#i-group"/></svg>GroupConnection<span class="menu-meta">groupconnection</span></button>
   </div>
 
   <!-- Explorer item menu -->
   <div id="item-menu" class="menu" role="menu" aria-label="Instance options" hidden>
-    <button class="menu-item" role="menuitem" data-act="rename"><svg class="ic"><use href="#i-edit"/></svg>Rename</button>
-    <button class="menu-item" role="menuitem" data-act="group"><svg class="ic"><use href="#i-model"/></svg>Group into Model<span class="menu-meta">Ctrl G</span></button>
-    <button class="menu-item" role="menuitem" data-act="ungroup"><svg class="ic"><use href="#i-cube"/></svg>Ungroup<span class="menu-meta">Ctrl Shift G</span></button>
-    <button class="menu-item" role="menuitem" data-act="union"><svg class="ic"><use href="#i-union"/></svg>Union Selected</button>
-    <button class="menu-item" role="menuitem" data-act="intersect"><svg class="ic"><use href="#i-union"/></svg>Intersect Selected</button>
-    <button class="menu-item" role="menuitem" data-act="copy"><svg class="ic"><use href="#i-copy"/></svg>Copy</button>
-    <button class="menu-item" role="menuitem" data-act="paste"><svg class="ic"><use href="#i-paste"/></svg>Paste</button>
-    <button class="menu-item" role="menuitem" data-act="cut"><svg class="ic"><use href="#i-cut"/></svg>Cut</button>
-    <button class="menu-item danger" role="menuitem" data-act="delete"><svg class="ic"><use href="#i-trash"/></svg>Delete</button>
-    <button class="menu-item" role="menuitem" data-act="addchild"><svg class="ic"><use href="#i-plus"/></svg>Add Child…</button>
-    <button class="menu-item" role="menuitem" data-act="pastechild"><svg class="ic"><use href="#i-paste"/></svg>Paste as Child</button>
-    <button class="menu-item" role="menuitem" data-act="camera"><svg class="ic"><use href="#i-target"/></svg>Move Camera To</button>
+    <button class="menu-item" role="menuitem" data-act="rename"><svg class="ic"><use href="../assets/icons.svg#i-edit"/></svg>Rename</button>
+    <button class="menu-item" role="menuitem" data-act="group"><svg class="ic"><use href="../assets/icons.svg#i-model"/></svg>Group into Model<span class="menu-meta">Ctrl G</span></button>
+    <button class="menu-item" role="menuitem" data-act="ungroup"><svg class="ic"><use href="../assets/icons.svg#i-cube"/></svg>Ungroup<span class="menu-meta">Ctrl Shift G</span></button>
+    <button class="menu-item" role="menuitem" data-act="union"><svg class="ic"><use href="../assets/icons.svg#i-union"/></svg>Union Selected</button>
+    <button class="menu-item" role="menuitem" data-act="intersect"><svg class="ic"><use href="../assets/icons.svg#i-union"/></svg>Intersect Selected</button>
+    <button class="menu-item" role="menuitem" data-act="copy"><svg class="ic"><use href="../assets/icons.svg#i-copy"/></svg>Copy</button>
+    <button class="menu-item" role="menuitem" data-act="paste"><svg class="ic"><use href="../assets/icons.svg#i-paste"/></svg>Paste</button>
+    <button class="menu-item" role="menuitem" data-act="cut"><svg class="ic"><use href="../assets/icons.svg#i-cut"/></svg>Cut</button>
+    <button class="menu-item danger" role="menuitem" data-act="delete"><svg class="ic"><use href="../assets/icons.svg#i-trash"/></svg>Delete</button>
+    <button class="menu-item" role="menuitem" data-act="addchild"><svg class="ic"><use href="../assets/icons.svg#i-plus"/></svg>Add Child…</button>
+    <button class="menu-item" role="menuitem" data-act="pastechild"><svg class="ic"><use href="../assets/icons.svg#i-paste"/></svg>Paste as Child</button>
+    <button class="menu-item" role="menuitem" data-act="camera"><svg class="ic"><use href="../assets/icons.svg#i-target"/></svg>Move Camera To</button>
   </div>
 
   <!-- Modals -->
@@ -324,10 +206,10 @@
     <div class="modal-card">
       <div class="modal-head">
         <h2 class="modal-title" id="mv-title">About Vanilla Engine</h2>
-        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="../assets/icons.svg#i-close"/></svg></button>
       </div>
       <div class="modal-body">
-        <svg class="about-logo" role="img" aria-label="Vanilla3D"><use href="#i-vanilla-logo"/></svg>
+        <svg class="about-logo" role="img" aria-label="Vanilla3D"><use href="../assets/icons.svg#i-vanilla-logo"/></svg>
         <dl>
           <div class="info-row"><dt>Engine</dt><dd>Vanilla Engine</dd></div>
           <div class="info-row"><dt>Version</dt><dd id="info-version"></dd></div>
@@ -345,7 +227,7 @@
     <div class="modal-card whats-new-card">
       <div class="modal-head">
         <h2 class="modal-title" id="wn-title">What's new</h2>
-        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="../assets/icons.svg#i-close"/></svg></button>
       </div>
       <div class="modal-body">
         <p class="wn-lede" id="wn-lede"></p>
@@ -359,7 +241,7 @@
     <div class="modal-card">
       <div class="modal-head">
         <h2 class="modal-title" id="mu-title">An update is available</h2>
-        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="../assets/icons.svg#i-close"/></svg></button>
       </div>
       <div class="modal-body">
         <p id="mu-ver"></p>
@@ -373,15 +255,15 @@
     <div class="modal-card settings-card">
       <div class="modal-head">
         <h2 class="modal-title" id="ms-title">Settings</h2>
-        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="../assets/icons.svg#i-close"/></svg></button>
       </div>
       <div class="settings-body">
         <nav class="set-nav" role="tablist" aria-label="Settings sections">
-          <button class="set-tab" role="tab" data-pane="basics" aria-selected="true"><svg class="ic"><use href="#i-sliders"/></svg>Basics</button>
-          <button class="set-tab" role="tab" data-pane="viewport" aria-selected="false"><svg class="ic"><use href="#i-target"/></svg>Viewport</button>
-          <button class="set-tab" role="tab" data-pane="interface" aria-selected="false"><svg class="ic"><use href="#i-ui-frame"/></svg>Interface</button>
-          <button class="set-tab" role="tab" data-pane="scripting" aria-selected="false"><svg class="ic"><use href="#i-script"/></svg>Scripting</button>
-          <button class="set-tab" role="tab" data-pane="appearance" aria-selected="false"><svg class="ic"><use href="#i-sun"/></svg>Appearance</button>
+          <button class="set-tab" role="tab" data-pane="basics" aria-selected="true"><svg class="ic"><use href="../assets/icons.svg#i-sliders"/></svg>Basics</button>
+          <button class="set-tab" role="tab" data-pane="viewport" aria-selected="false"><svg class="ic"><use href="../assets/icons.svg#i-target"/></svg>Viewport</button>
+          <button class="set-tab" role="tab" data-pane="interface" aria-selected="false"><svg class="ic"><use href="../assets/icons.svg#i-ui-frame"/></svg>Interface</button>
+          <button class="set-tab" role="tab" data-pane="scripting" aria-selected="false"><svg class="ic"><use href="../assets/icons.svg#i-script"/></svg>Scripting</button>
+          <button class="set-tab" role="tab" data-pane="appearance" aria-selected="false"><svg class="ic"><use href="../assets/icons.svg#i-sun"/></svg>Appearance</button>
         </nav>
         <div class="set-panes">
           <section class="set-pane" id="set-basics">
@@ -518,16 +400,16 @@
     <div class="modal-card settings-card">
       <div class="modal-head">
         <h2 class="modal-title" id="mw-title">World Settings</h2>
-        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+        <button class="btn icon-btn" data-close aria-label="Close"><svg class="ic"><use href="../assets/icons.svg#i-close"/></svg></button>
       </div>
       <div class="settings-body">
         <nav class="set-nav" role="tablist" aria-label="World settings sections">
-          <button class="set-tab" role="tab" data-pane="world-general" aria-selected="true"><svg class="ic"><use href="#i-world"/></svg>General</button>
-          <button class="set-tab" role="tab" data-pane="world-version" aria-selected="false"><svg class="ic"><use href="#i-engine"/></svg>Version</button>
-          <button class="set-tab" role="tab" data-pane="world-environment" aria-selected="false"><svg class="ic"><use href="#i-sun"/></svg>Environment</button>
-          <button class="set-tab" role="tab" data-pane="world-defaults" aria-selected="false"><svg class="ic"><use href="#i-human"/></svg>Defaults</button>
-          <button class="set-tab" role="tab" data-pane="world-assets-tab" aria-selected="false"><svg class="ic"><use href="#i-image"/></svg>Assets</button>
-          <button class="set-tab" role="tab" data-pane="world-audio" aria-selected="false"><svg class="ic"><use href="#i-sound"/></svg>Audio</button>
+          <button class="set-tab" role="tab" data-pane="world-general" aria-selected="true"><svg class="ic"><use href="../assets/icons.svg#i-world"/></svg>General</button>
+          <button class="set-tab" role="tab" data-pane="world-version" aria-selected="false"><svg class="ic"><use href="../assets/icons.svg#i-engine"/></svg>Version</button>
+          <button class="set-tab" role="tab" data-pane="world-environment" aria-selected="false"><svg class="ic"><use href="../assets/icons.svg#i-sun"/></svg>Environment</button>
+          <button class="set-tab" role="tab" data-pane="world-defaults" aria-selected="false"><svg class="ic"><use href="../assets/icons.svg#i-human"/></svg>Defaults</button>
+          <button class="set-tab" role="tab" data-pane="world-assets-tab" aria-selected="false"><svg class="ic"><use href="../assets/icons.svg#i-image"/></svg>Assets</button>
+          <button class="set-tab" role="tab" data-pane="world-audio" aria-selected="false"><svg class="ic"><use href="../assets/icons.svg#i-sound"/></svg>Audio</button>
         </nav>
         <div class="set-panes">
           <section class="set-pane" id="set-world-general">
@@ -642,13 +524,13 @@
   <div id="modal-script-docs" class="modal-overlay docs-overlay" role="dialog" aria-modal="true" aria-label="Vanilla Engine documentation">
     <div class="docs-app">
       <header class="docs-topbar">
-        <div class="brand"><svg class="ic mark logo-mark"><use href="#i-vanilla-mark"/></svg><span class="brand-name">Vanilla Engine</span><span class="brand-sub" id="docs-sub">Documentation</span></div>
-        <button class="btn docs-return" id="docs-return-settings" type="button" title="Close the docs" aria-label="Close the docs"><svg class="ic"><use href="#i-chev"/></svg><span class="label" id="docs-return-label">Return to Settings</span></button>
+        <div class="brand"><svg class="ic mark logo-mark"><use href="../assets/icons.svg#i-vanilla-mark"/></svg><span class="brand-name">Vanilla Engine</span><span class="brand-sub" id="docs-sub">Documentation</span></div>
+        <button class="btn docs-return" id="docs-return-settings" type="button" title="Close the docs" aria-label="Close the docs"><svg class="ic"><use href="../assets/icons.svg#i-chev"/></svg><span class="label" id="docs-return-label">Return to Settings</span></button>
       </header>
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 16</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.0.0.0 pt 17</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -673,6 +555,23 @@
         <h3 data-group="Editor guide">Camera and selection</h3>
         <p>The camera looks like a first-person view: the horizon stays level and dragging turns your head up, down, left and right. There is no momentum, so it stops the moment you let go. Move with <code>W</code> <code>A</code> <code>S</code> <code>D</code>.</p>
         <p>In <b>Settings</b>, <b>Drag to move</b> turns the camera with the left mouse button and <b>Right click to move</b> uses the right button. The camera is locked while you drag a gizmo handle.</p>
+        <h3 data-group="Editor guide">Shortcuts</h3>
+        <p>Shortcuts pause while you type, while a menu is open and while the simulation is running, so Space still jumps and Backspace never leaves the page.</p>
+        <table class="docs-table"><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody>
+          <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></td><td>Select, Move, Scale, Rotate</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></td><td>Copy, cut and paste the selection</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></td><td>Paste inside the selection</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Duplicate the selection</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>Select everything in the current space</td></tr>
+          <tr><td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td>Delete the selection</td></tr>
+          <tr><td><kbd>Space</kbd></td><td>Rename the selected instance</td></tr>
+          <tr><td><kbd>F</kbd></td><td>Move the camera to the selection</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>M</kbd></td><td>Group into a Model</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>U</kbd> / <kbd>Shift</kbd>+<kbd>U</kbd></td><td>Union / intersect the selection</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td><td>Undo and redo (100 world snapshots)</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd></td><td>Save to Autosave / download a .vnw</td></tr>
+          <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Move the camera; in play mode, move the player</td></tr>
+        </tbody></table>
         <h3 data-group="Editor guide">Move, Scale and Offset</h3>
         <ul>
           <li><b>Select</b> picks an instance in the viewport or the Explorer.</li>
@@ -704,6 +603,35 @@
         <h3 data-group="Editor guide">Playing worlds</h3>
         <p>The <b>Player</b> page opens a <code>.vnw</code> file from your computer, a drag-and-drop, the last played world, or an <code>https</code> URL. It shows the world name, creator and instance and script counts, and it asks you to confirm that you trust the world before its scripts run. The world is kept in this browser; opening the page again offers it as the last world.</p>
         <p><b>Play Solo</b> opens the world in play mode. The editor panels are hidden and the simulation starts immediately; <b>Escape</b> opens Pause, <b>Resume</b> returns to the game and <b>Leave game</b> goes back to the Player page. Play mode uses the same engine, physics, scripts and player controller as the editor.</p>
+        <h3 data-group="Editor guide">Materials</h3>
+        <p>Every 3D shape has a <b>Material</b> in its Render section. The material changes the surface pattern and how highlights catch it; <b>Color</b> still tints the result, so a brick wall can be blue and a grass floor still takes the colour you choose. Default maps to Plastic, and old worlds are migrated to Plastic only where a material is missing. Materials are visual only: they do not change mass or collision.</p>
+        <table class="docs-table"><thead><tr><th>Material</th><th>What it looks like</th></tr></thead><tbody>
+          <tr><td>Plastic</td><td>Smooth moulded surface. The default for every new shape.</td></tr>
+          <tr><td>Glass</td><td>Cool and glossy, with a bright fresnel edge and strong reflection.</td></tr>
+          <tr><td>Metal</td><td>Brushed metal with a sharp, strong highlight.</td></tr>
+          <tr><td>Grass</td><td>Mottled green blades with a matte finish.</td></tr>
+          <tr><td>Brick</td><td>Staggered courses with pale mortar lines.</td></tr>
+          <tr><td>Tile</td><td>Square tiles with grout lines and a light sheen.</td></tr>
+          <tr><td>Carpet</td><td>Fine woven fibres, soft and matte.</td></tr>
+          <tr><td>Wood</td><td>Warm planks with grain and growth rings.</td></tr>
+          <tr><td>Concrete</td><td>Poured stone with a fine, uneven grain.</td></tr>
+          <tr><td>Neon</td><td>Self-lit colour. Glows when bloom is on.</td></tr>
+          <tr><td>Sand</td><td>Fine matte grains with a warm tint.</td></tr>
+          <tr><td>Rubber</td><td>Soft dark surface with a damped highlight.</td></tr>
+          <tr><td>Ice</td><td>Pale, glossy and cold, with a fresnel edge.</td></tr>
+          <tr><td>Fabric</td><td>Soft woven cloth with a matte response.</td></tr>
+          <tr><td>Marble</td><td>Polished stone with pale veins.</td></tr>
+        </tbody></table>
+        <p>A union keeps the material of the first part it was built from. Scripts set the same field with the lowercase key: <code>block.Material = "neon"</code>. Use <code>Plastic</code>, <code>Glass</code>, <code>Metal</code>, <code>Grass</code>, <code>Brick</code>, <code>Tile</code>, <code>Carpet</code>, <code>Wood</code>, <code>Concrete</code>, <code>Neon</code>, <code>Sand</code>, <code>Rubber</code>, <code>Ice</code>, <code>Fabric</code> or <code>Marble</code>.</p>
+        <h3 data-group="Editor guide">Lights and shadows</h3>
+        <p>A <b>Light</b> is a placeable point or spot light. Point lights shine in every direction; spot lights shine in a cone and use Rotation to aim, with their local +Z direction and a default rotation pointing down. <b>Enabled</b> turns a light on and off, <b>Color</b> sets its tint, <b>Brightness</b> its strength, <b>Range</b> how far it reaches in Vanillameters, and <b>Cone angle</b> the width of a spot beam.</p>
+        <p>Both spot and point lights have <b>Cast shadows</b>. The nearest two shadow-casting lights get a map, and shadow quality follows the Shadows setting. A spot uses one cone map; a point uses a six-face cube map, so its shadow wraps around it. The nearest eight enabled lights are used in the viewport, so a large world stays fast. A small sun marker shows each light in the editor even when it is inside a wall, and a selected light uses the normal Move and Rotate gizmos. Scripts can set <code>Enabled</code>, <code>Color</code>, <code>Brightness</code>, <code>Range</code>, <code>LightType</code>, <code>Shadows</code>, <code>Position</code> and <code>Rotation</code>.</p>
+        <h3 data-group="Editor guide">Effects</h3>
+        <p>Add a <b>SimpleEffect</b> for a ready-made Smoke, Fire, Steam, Dust, Sparkle / Shine, Explosion, Splash or Embers preset, or an <b>AdvancedEffect</b> when you want to control the sprite, size, colour, gravity and emitter shape yourself. Effects are children of the World or of a shape or model; the Position fields are an offset from that parent. Local space makes the particles turn and follow the parent, while World space leaves them where they were emitted.</p>
+        <p>SimpleEffect scales its preset with <b>Size</b> and <b>Speed</b>, and every effect can emit continuously with <b>Rate</b> or fire a <b>Burst</b>. AdvancedEffect adds the sprite or sprite sheet, alpha or additive blend, lifetime, start and end size, spread, gravity, drag, spin, colour over life, fades, emitter shape and radius. Scripts can use <code>Play()</code>, <code>Stop()</code> and <code>Emit(count)</code>, and can set <code>Emitting</code> and any of the properties above. Effects animate in the editor and render with the scene during Run.</p>
+        <h3 data-group="Editor guide">Audio</h3>
+        <p>A <b>Sound</b> plays a built-in preset (Beep, Chime, Click, Thud or Siren) or an audio file uploaded in <b>World Settings → Assets</b>. Presets are synthesised, so a world never needs an audio file. <b>Playing</b> starts and stops it, <b>Looped</b> repeats it, <b>Volume</b> is a slider from 0 to 1, <b>Pitch</b> changes its speed and <b>3D sound</b> turns HRTF panning on. <b>Rolloff</b> controls how quickly it fades with distance, and a looped uploaded file crossfades at the seam.</p>
+        <p><b>Max distance</b> makes a Sound positional and only applies when the Sound is a child of an object; it is heard within that many meters of its parent. A Sound placed straight in a Space, or one with 3D sound off, is heard at the same volume everywhere. The camera is the listener, so turning and moving changes the left/right and distance cues. With no files, the engine also gives the controlled player footsteps that follow the material under its feet, falling air, landing whooshes and a death sound, and hard body impacts make a material-aware thud. <b>World Settings → Audio</b> can replace any of those with a preset or an uploaded asset, or turn it off. Scripts can change Playing, Looped, Volume, Pitch, Spatial, Rolloff, MaxDistance, Preset and Source, and call <code>Play()</code> and <code>Stop()</code>.</p>
         <h3 data-group="Editor guide">Multiplayer</h3>
         <p>Press <b>Multiplayer</b> in the toolbar. <b>Host room</b> creates a five-character code; share it with up to four guests. A guest opens <b>Join room</b>, enters the code, and receives the host's current world. The host stays authoritative, relays and checks edit batches, and keeps the tab open for the room to exist. The room has a roster, chat and coloured selection markers, so you can see what another collaborator has selected.</p>
         <p>Rooms use PeerJS over the free public signalling server and then a direct WebRTC connection. There is no backend to deploy and no account. A restrictive network may need a TURN relay; a host can supply one through <code>window.VANILLA_TURN</code> before loading the editor. Messages are capped, rate-limited and validated, and an editing room pauses its world sync while the simulation runs.</p>
@@ -1181,7 +1109,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
     <div class="modal-card mp-card">
       <div class="modal-head">
         <h2 class="modal-title" id="mp-title">Multiplayer</h2>
-        <button class="icon-btn" id="mp-close" type="button" aria-label="Close multiplayer">✕</button>
+        <button class="btn icon-btn" id="mp-close" type="button" aria-label="Close multiplayer"><svg class="ic"><use href="../assets/icons.svg#i-close"/></svg></button>
       </div>
       <div class="modal-body mp-body">
         <label class="mp-field">Your name<input id="mp-name" maxlength="24" autocomplete="nickname" placeholder="Player"></label>
@@ -1227,30 +1155,30 @@ vanilla3D.Size(1, 2, 1)</code></pre>
   </div>
 
   <script src="../assets/peerjs.min.js"></script>
-  <script src="../vanillalua.js?v=4.0.0.0.16.9"></script>
-  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 16';</script>
+  <script src="../vanillalua.js?v=4.0.0.0.17.2"></script>
+  <script>const ENGINE_VERSION = '4.0.0.0'; const ENGINE_RELEASE = '4.0.0.0 pt 17';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
-  <script defer src="js/collision.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/scene.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/effects.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/csg.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/version-history.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/playeranim.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/player.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/sounds.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/scripting.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/shell.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/files.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/offline.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/explorer.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/shortcuts.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/properties.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/protocol.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/net.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/multiplayer.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/playmultiplayer.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/render.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/gl.js?v=4.0.0.0.16.9"></script>
-  <script defer src="js/main.js?v=4.0.0.0.16.9"></script>
+  <script defer src="js/collision.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/scene.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/effects.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/csg.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/version-history.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/playeranim.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/player.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/sounds.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/scripting.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/shell.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/files.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/offline.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/explorer.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/shortcuts.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/properties.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/protocol.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/net.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/multiplayer.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/playmultiplayer.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/render.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/gl.js?v=4.0.0.0.17.2"></script>
+  <script defer src="js/main.js?v=4.0.0.0.17.2"></script>
 </body>
 </html>

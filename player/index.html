@@ -1,158 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#171a21">
-<meta name="description" content="Play Vanilla3D worlds in the browser.">
-<title>Vanilla Player</title>
-<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
-<link rel="stylesheet" href="../assets/vanilla.css">
-<style>
-  /* The engine stylesheet is an app shell: this page is a plain document. */
-  html, body { height: auto; min-height: 100%; overflow: auto; }
-  body { display: flex; flex-direction: column; min-height: 100vh; }
-
-  .pl-top {
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    padding: 0 22px; height: 54px;
-    border-bottom: 1px solid var(--line);
-  }
-  .pl-brand { margin-right: auto; font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
-  .pl-brand span { color: var(--accent); }
-  .pl-nav { display: flex; align-items: center; gap: 4px; }
-  .pl-nav a {
-    display: inline-flex; align-items: center; height: 30px; padding: 0 11px;
-    border: 1px solid transparent; border-radius: 7px;
-    color: var(--text-2); font-size: 12.5px; white-space: nowrap;
-    transition: background .15s, color .15s;
-  }
-  .pl-nav a:hover { background: var(--hover); color: var(--text); }
-  .pl-nav a[aria-current="page"] { background: var(--accent-soft); color: var(--text); }
-
-  .pl-main { flex: 1; width: min(760px, 100%); margin: 0 auto; padding: 42px 22px 24px; }
-  .pl-badge {
-    display: inline-flex; align-items: center; height: 22px; padding: 0 9px; margin-bottom: 16px;
-    border: 1px solid var(--line); border-radius: 99px;
-    color: var(--muted); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
-  }
-  .pl-main h1 { margin: 0 0 8px; font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
-  .pl-main h1 .pl-dot { color: var(--accent); }
-  .pl-main > p { margin: 0 0 22px; color: var(--text-2); font-size: 13.5px; line-height: 1.65; max-width: 60ch; }
-
-  .pl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  @media (max-width: 650px) { .pl-grid { grid-template-columns: 1fr; } }
-  .pl-card { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 17px; }
-  .pl-card h2 { margin: 0 0 6px; font-size: 14px; }
-  .pl-card p { margin: 0 0 12px; color: var(--text-2); font-size: 12.5px; line-height: 1.55; }
-  .pl-drop {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-    min-height: 112px; padding: 14px; border: 1px dashed var(--line); border-radius: 9px;
-    color: var(--text-2); font-size: 12.5px; text-align: center; cursor: pointer;
-    transition: border-color .15s, background .15s;
-  }
-  .pl-drop:hover, .pl-drop.over { border-color: var(--accent); background: var(--accent-soft); }
-  .pl-drop b { color: var(--text); font-size: 13px; }
-  .pl-input {
-    width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px;
-    background: var(--bg); color: var(--text); font: inherit; font-size: 12.5px;
-  }
-  .pl-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
-  .pl-row { display: flex; gap: 8px; align-items: center; margin-top: 9px; flex-wrap: wrap; }
-  .pl-btn {
-    display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 13px;
-    border: 1px solid var(--line); border-radius: 7px; background: var(--rail); color: var(--text);
-    font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
-  }
-  .pl-btn:hover { background: var(--hover); }
-  .pl-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .pl-btn.primary:disabled { opacity: .45; cursor: not-allowed; }
-  .pl-status { min-height: 19px; margin-top: 10px; color: var(--text-2); font-size: 12px; line-height: 1.45; }
-  .pl-status.bad { color: var(--danger, #e66); }
-  .pl-world { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
-  .pl-world.show { display: block; }
-  .pl-world-name { font-size: 13px; font-weight: 600; }
-  .pl-world-meta { margin-top: 2px; color: var(--muted); font-size: 11.5px; }
-  .pl-trust { display: flex; gap: 8px; align-items: flex-start; margin-top: 11px; color: var(--text-2); font-size: 12px; line-height: 1.5; }
-  .pl-trust input { margin-top: 2px; accent-color: var(--accent); }
-  .pl-note { margin-top: 18px; color: var(--muted); font-size: 11.5px; line-height: 1.55; }
-  .pl-foot {
-    display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-    width: min(760px, 100%); margin: 0 auto; padding: 18px 22px 34px;
-    border-top: 1px solid var(--line-soft);
-    color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#14171e">
+  <meta name="description" content="Open and play Vanilla3D worlds in the browser, solo or in a live lobby.">
+  <title>Player — Vanilla3D</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <script>document.documentElement.classList.add('has-js');</script>
+  <link rel="stylesheet" href="../assets/base.css?v=4.0.0.0.17.2">
+  <link rel="stylesheet" href="../assets/site.css?v=4.0.0.0.17.2">
 </head>
-<body>
-  <header class="pl-top">
-    <a class="pl-brand" href="../index.html">Vanilla<span>3D</span></a>
-    <nav class="pl-nav" aria-label="Vanilla3D">
-      <a href="../engine/">Editor</a>
-      <a href="../language/">Language</a>
-      <a href="../toolbox/">Toolbox</a>
-      <a href="../player/" aria-current="page">Player</a>
-    </nav>
+<body class="site">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="shell nav-shell">
+      <a class="brand" href="../index.html" aria-label="Vanilla3D home">
+        <svg class="brand-mark" aria-hidden="true"><use href="../assets/icons.svg#i-vanilla-mark"/></svg>
+        <span class="brand-name">Vanilla<span class="accent">3D</span></span>
+        <span class="brand-tag">4.0</span>
+      </a>
+      <nav class="site-nav" id="site-nav" aria-label="Vanilla3D">
+        <a href="../engine/">Editor</a>
+        <a href="../language/">Language</a>
+        <a href="../toolbox/">Toolbox</a>
+        <a href="../player/" aria-current="page">Player</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-ghost" href="../language/">Playground</a>
+        <a class="btn btn-primary" href="../engine/">Open editor <svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-arrow-up-right"/></svg></a>
+        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+          <svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-menu"/></svg>
+        </button>
+      </div>
+    </div>
   </header>
 
-  <main class="pl-main">
-    <span class="pl-badge">Play a world</span>
-    <h1>Player<span class="pl-dot">.</span></h1>
-    <p>Open a <b>.vnw</b> world and play it without the editor around it. Your world stays in this browser until you choose another one.</p>
-
-    <div class="pl-grid">
-      <section class="pl-card">
-        <h2>Open a world file</h2>
-        <p>Choose a file, or drop it here.</p>
-        <label class="pl-drop" id="drop" for="world-file">
-          <b>Choose a .vnw file</b>
-          <span>or drag and drop it</span>
-          <input id="world-file" type="file" accept=".vnw,application/json" hidden>
-        </label>
-        <div class="pl-status" id="file-status" aria-live="polite"></div>
-        <div class="pl-row">
-          <button class="pl-btn" id="last-world" type="button" disabled>Open last world</button>
+  <main class="page" id="main">
+    <section class="page-hero">
+      <div class="shell">
+        <div class="page-load">
+          <span class="eyebrow">Play a world</span>
+          <h1>Player<span class="dot">.</span></h1>
+          <p class="lede">Open a <b>.vnw</b> world and play it without the editor around it. Your world stays in this browser until you choose another one, and scripts only run after you confirm you trust it.</p>
+          <div class="hero-meta">
+            <span><svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-shield"/></svg> Trust prompt before scripts run</span>
+            <span><svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-wifi"/></svg> Solo, host or join</span>
+          </div>
         </div>
-      </section>
-
-      <section class="pl-card">
-        <h2>Open a world URL</h2>
-        <p>The server must allow cross-origin requests.</p>
-        <input class="pl-input" id="world-url" type="url" inputmode="url" placeholder="https://example.com/my-world.vnw" aria-label="World URL">
-        <div class="pl-row">
-          <button class="pl-btn" id="url-open" type="button">Fetch world</button>
-        </div>
-        <div class="pl-status" id="url-status" aria-live="polite"></div>
-      </section>
-    </div>
-
-    <div class="pl-world" id="world-info">
-      <div class="pl-world-name" id="world-name"></div>
-      <div class="pl-world-meta" id="world-meta"></div>
-      <label class="pl-trust"><input type="checkbox" id="trust"> <span>I trust this world. Its scripts run in my browser and can change the game while I play.</span></label>
-      <div class="pl-row">
-        <button class="pl-btn primary" id="play" type="button" disabled>Play Solo</button>
-        <button class="pl-btn" id="host-lobby" type="button" disabled>Host Lobby</button>
       </div>
-    </div>
-
-    <section class="pl-card" style="margin-top:14px">
-      <h2>Join a lobby</h2>
-      <p>Ask the host for their 5-character room code. The host sends the world to you; this browser does not need a copy.</p>
-      <div class="pl-row">
-        <input class="pl-input" id="join-code" maxlength="5" autocomplete="off" spellcheck="false" placeholder="ABCDE" aria-label="Room code" style="width:118px;text-transform:uppercase;letter-spacing:.12em">
-        <button class="pl-btn" id="join-lobby" type="button">Join Lobby</button>
-      </div>
-      <div class="pl-row"><input class="pl-input" id="player-name" maxlength="24" autocomplete="nickname" placeholder="Your name" aria-label="Your name" style="max-width:190px"></div>
-      <div class="pl-status" id="lobby-status" aria-live="polite"></div>
     </section>
 
-    <p class="pl-note">The Player uses the same engine as the editor. Worlds with scripts run those scripts locally when you play solo. A guest joins the host's session, receives the host world and controls a guest avatar while the host runs the simulation.</p>
+    <section class="shell" aria-label="Open a world">
+      <div class="player-layout">
+        <section class="pl-card" data-reveal>
+          <h2><svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-box"/></svg> Open a world file</h2>
+          <p>Choose a <b>.vnw</b> file, or drop it here. It stays on this device.</p>
+          <label class="dropzone" id="drop" for="world-file">
+            <svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-download-cloud"/></svg>
+            <b>Choose a .vnw file</b>
+            <span>or drag and drop it</span>
+            <input id="world-file" type="file" accept=".vnw,application/json" hidden>
+          </label>
+          <div class="pl-status" id="file-status" aria-live="polite"></div>
+          <div class="pl-row">
+            <button class="btn btn-outline" id="last-world" type="button" disabled>
+              <svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-play-circle"/></svg>
+              Open last world
+            </button>
+          </div>
+
+          <div class="pl-world" id="world-info">
+            <div class="pl-world-name" id="world-name"></div>
+            <div class="pl-world-meta" id="world-meta"></div>
+            <label class="pl-trust"><input type="checkbox" id="trust"> <span>I trust this world. Its scripts run in my browser and can change the game while I play.</span></label>
+            <div class="pl-row">
+              <button class="btn btn-primary" id="play" type="button" disabled>
+                <svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-play"/></svg>
+                Play Solo
+              </button>
+              <button class="btn btn-outline" id="host-lobby" type="button" disabled>
+                <svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-users"/></svg>
+                Host Lobby
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div class="pl-stack">
+          <section class="pl-card" data-reveal data-reveal-delay="70">
+            <h2><svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-wifi"/></svg> Open a world URL</h2>
+            <p>The server must allow cross-origin requests. Worlds larger than 32 MB are refused.</p>
+            <input class="pl-input" id="world-url" type="url" inputmode="url" placeholder="https://example.com/my-world.vnw" aria-label="World URL">
+            <div class="pl-row">
+              <button class="btn btn-outline" id="url-open" type="button">
+                <svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-search"/></svg>
+                Fetch world
+              </button>
+            </div>
+            <div class="pl-status" id="url-status" aria-live="polite"></div>
+          </section>
+
+          <section class="pl-card" data-reveal data-reveal-delay="140">
+            <h2><svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-users"/></svg> Join a lobby</h2>
+            <p>Ask the host for their 5-character room code. The host sends the world to you; this browser does not need a copy.</p>
+            <div class="pl-code-row">
+              <input class="pl-code" id="join-code" maxlength="5" autocomplete="off" spellcheck="false" placeholder="ABCDE" aria-label="Room code">
+              <button class="btn btn-primary" id="join-lobby" type="button">Join Lobby</button>
+            </div>
+            <div class="pl-row">
+              <input class="pl-input" id="player-name" maxlength="24" autocomplete="nickname" placeholder="Your name" aria-label="Your name" style="max-width:220px">
+            </div>
+            <div class="pl-status" id="lobby-status" aria-live="polite"></div>
+          </section>
+        </div>
+      </div>
+
+      <p class="pl-note">
+        <svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-info"/></svg>
+        <span>The Player uses the same engine as the editor. Worlds with scripts run those scripts locally when you play solo. A guest joins the host's session, receives the host world and controls a guest avatar while the host runs the simulation. Everyone in a room needs the same 4.0 network version.</span>
+      </p>
+    </section>
   </main>
 
-  <footer class="pl-foot">
-    <span>Vanilla3D</span>
-    <span>player</span>
+  <footer class="site-footer">
+    <div class="shell footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="../index.html">
+          <svg class="brand-mark" aria-hidden="true"><use href="../assets/icons.svg#i-vanilla-mark"/></svg>
+          <span class="brand-name">Vanilla<span class="accent">3D</span></span>
+        </a>
+        <p>The lean way into a Vanilla3D world: no editor panels, just the game and a room code.</p>
+        <div class="footer-social">
+          <a href="https://github.com/rigatoni534/Vanilla3D" aria-label="Vanilla3D on GitHub" rel="noopener"><svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-code"/></svg></a>
+          <a href="../engine/" aria-label="Open the editor"><svg class="ic" aria-hidden="true"><use href="../assets/icons.svg#i-monitor"/></svg></a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h3>Build</h3>
+        <a href="../engine/">Editor</a>
+        <a href="../language/">Playground</a>
+        <a href="../toolbox/">Toolbox</a>
+        <a href="../player/">Player</a>
+      </div>
+      <div class="footer-col">
+        <h3>Learn</h3>
+        <a href="../engine/">Engine guide</a>
+        <a href="../language/">Language reference</a>
+        <a href="../toolbox/">Premade items</a>
+      </div>
+      <div class="footer-col">
+        <h3>Project</h3>
+        <a href="https://github.com/rigatoni534/Vanilla3D" rel="noopener">GitHub</a>
+        <a href="../README.md">Readme</a>
+      </div>
+    </div>
+    <div class="shell footer-meta">
+      <span>© <span id="footer-year">2026</span> Vanilla3D. Built for the open web.</span>
+      <span class="mono">v4.0.0.0 · player</span>
+    </div>
   </footer>
 
   <script>
@@ -279,5 +286,6 @@
       }
     })();
   </script>
+  <script defer src="../assets/site.js?v=4.0.0.0.17.2"></script>
 </body>
 </html>

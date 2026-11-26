@@ -1,0 +1,15 @@
+{
+  "format": "VanillaInstance",
+  "formatVersion": 1,
+  "objects": {
+    "CheckpointPad": {
+      "type": "script",
+      "name": "Checkpoint Pad",
+      "parent": "scripts",
+      "scriptType": "Server",
+      "runWhen": "simulation",
+      "language": "vanillalua",
+      "source": "# Checkpoint Pad: adds a glowing pad and makes it the world's spawnpoint.\n# Only one block can be the spawnpoint, so remove any other Spawnpoint you set first.\ncall Scripts\ncall World\nget Instance\n\nlocal pad = Instance.create(\"prism6\", World)\npad.Name = \"CheckpointPad\"\npad.Position = vanilla3D.Position(0, 0.2, 0)\npad.Size = vanilla3D.Size(2, 0.2, 2)\npad.Anchored = True\npad.Collidable = True\npad.Color = \"#4ed08a\"\npad.Material = \"neon\"\npad.Spawnpoint = True\n\nprint(\"Checkpoint Pad running. Players now spawn on the pad.\")\n"
+    }
+  }
+}

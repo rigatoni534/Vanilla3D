@@ -1,5 +1,7 @@
 // Vanilla Engine — scene data, UI instances, unions and shape makers. Loaded in order by index.html; all files share one global scope.
-        const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
+        // Every icon comes from the shared sprite, so the engine and the site share one 24px set.
+        const ICON_SPRITE = '../assets/icons.svg';
+        const icon = (id, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="${ICON_SPRITE}#${id}"/></svg>`;
 
         // ───────── Scene data ─────────
         const spaces = {
@@ -151,24 +153,46 @@
             },
             {
                 version: '4.0.0.0',
-                title: 'Materials and player colour defaults',
+                title: 'Materials, new instance defaults and player colours',
                 notes: [
                     'Fills in a material on every 3D shape that predates materials.',
                     'Adds the Player skin, shirt and pants default colours to World Settings.',
+                    'Registers the newer instance types (light, sound, highlight, SimpleEffect and AdvancedEffect), filling in defaults only where an old file is missing a field.',
+                    'Rebuilds the default-name counters for every instance type.',
                     'Leaves existing instance data, scripts and references untouched.'
                 ],
                 apply(ws) {
                     const changes = [];
                     let materials = 0;
+                    let instances = 0;
                     for (const o of Object.values(sceneObjects)) {
                         if (isShape(o) && !MATERIAL_KEYS.has(o.material)) { o.material = 'plastic'; materials++; }
+                        if (!o) continue;
+                        // Newer instance types are registered here so opening an old file never drops one.
+                        if (o.type === 'sound' && typeof normalizeSound === 'function') { normalizeSound(o); instances++; }
+                        else if ((o.type === 'simpleeffect' || o.type === 'advancedeffect') && typeof normalizeEffect === 'function') { normalizeEffect(o); instances++; }
+                        else if (o.type === 'highlight') {
+                            if (!HEX6.test(o.color)) o.color = '#ffd23f';
+                            o.overObjects = o.overObjects !== false;
+                            instances++;
+                        } else if (o.type === 'light') {
+                            if (!HEX6.test(o.color)) o.color = '#ffe3ad';
+                            if (!LIGHT_TYPES.includes(o.lightType)) o.lightType = 'point';
+                            o.castShadows = o.castShadows !== false;
+                            instances++;
+                        } else if (o.type === 'human') {
+                            Object.assign(o, normalizeHumanStats(o));
+                            instances++;
+                        }
                     }
                     if (materials) changes.push(materials + ' shape material' + (materials === 1 ? '' : 's'));
+                    if (instances) changes.push(instances + ' newer instance' + (instances === 1 ? '' : 's') + ' checked');
                     if (!ws.defaults || !ws.defaults.playerColors) {
                         if (!ws.defaults) ws.defaults = {};
                         ws.defaults.playerColors = { skinColor: '#ffcc85', shirtColor: '#0d69ac', pantsColor: '#4b974b' };
                         changes.push('player colour defaults');
                     }
+                    if (typeof recountTypes === 'function') recountTypes();
                     return changes;
                 }
             }
@@ -283,6 +307,9 @@
             if (typeof o.worldName !== 'string' || !o.worldName.trim()) o.worldName = 'My World';
             if (typeof o.creator !== 'string') o.creator = '';
             if (typeof o.description !== 'string') o.description = '';
+            o.timeOfDay = ((Number.isFinite(+o.timeOfDay) ? +o.timeOfDay : 14) % 24 + 24) % 24;
+            o.gravity = Number.isFinite(+o.gravity) ? +o.gravity : 9.8;
+            o.killY = Number.isFinite(+o.killY) ? +o.killY : -5000;
             o.maxPlayers = Math.max(1, Math.min(100, Math.round(Number.isFinite(+o.maxPlayers) ? +o.maxPlayers : DEFAULT_MAX_PLAYERS)));
             o.audio = normalizeAudioSettings(o.audio);
             // Uploaded assets are files from the picker, kept as data URLs inside the world file. Older worlds may

@@ -422,7 +422,7 @@
                 const image = /^image\//i.test(a.type || '') || /^data:image\//i.test(a.url || '');
                 const thumb = image
                     ? `<img src="${esc(a.url)}" alt="">`
-                    : `<svg class="ic"><use href="#i-folder"/></svg>`;
+                    : `<svg class="ic"><use href="../assets/icons.svg#i-folder"/></svg>`;
                 const meta = [a.type || 'file', assetBytes(a.size)].filter(Boolean).join(' \u00b7 ');
                 return `<div class="asset-row asset-upload">
                     <div class="asset-thumb">${thumb}</div>

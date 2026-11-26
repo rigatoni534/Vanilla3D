@@ -1,0 +1,15 @@
+{
+  "format": "VanillaInstance",
+  "formatVersion": 1,
+  "objects": {
+    "SpinningPlatform": {
+      "type": "script",
+      "name": "Spinning Platform",
+      "parent": "scripts",
+      "scriptType": "Server",
+      "runWhen": "simulation",
+      "language": "vanillalua",
+      "source": "# Spinning Platform: creates an anchored metal platform and turns it forever.\n# Change speed to taste; 1.2 degrees every tick is a lazy turn, 8 is fast.\ncall Scripts\ncall World\nget Instance\n\nlocal speed = 1.2\nlocal platform = Instance.create(\"prism6\", World)\nplatform.Name = \"SpinningPlatform\"\nplatform.Position = vanilla3D.Position(0, 1, 0)\nplatform.Size = vanilla3D.Size(3, 0.4, 3)\nplatform.Anchored = True\nplatform.Color = \"#f2b134\"\nplatform.Material = \"metal\"\n\nlocal angle = 0\nprint(\"Spinning Platform running.\")\n\nwhile True do\n    angle = angle + speed\n    if angle >= 360 then\n        angle = angle - 360\n    end\n    platform.Rotation = vanilla3D.Position(0, angle, 0)\n    wait(0.05)\nend\n"
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "format": "VanillaInstance",
+  "formatVersion": 1,
+  "objects": {
+    "CrateStack": {
+      "type": "model",
+      "name": "Crate Stack",
+      "parent": "world"
+    },
+    "CrateA": {
+      "type": "prism6",
+      "name": "Crate A",
+      "parent": "CrateStack",
+      "x": -0.55, "y": 0.5, "z": 0,
+      "length": 0.5, "width": 0.5, "height": 0.5,
+      "rotX": 0, "rotY": 0, "rotZ": 0,
+      "color": "#8a5a33", "material": "wood",
+      "anchored": true, "collidable": true, "reactsToPhysics": true
+    },
+    "CrateB": {
+      "type": "prism6",
+      "name": "Crate B",
+      "parent": "CrateStack",
+      "x": 0.55, "y": 0.5, "z": 0.1,
+      "length": 0.5, "width": 0.5, "height": 0.5,
+      "rotX": 0, "rotY": 12, "rotZ": 0,
+      "color": "#96643a", "material": "wood",
+      "anchored": true, "collidable": true, "reactsToPhysics": true
+    },
+    "CrateC": {
+      "type": "prism6",
+      "name": "Crate C",
+      "parent": "CrateStack",
+      "x": 0, "y": 1.5, "z": 0.05,
+      "length": 0.5, "width": 0.5, "height": 0.5,
+      "rotX": 0, "rotY": -18, "rotZ": 0,
+      "color": "#a57044", "material": "wood",
+      "anchored": true, "collidable": true, "reactsToPhysics": true
+    },
+    "CrateD": {
+      "type": "prism6",
+      "name": "Crate D",
+      "parent": "CrateStack",
+      "x": 0.1, "y": 2.5, "z": 0,
+      "length": 0.4, "width": 0.4, "height": 0.4,
+      "rotX": 0, "rotY": 28, "rotZ": 0,
+      "color": "#b07b4c", "material": "wood",
+      "anchored": true, "collidable": true, "reactsToPhysics": true
+    }
+  }
+}

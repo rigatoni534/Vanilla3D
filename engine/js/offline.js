@@ -116,8 +116,14 @@ async function buildOfflineCopy() {
         refs.set(path, url.href);
     };
     doc.querySelectorAll('script[src]').forEach(el => add(el.getAttribute('src')));
-    doc.querySelectorAll('link[rel~="stylesheet"][href]').forEach(el => add(el.getAttribute('href')));
+    doc.querySelectorAll('link[rel~="stylesheet"][href], link[rel~="icon"][href]').forEach(el => add(el.getAttribute('href')));
     doc.querySelectorAll('img[src]').forEach(el => add(el.getAttribute('src')));
+    // Icons are referenced through <use> in the shared sprite, not through <img>.
+    // Add the sprite itself (without the #symbol fragment) so the offline copy keeps its icons.
+    doc.querySelectorAll('use[href], use[xlink\\:href]').forEach(el => {
+        const raw = el.getAttribute('href') || el.getAttribute('xlink:href') || '';
+        add(raw.split('#')[0]);
+    });
 
     // The version query is for cache busting online; a local file does not need it.
     const offlineHtml = html.replace(/(\b(?:src|href)="[^"]*?)\?v=[^"]*"/g, '$1"');

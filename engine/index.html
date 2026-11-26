@@ -1088,7 +1088,7 @@ if player.Character then setup(player.Character) end</code></pre>
         <p><b>Materials.</b> Every shape has a Material in Render: Plastic, Glass, Metal, Grass, Brick, Tile, Carpet, Wood, Concrete, Neon, Sand, Rubber, Ice, Fabric or Marble. Default maps to Plastic. The material changes the surface pattern and how highlights catch it. Color still tints the result, so every material picks up the color you choose. Neon glows when bloom is on, Glass has a bright fresnel edge and Metal is brushed and reflective. A union keeps the material of the first part it was built from. Materials are visual only; they do not change mass or collision.</p>
         <p><b>Physics.</b> Everything has the same density, so a body's mass comes from its volume: a ball by its sphere, a cylinder by its round column and a wedge by half its box. Falling bodies speed up with gravity, and air slows them more the faster they go, so every body has a terminal velocity (a person falls at about 55 Vm/s). Air is thick where gravity is strong and gone on the Moon and in Space, so there bodies keep speeding up. When two bodies collide momentum is conserved, so a heavy body pushes a light one much more than the other way round. Fast impacts bounce and lose energy, and sliding bodies slow down and stop because of friction. A body that comes to rest sits exactly on the surface it landed on, so a stack stays still instead of creeping. Turned blocks collide at their real angle, and a union is tested cell by cell, so a hole cut through it is a hole for falling bodies too. Boxes still do not tip over from a collision. The player collides as a box matching its body's width and depth, and a ball is round for the player as well, so corners and turned walls slide instead of stopping on an invisible square. The player is not a body in the simulation: it is moved directly against the world, so nothing it stands on is weighed down by it, and a loose cylinder underfoot simply falls away with the player riding it down.</p>
         <p><b>Threads.</b> <code>Scripting.NewThread(fn, threadId, ...)</code> runs <code>fn</code> in a new thread, and any extra arguments are passed to it. <code>threadId</code> is a number, a string, or <code>auto</code>, which uses the next free number. Reusing an id that is still running prints a warning and makes no new thread. A script can have at most the player count times 3 threads made this way. Server scripts share thread ids with other Server scripts, and Local scripts share theirs with other Local scripts.</p>
-        <p>New worlds start with the <code>DefaultPlayer</code> model in Storage (with a Human inside it), a <b>PlayerManagement</b> script that spawns every player who joins and respawns them after they die, and a <b>Networking</b> script that keeps a <code>ServerSocket</code> and one <code>ClientSocket</code> per player in Communications. The Networking script creates the server socket when the simulation starts, adds a ClientSocket named after each player who joins, gives it that player's name in <code>Player</code>, and deletes the socket when the player leaves. It also adopts any players who were already there when it started, so restarting it does not make duplicate sockets:</p>
+        <p>New worlds start with the <code>DefaultPlayer</code> model in Storage (with a Human inside it), a <b>PlayerManagement</b> script that spawns every player who joins, respawns them after they die and removes their model when they leave, and a <b>Networking</b> script that keeps a <code>ServerSocket</code> and one <code>ClientSocket</code> per player in Communications. The Networking script creates the server socket when the simulation starts, adds a ClientSocket named after each player who joins, gives it that player's name in <code>Player</code>, and deletes the socket when the player leaves. It also adopts any players who were already there when it started, so restarting it does not make duplicate sockets:</p>
         <pre><code># Networking: keeps a ServerSocket and one ClientSocket per player in Communications.
 call Scripts
 call Communications
@@ -1126,37 +1126,61 @@ Players.OnPlayerLeave:Connect(function(player)
   local socket = findSocket(player.Name)
   if socket ~= nil then Instance.delete(socket) end
 end)</code></pre>
-        <p><b>PlayerManagement</b> spawns the models:</p>
+        <p><b>PlayerManagement</b> spawns the models, including players who were already in the game when it started, and removes a player's model when they leave:</p>
         <pre><code># PlayerManagement: gives every player a model when they join, and respawns them after they die.
 call Scripts
 call Storage
 call World
 call Players
-get Scripting
 get Instance
 get Players
 
 local template = Instance.GetUID("DefaultPlayer", Storage)
+local spawned = {}
+local present = {}
 
-function spawn(player)
-  local model = Players.AddModel(template)
-  Players.AssignModelToPlayer(model, player)
+if template == nil then
+  print("PlayerManagement: DefaultPlayer was not found in Storage. Add it to give players a body.")
 end
 
-function managePlayer(player)
-  spawn(player)
-  print("Handled new join by " .. player.Name)
+local spawnName = function(name)
+  present[name] = true
+  if template == nil or spawned[name] ~= nil then return end
+  local model = Players.AddModel(template)
+  Players.AssignModelToPlayer(model, name)
+  spawned[name] = model
+end
+
+local remove = function(name)
+  present[name] = nil
+  local model = spawned[name]
+  spawned[name] = nil
+  if model ~= nil then Instance.delete(model) end
+end
+
+local spawn = function(player)
+  spawnName(player.Name)
+end
+
+# Players already in the game when this starts, including Player1, get a model too.
+for i in 1, Players.Count do
+  spawnName(Players.Players[i])
 end
 
 Players.OnPlayerJoin:Connect(function(player)
-  # Every player gets their own thread so they are managed individually.
-  Scripting.NewThread(managePlayer, auto, player)
+  spawn(player)
 end)
 
 Players.OnPlayerDeath:Connect(function(player)
   wait(3) # The ragdoll lies there for a moment.
-  Instance.delete(player.Character)
-  spawn(player)
+  if present[player.Name] ~= nil then
+    remove(player.Name)
+    spawn(player)
+  end
+end)
+
+Players.OnPlayerLeave:Connect(function(player)
+  remove(player.Name)
 end)</code></pre>
 
         <h3 data-group="Vanillalua language">13. Full example: shared status and moving block</h3>
@@ -1260,7 +1284,7 @@ vanilla3D.Size(1, 2, 1)</code></pre>
   </div>
 
   <script src="../assets/peerjs.min.js"></script>
-  <script src="../vanillalua.js?v=4.1.0.0.1"></script>
+  <script src="../vanillalua.js?v=4.1.0.0.2"></script>
   <script>const ENGINE_VERSION = '4.1.0.0'; const ENGINE_RELEASE = '4.1.0.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
   <script defer src="js/loader.js?v=4.1.0.0.1"></script>
@@ -1271,18 +1295,18 @@ vanilla3D.Size(1, 2, 1)</code></pre>
   <script defer src="js/version-history.js?v=4.1.0.0.1"></script>
   <script defer src="js/playeranim.js?v=4.1.0.0.1"></script>
   <script defer src="js/player.js?v=4.1.0.0.1"></script>
-  <script defer src="js/sounds.js?v=4.1.0.0.1"></script>
+  <script defer src="js/sounds.js?v=4.1.0.0.2"></script>
   <script defer src="js/scripting.js?v=4.1.0.0.1"></script>
   <script defer src="js/shell.js?v=4.1.0.0.1"></script>
-  <script defer src="js/files.js?v=4.1.0.0.1"></script>
+  <script defer src="js/files.js?v=4.1.0.0.3"></script>
   <script defer src="js/offline.js?v=4.1.0.0.1"></script>
   <script defer src="js/explorer.js?v=4.1.0.0.1"></script>
   <script defer src="js/shortcuts.js?v=4.1.0.0.1"></script>
   <script defer src="js/properties.js?v=4.1.0.0.1"></script>
-  <script defer src="js/protocol.js?v=4.1.0.0.1"></script>
-  <script defer src="js/net.js?v=4.1.0.0.1"></script>
-  <script defer src="js/multiplayer.js?v=4.1.0.0.1"></script>
-  <script defer src="js/playmultiplayer.js?v=4.1.0.0.1"></script>
+  <script defer src="js/protocol.js?v=4.1.0.0.3"></script>
+  <script defer src="js/net.js?v=4.1.0.0.2"></script>
+  <script defer src="js/multiplayer.js?v=4.1.0.0.2"></script>
+  <script defer src="js/playmultiplayer.js?v=4.1.0.0.6"></script>
   <script defer src="js/render.js?v=4.1.0.0.1"></script>
   <script defer src="js/gl.js?v=4.1.0.0.1"></script>
   <script defer src="../assets/release.js?v=4.1.0.0.1"></script>

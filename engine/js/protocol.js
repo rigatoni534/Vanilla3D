@@ -87,6 +87,17 @@ async function v3dPackWorld(world) {
     }
     return { chunks, encoding: packed.encoding, rawSize: raw.byteLength, size: packed.bytes.byteLength };
 }
+// PeerJS can hand a binary chunk back as an ArrayBuffer, a typed-array view or a Blob depending on the browser
+// and serialization path. Normalize all three before assembling the world; dropping a view or racing a Blob read
+// leaves the guest with an incomplete world even though every message arrived.
+async function v3dChunkBytes(data) {
+    if (data instanceof ArrayBuffer) return data;
+    if (ArrayBuffer.isView(data)) return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+    if (data && typeof data.arrayBuffer === 'function') {
+        try { return await data.arrayBuffer(); } catch (e) { return null; }
+    }
+    return null;
+}
 async function v3dUnpackWorld(chunks, encoding, expectedSize) {
     let total = 0;
     for (const chunk of chunks) {
@@ -134,8 +145,10 @@ function v3dValidOps(ops, current) {
     if (!Array.isArray(ops.upsert) || !Array.isArray(ops.remove)) return false;
     if (ops.upsert.length > 500 || ops.remove.length > 500) return false;
     const names = new Set(current ? Object.values(current).map(o => o && o.name) : []);
+    const ids = new Set(current ? Object.keys(current) : []);
     for (const pair of ops.upsert) {
         if (!Array.isArray(pair) || pair.length !== 2 || !v3dValidNetObject(pair[0], pair[1])) return false;
+        ids.add(pair[0]);
         if (pair[1].name) names.add(pair[1].name);
     }
     const roots = new Set(['world', 'storage', 'scripts']);
@@ -143,7 +156,9 @@ function v3dValidOps(ops, current) {
         for (const pair of ops.upsert) {
             const obj = pair[1];
             if (!obj.parent || obj.parent === obj.name) return false;
-            if (!roots.has(obj.parent) && !names.has(obj.parent)) return false;
+            // Model children normally point at their model's UID, while some UI and older worlds use its display
+            // name. Accept both, but never a parent that is neither in this world nor in the same batch.
+            if (!roots.has(obj.parent) && !names.has(obj.parent) && !ids.has(obj.parent)) return false;
         }
     }
     for (const id of ops.remove) if (!/^[A-Za-z][A-Za-z0-9]{0,63}$/.test(String(id))) return false;

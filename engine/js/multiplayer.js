@@ -8,7 +8,8 @@ const MP_MAX_BATCH = 350000;          // fall back to a complete world above thi
 const mpState = {
     transport: null, role: null, room: '', name: '', color: '', selfId: '', hostId: '',
     peers: new Map(), roster: [], connected: false, ready: false, lastSync: null, lastPresence: null,
-    applying: false, worldIn: null, transfers: 0, remoteSelections: new Map(), chatLines: 0
+    applying: false, worldIn: null, transfers: 0, remoteSelections: new Map(), chatLines: 0,
+    worldTimer: null, worldRetries: 0
 };
 const mpUi = {};
 
@@ -18,6 +19,22 @@ function mpSetStatus(text, kind) {
     mpUi.status.textContent = text || '';
     mpUi.status.classList.toggle('bad', kind === 'bad');
     mpUi.status.classList.toggle('good', kind === 'good');
+}
+function mpClearWorldWait() {
+    if (mpState.worldTimer) { clearTimeout(mpState.worldTimer); mpState.worldTimer = null; }
+}
+function mpAskForWorld(delay, quiet) {
+    mpClearWorldWait();
+    if (mpState.role !== 'guest' || mpState.ready) return;
+    mpState.worldTimer = setTimeout(() => {
+        mpState.worldTimer = null;
+        if (!mpState.transport || mpState.role !== 'guest' || mpState.ready) return;
+        if (mpState.worldRetries >= 5) return;
+        mpState.worldRetries++;
+        mpSend({ type: 'request-world' });
+        if (!quiet) mpSetStatus('Still waiting for the world. Asking the host to send it again…', 'bad');
+        mpAskForWorld(6000, true);
+    }, Math.max(0, delay));
 }
 function mpColorFor(id) {
     const person = mpState.roster.find(p => p.id === id);
@@ -81,7 +98,7 @@ function mpHostWorld(guestId) {
     (async () => {
         try {
             mpState.transfers++;
-            const packed = await v3dPackWorld(buildWorldFile());
+            const packed = await v3dPackWorld(buildWorldFile(true));
             const transfer = Math.random().toString(36).slice(2);
             mpSend({ type: 'world-begin', transfer, encoding: packed.encoding, size: packed.size, rawSize: packed.rawSize, total: packed.chunks.length }, guestId);
             for (let i = 0; i < packed.chunks.length; i++) {
@@ -101,6 +118,13 @@ function mpHostWorld(guestId) {
 }
 function mpPeerJoined(id, profile) {
     if (!id || id === mpState.selfId) return;
+    const existing = mpState.peers.get(id);
+    if (existing) {
+        existing.name = v3dCleanName(profile && profile.name, existing.name);
+        if (/^#[0-9a-f]{6}$/i.test(profile && profile.color)) existing.color = profile.color;
+        mpRenderRoster();
+        return;
+    }
     const person = { id, name: v3dCleanName(profile && profile.name, 'Guest'), color: /^#[0-9a-f]{6}$/i.test(profile && profile.color) ? profile.color : v3dNetColor(id), role: 'guest' };
     mpState.peers.set(id, person);
     if (mpState.role === 'guest') mpState.hostId = id;
@@ -142,31 +166,58 @@ function mpApplyIncomingOps(ops, from) {
         mpState.applying = false;
     }
 }
-async function mpReceiveWorldEnd() {
+function mpWorldFailed(message) {
+    mpSetStatus('Could not open the shared world: ' + message, 'bad');
+    if (mpState.role === 'guest' && mpState.transport) mpAskForWorld(1800, true);
+}
+function mpFinishWorldTransfer() {
+    const transfer = mpState.worldIn;
+    if (!transfer || !transfer.ended || transfer.pending || transfer.finishing) return;
+    transfer.finishing = true;
+    mpState.worldIn = null;
+    if (transfer.failed || transfer.received !== transfer.total) {
+        mpWorldFailed(transfer.failed || 'The world transfer was incomplete.');
+        return;
+    }
+    (async () => {
+        try {
+            const data = await v3dUnpackWorld(transfer.chunks, transfer.encoding, transfer.size);
+            if (simulationRunning) setSimulationRunning(false);
+            applyWorldFile(data);
+            mpState.lastSync = JSON.stringify(sceneObjects);
+            mpState.ready = true;
+            mpState.connected = true;
+            mpClearWorldWait();
+            mpSetStatus('World received. You are editing with the host.', 'good');
+            mpSend({ type: 'ready' });
+            mpBroadcastRoster();
+        } catch (err) {
+            mpWorldFailed(err.message);
+        }
+    })();
+}
+function mpReceiveWorldEnd() {
     const transfer = mpState.worldIn;
     if (!transfer) return;
-    mpState.worldIn = null;
-    try {
-        if (transfer.chunks.filter(Boolean).length !== transfer.total) throw new Error('The world transfer was incomplete.');
-        const data = await v3dUnpackWorld(transfer.chunks, transfer.encoding, transfer.size);
-        if (simulationRunning) setSimulationRunning(false);
-        applyWorldFile(data);
-        mpState.lastSync = JSON.stringify(sceneObjects);
-        mpState.ready = true;
-        mpState.connected = true;
-        mpSetStatus('World received. You are editing with the host.', 'good');
-        mpSend({ type: 'ready' });
-        mpBroadcastRoster();
-    } catch (err) {
-        mpSetStatus('Could not open the shared world: ' + err.message, 'bad');
-    }
+    transfer.ended = true;
+    mpFinishWorldTransfer();
 }
 async function mpReceive(id, msg) {
     if (!msg || typeof msg !== 'object') return;
     if (msg.type === 'hello') {
+        // The host normally learns about a guest from the transport join event. If that event raced the host's
+        // handler setup, the guest's hello is the reliable second chance to add the peer and send the world.
+        if (mpState.role === 'host' && !mpState.peers.has(id)) mpPeerJoined(id, { name: msg.name, color: msg.color });
         const peer = mpState.peers.get(id);
         if (peer) { peer.name = v3dCleanName(msg.name, peer.name); peer.color = msg.color || peer.color; }
         mpRenderRoster();
+        return;
+    }
+    if (msg.type === 'ready') {
+        if (mpState.role === 'host') {
+            const who = mpState.peers.get(id)?.name || 'The guest';
+            mpSetStatus(who + ' has the world.', 'good');
+        }
         return;
     }
     if (msg.type === 'roster' && Array.isArray(msg.people)) {
@@ -196,21 +247,32 @@ async function mpReceive(id, msg) {
         if (mpState.role !== 'guest') return;
         if (!Number.isInteger(msg.total) || msg.total < 1 || msg.total > 2048) return;
         if (!Number.isFinite(msg.size) || msg.size < 0 || msg.size > V3D_NET_MAX_WORLD + 1024) return;
-        mpState.worldIn = { transfer: msg.transfer, encoding: msg.encoding === 'gzip' ? 'gzip' : 'raw', size: msg.size, total: msg.total, chunks: new Array(msg.total) };
+        mpClearWorldWait();
+        mpState.worldIn = { transfer: msg.transfer, encoding: msg.encoding === 'gzip' ? 'gzip' : 'raw', size: msg.size, total: msg.total, chunks: new Array(msg.total), received: 0, pending: 0, ended: false, finishing: false, failed: '' };
         mpSetStatus('Receiving the world…');
         return;
     }
     if (msg.type === 'world-chunk') {
         const t = mpState.worldIn;
         if (!t || t.transfer !== msg.transfer || !Number.isInteger(msg.index) || msg.index < 0 || msg.index >= t.chunks.length) return;
-        let chunk = msg.data;
-        if (chunk && typeof chunk.arrayBuffer === 'function') chunk = await chunk.arrayBuffer();
-        if (!(chunk instanceof ArrayBuffer) || chunk.byteLength > V3D_NET_CHUNK + 64) return;
-        t.chunks[msg.index] = chunk;
+        t.pending++;
+        (async () => {
+            let failure = '';
+            try {
+                const chunk = await v3dChunkBytes(msg.data);
+                if (!(chunk instanceof ArrayBuffer) || chunk.byteLength > V3D_NET_CHUNK + 64) failure = 'The world transfer was damaged.';
+                else if (!t.chunks[msg.index]) { t.chunks[msg.index] = chunk; t.received++; }
+            } catch (err) { failure = err.message || 'The world transfer was damaged.'; }
+            finally {
+                if (failure && !t.failed) t.failed = failure;
+                t.pending--;
+                if (mpState.worldIn === t) mpFinishWorldTransfer();
+            }
+        })();
         return;
     }
     if (msg.type === 'world-end') {
-        if (mpState.worldIn && mpState.worldIn.transfer === msg.transfer) await mpReceiveWorldEnd();
+        if (mpState.worldIn && mpState.worldIn.transfer === msg.transfer) mpReceiveWorldEnd();
         return;
     }
     if (msg.type === 'request-world') {
@@ -313,8 +375,12 @@ async function mpJoinRoom() {
         t.on('error', err => mpSetStatus(v3dNetErrorText(err), 'bad'));
         t.on('offline', () => mpSetStatus('Signalling is offline; reconnecting…', 'bad'));
         mpRenderSession();
+        mpState.worldRetries = 0;
         mpSetStatus('Waiting for the host to send the world…');
         mpAppendChat('', 'Joined ' + code + '. Waiting for the world…', true);
+        // The guest normally receives the world immediately. If that first send is lost, ask for it rather than
+        // waiting forever on a blank editor.
+        mpAskForWorld(6000, true);
     } catch (err) {
         t.close();
         mpSetStatus(v3dNetErrorText(err), 'bad');
@@ -326,7 +392,8 @@ function mpEndSession(message, quiet) {
     }
     mpState.transport = null; mpState.role = null; mpState.room = ''; mpState.hostId = '';
     mpState.peers.clear(); mpState.roster = []; mpState.remoteSelections.clear();
-    mpState.ready = false; mpState.worldIn = null; mpState.lastSync = null; mpState.lastPresence = null; mpState.transfers = 0;
+    mpClearWorldWait();
+    mpState.ready = false; mpState.worldIn = null; mpState.lastSync = null; mpState.lastPresence = null; mpState.transfers = 0; mpState.worldRetries = 0;
     mpState.connected = false;
     if (mpUi.session) mpUi.session.classList.add('mp-hidden');
     if (mpUi.dot) mpUi.dot.hidden = true;

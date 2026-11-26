@@ -126,8 +126,10 @@
             for (const [t] of SAVED_TYPES) keepTypes[t] = types[t] !== false;
             return { spaces, types: keepTypes };
         }
-        function buildWorldFile() {
-            const inc = saveIncludes(), objects = {};
+        // Saving can leave spaces or instance types out. A multiplayer guest needs the whole document, so world
+        // transfers pass includeEverything=true and ignore the host's local save filters.
+        function buildWorldFile(includeEverything) {
+            const inc = includeEverything ? { spaces: Object.fromEntries(SAVED_SPACES.map(([id]) => [id, true])), types: Object.fromEntries(SAVED_TYPES.map(([type]) => [type, true])) } : saveIncludes(), objects = {};
             const allowed = new Map();
             // An object is only saved if its space, its type and its whole parent chain are included.
             const included = (uid, depth = 0) => {
@@ -193,6 +195,9 @@
         }
         function applyWorldFile(raw) {
             const data = validateWorldFile(raw);
+            // Worlds made with the old default script only spawned players who joined after it started. Upgrade that
+            // untouched default in place so existing saved worlds get Player1 and guest models too.
+            if (typeof upgradeLegacyPlayerManagement === 'function') upgradeLegacyPlayerManagement(data.objects);
             clearAsk();
             loadedWorldMeta = {
                 currentVersion: normalizeWorldVersion(raw.currentVersion) || normalizeWorldVersion(raw.engineVersion) || '',

@@ -11,6 +11,7 @@ class V3DTransport {
         this.handlers = new Map();
         this.heartbeat = null;
         this.pendingData = [];
+        this.pendingJoins = [];
         this.closed = false;
     }
     on(event, fn) {
@@ -20,6 +21,13 @@ class V3DTransport {
             const queued = this.pendingData;
             this.pendingData = [];
             for (const args of queued) this.emit('data', ...args);
+        }
+        // A guest can finish connecting while the host is still registering its room handlers. Keep that join
+        // until the host is listening, otherwise it never sends the joining guest its world.
+        if (event === 'join' && this.pendingJoins && this.pendingJoins.length) {
+            const queued = this.pendingJoins;
+            this.pendingJoins = [];
+            for (const args of queued) this.emit('join', ...args);
         }
         return this;
     }
@@ -90,6 +98,13 @@ class V3DTransport {
         this.connections.set(id, entry);
         const ready = () => {
             if (this.closed) return;
+            // Only the host needs this queue. An outgoing guest gets its host from peers() explicitly, so replaying
+            // the guest's own join would add the host twice.
+            if (this.role === 'host' && !(this.handlers.get('join') || []).length) {
+                this.pendingJoins.push([id, entry.profile, outgoing]);
+                if (this.pendingJoins.length > 16) this.pendingJoins.shift();
+                return;
+            }
             this.emit('join', id, entry.profile, outgoing);
         };
         if (conn.open) ready();
@@ -104,11 +119,12 @@ class V3DTransport {
         if (!entry || !data || typeof data !== 'object') return;
         const now = Date.now();
         entry.lastSeen = now;
-        // Rate limit each peer. World chunks are allowed at the same message rate as controls, but a peer cannot flood
-        // the editor with thousands of events a second.
+        // Rate limit each peer. A world arrives as a burst of chunks, so world frames get a much higher ceiling than
+        // controls; otherwise a large world loses its tail and the guest can never open it.
+        const worldFrame = data.type === 'world-begin' || data.type === 'world-chunk' || data.type === 'world-end';
         entry.window = entry.window && now - entry.window.start < 1000 ? entry.window : { start: now, count: 0 };
         entry.window.count++;
-        if (entry.window.count > 240) return;
+        if (entry.window.count > (worldFrame ? 4096 : 240)) return;
         if (v3dMessageBytes(data) > V3D_NET_MAX_MESSAGE + V3D_NET_CHUNK) return;
         if (data.type === 'ping') { this.send(id, { type: 'pong', t: data.t }); return; }
         if (data.type === 'pong') return;
@@ -120,7 +136,7 @@ class V3DTransport {
         // instead of dropping a hello or the first world chunk on the floor.
         if (!(this.handlers.get('data') || []).length) {
             this.pendingData.push([id, data, entry.profile]);
-            if (this.pendingData.length > 1024) this.pendingData.shift();
+            if (this.pendingData.length > 4096) this.pendingData.shift();
             return;
         }
         this.emit('data', id, data, entry.profile);
@@ -155,6 +171,7 @@ class V3DTransport {
         for (const entry of this.connections.values()) { try { entry.conn.close(); } catch (e) {} }
         this.connections.clear();
         this.pendingData = [];
+        this.pendingJoins = [];
         if (this.peer) { try { this.peer.destroy(); } catch (e) {} }
         this.peer = null;
         this.role = null;

@@ -610,4 +610,20 @@
             getSelectedObjectId: () => selectedObjectId, setSelectedObjectId: value => { selectedObjectId = value; },
             markUIDirty: () => { uiDirty = true; }, markOutputDirty: () => { outputDirty = true; }
         });
-        const { VL_KEYWORDS, VL_SPACES, VL_MODULES, VL_TYPES, VL_GLOBALS, VLParseError, VLError, vlLex, vlParse, vlAnalyze, jsonDiagnostics, SCRIPT_TEMPLATE, newScriptData, makeHuman, HUMAN_DEFAULTS, makePlayerSetup, makePlayerScript, NETWORKING_SOURCE, makeNetworkingScript, ensureScript, computeDiagnostics, VLFn, VLWait, VLModule, VLSpace, VLInst, VLVec, VLScope, vlInstCache, vlSpaces, vlInst, vlObj, vlRound, vlTypeName, vlStr, vlTruthy, VL_PROPS, vlGetProp, vlSetProp, vlGetMember, vlSetMember, vlCreate, vlDeleteInst, vlGetUID, vlSetUID, vlGetUIDFn, vlSetUIDFn, vlScriptingModule, vlInstanceModule, vlVanilla3D, vlVecFrom, vlRootScope, vlEq, vlBinary, vlEval, vlExec, vlMain, scriptTasks, outputLog, logOutput, vlStartTask, vlRunScript, startSimulationScripts, stepScripts, stopScripts } = vlRuntime;
+        const { VL_KEYWORDS, VL_SPACES, VL_MODULES, VL_TYPES, VL_GLOBALS, VLParseError, VLError, vlLex, vlParse, vlAnalyze, jsonDiagnostics, SCRIPT_TEMPLATE, newScriptData, makeHuman, HUMAN_DEFAULTS, makePlayerSetup, makePlayerScript, PLAYER_MANAGEMENT_SOURCE, NETWORKING_SOURCE, makeNetworkingScript, ensureScript, computeDiagnostics, VLFn, VLWait, VLModule, VLSpace, VLInst, VLVec, VLScope, vlInstCache, vlSpaces, vlInst, vlObj, vlRound, vlTypeName, vlStr, vlTruthy, VL_PROPS, vlGetProp, vlSetProp, vlGetMember, vlSetMember, vlCreate, vlDeleteInst, vlGetUID, vlSetUID, vlGetUIDFn, vlSetUIDFn, vlScriptingModule, vlInstanceModule, vlVanilla3D, vlVecFrom, vlRootScope, vlEq, vlBinary, vlEval, vlExec, vlMain, scriptTasks, outputLog, logOutput, vlStartTask, vlRunScript, startSimulationScripts, stepScripts, stopScripts } = vlRuntime;
+        function upgradeLegacyPlayerManagement(objects) {
+            let changed = false;
+            for (const o of Object.values(objects || {})) {
+                if (!o || o.type !== 'script' || o.name !== 'PlayerManagement' || typeof o.source !== 'string') continue;
+                // Match only the old default, not a script someone has rewritten. It used NewThread and never handled
+                // players who were already in the game, which is why Player1 could have no model in a new room.
+                if (o.source.includes('Scripting.NewThread(managePlayer, auto, player)') &&
+                    o.source.includes('Players.OnPlayerJoin:Connect') &&
+                    o.source.includes('Players.OnPlayerDeath:Connect') &&
+                    !o.source.includes('Players.OnPlayerLeave')) {
+                    o.source = PLAYER_MANAGEMENT_SOURCE;
+                    changed = true;
+                }
+            }
+            return changed;
+        }

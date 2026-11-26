@@ -2,6 +2,15 @@
 // Add an entry here whenever ENGINE_VERSION changes. The About dialog and What's new both warn if the running version is missing.
 const VERSION_HISTORY = [
   {
+    version: '4.2.3.0',
+    label: '4.2.3.0',
+    date: '2026-11-26',
+    notes: [
+      'Closing the editor with changes that are still being written now asks for confirmation first. The synchronous copy is written before the prompt, and the IndexedDB write starts just before it, so the prompt also gives the database time to finish.',
+      'A close with nothing new to save does not interrupt you, and play mode and guests never prompt for the editor save.'
+    ]
+  },
+  {
     version: '4.2.2.0',
     label: '4.2.2.0',
     date: '2026-11-26',

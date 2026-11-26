@@ -116,6 +116,9 @@ const page = await context.newPage();
 page.setDefaultTimeout(15000);
 const pageErrors = [];
 const consoleErrors = [];
+const nativeDialogs = [];
+// A beforeunload prompt pauses a navigation until it is answered; accept it so the test can keep walking.
+page.on('dialog', async (dialog) => { nativeDialogs.push(dialog.type()); await dialog.accept(); });
 page.on('pageerror', (error) => pageErrors.push(error));
 page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
 
@@ -326,19 +329,35 @@ try {
         });
         assert.equal(saved.ok, true, 'the synchronous tab-close save should report a write');
         assert.equal(saved.hasTest, true, 'the complete world must be in localStorage before the page can close');
-        // A change made after that save is carried out by the real pagehide handler.
+        // A change made after that save makes a close ask first, and the prompt is preceded by the save.
         await page.evaluate(() => {
             const id = newId();
             sceneObjects[id] = makePrism('Exit Test', 'world', { x: -8, y: 3, z: 0, length: 1, width: 1, height: 1, anchored: true });
+            recountTypes(); renderExplorer();
+        });
+        const prompt = await page.evaluate(() => {
+            const event = new Event('beforeunload', { cancelable: true });
+            window.dispatchEvent(event);
+            return { prevented: event.defaultPrevented, saved: (localStorage.getItem('vanilla-engine-slot-autosave-v1') || '').includes('Exit Test') };
+        });
+        assert.equal(prompt.prevented, true, 'a close with unsaved changes must ask for confirmation');
+        assert.equal(prompt.saved, true, 'the exit save must finish before the confirmation is shown');
+        // A change made after the prompt is carried out by the real pagehide handler.
+        await page.evaluate(() => {
+            const id = newId();
+            sceneObjects[id] = makePrism('Pagehide Test', 'world', { x: 0, y: 3, z: 8, length: 1, width: 1, height: 1, anchored: true });
             recountTypes(); renderExplorer();
         });
         await page.goto(base + '/player/index.html', { waitUntil: 'load' });
         await page.goto(base + '/engine/index.html', { waitUntil: 'load' });
         await waitForEditorBoot();
         const restored = await page.evaluate(() => Object.values(sceneObjects)
-            .filter((o) => o.name === 'Close Test' || o.name === 'Exit Test')
+            .filter((o) => o.name === 'Close Test' || o.name === 'Exit Test' || o.name === 'Pagehide Test')
             .map((o) => o.name).sort());
-        assert.deepEqual(restored, ['Close Test', 'Exit Test'], 'the closed tab world should reopen from its exit save');
+        assert.deepEqual(restored, ['Close Test', 'Exit Test', 'Pagehide Test'], 'the closed tab world should reopen from its exit save');
+        const unloadDialogs = nativeDialogs.filter((type) => type === 'beforeunload').length;
+        assert.ok(unloadDialogs > 0, 'a real close with unsaved changes should show the browser confirmation');
+        assert.equal(nativeDialogs.length, unloadDialogs, 'only the close confirmation should appear: ' + nativeDialogs.join(', '));
     });
 
     await step('closing during Run saves the world Run started from', async () => {

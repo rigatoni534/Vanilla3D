@@ -314,32 +314,46 @@
         // A closing tab cannot wait for IndexedDB. localStorage writes are synchronous, so this copy is complete before
         // the page can go away; the next open migrates it into IndexedDB. A world too large for localStorage starts the
         // IndexedDB write immediately instead.
-        function autosaveSync() {
+        function autosaveSync(persistAsync) {
             if (autosaveSuppressed) return false;
             let json; try { json = worldFileJsonForSave(); } catch (e) { return false; }
             const fingerprint = autosaveFingerprint(json);
             if (!json || fingerprint === autosaveBase) return false;
+            let localSaved = false;
             try {
                 localStorage.setItem(slotOf('autosave').key, json);
+                localSaved = true;
             } catch (e) {
                 lastSlotWriteError = e;
+            }
+            if (localSaved) {
+                autosaveBase = fingerprint;
+                setAutosaveFailure(false);
+            }
+            // IndexedDB is written here only when asked (the close prompt) or when localStorage could not hold the
+            // world. Without a close prompt the localStorage copy is authoritative until the next open migrates it.
+            if (persistAsync || !localSaved) {
                 writeSlot('autosave', json).then(ok => {
                     if (ok) { autosaveBase = fingerprint; setAutosaveFailure(false); }
-                    else setAutosaveFailure(true);
-                }).catch(() => setAutosaveFailure(true));
-                return false;
+                    else if (!localSaved) setAutosaveFailure(true);
+                }).catch(() => { if (!localSaved) setAutosaveFailure(true); });
             }
-            autosaveBase = fingerprint;
-            setAutosaveFailure(false);
-            // Deliberately no IndexedDB write here: an async commit must never be able to delete this copy while the
-            // tab is closing. The next open migrates it, and a later autosave replaces it once the world changes.
             return true;
         }
-        const saveOnExit = () => { try { autosaveSync(); } catch (e) {} };
+        const saveOnExit = () => { try { autosaveSync(false); } catch (e) {} };
         window.addEventListener('pagehide', saveOnExit);
-        window.addEventListener('beforeunload', saveOnExit);
         // Mobile browsers can discard a hidden tab without a pagehide, so hiding the tab saves as well.
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnExit(); });
+        // A close with changes still waiting to be written asks first. The synchronous copy above is already complete,
+        // and the IndexedDB write starts before the prompt, so the time the prompt is open also gives it time to finish.
+        window.addEventListener('beforeunload', (event) => {
+            let changed = false;
+            try { changed = autosaveSync(true); } catch (e) {}
+            if (!changed) return;
+            event.preventDefault();
+            event.returnValue = '';
+            return '';
+        });
         document.getElementById('opt-uid').addEventListener('change', (e) => { settings.showUid = e.target.checked; saveSettings(); renderExplorer(); });
         document.getElementById('opt-syntax').addEventListener('change', (e) => { settings.syntax = e.target.checked; saveSettings(); reCheckEditor(); });
         ['prism6', 'ball', 'model', 'human', 'script', 'worldsettings'].forEach(t => { const el = document.getElementById('dn-' + t); if (el) el.addEventListener('change', () => { const v = el.value.trim().slice(0, 24); if (v) settings.defaultNames[t] = v; else delete settings.defaultNames[t]; el.value = dn(t); saveSettings(); }); });

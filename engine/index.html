@@ -6,7 +6,7 @@
 <title>Vanilla Engine – Editor</title>
 
     <link rel="stylesheet" href="../assets/base.css?v=4.1.0.0.1">
-    <link rel="stylesheet" href="../assets/engine.css?v=4.1.0.0.2">
+    <link rel="stylesheet" href="../assets/engine.css?v=4.3.0.0">
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" id="favicon">
     <script>if (new URLSearchParams(location.search).get('play') === '1') document.documentElement.classList.add('boot-skip');</script>
     <script>
@@ -543,7 +543,7 @@
             <div class="version-list">
               <div class="version-row"><span>Created</span><code id="world-created-version">Unknown</code></div>
               <div class="version-row"><span>Current</span><code id="world-current-version">Unknown</code></div>
-              <div class="version-row"><span>Latest</span><code id="world-latest-version">4.2.3.0</code></div>
+              <div class="version-row"><span>Latest</span><code id="world-latest-version">4.3.1.0</code></div>
             </div>
             <button class="btn btn-primary" id="world-migrate" type="button" style="width:100%;justify-content:center;margin-top:10px">Up to date</button>
             <div class="field-note" id="world-version-note"></div>
@@ -636,7 +636,7 @@
       <div class="docs-layout">
         <aside class="docs-sidebar"><input id="docs-search" class="text docs-search" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off"><div id="docs-nav" class="docs-nav" aria-label="Documentation sections"></div><div class="docs-sidebar-foot"><span class="docs-status-dot"></span> <span id="docs-foot">Up to date</span></div></aside>
         <main class="docs-main"><div class="docs-article" id="docs-article">
-        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.2.3.0</code>.</p>
+        <p>Vanilla Engine is a browser 3D editor with a built-in scripting language, <b>Vanillalua</b>. This guide has two parts: how the editor works, then everything the language supports. It is written for engine version <code class="ver-chip">4.3.1.0</code>.</p>
         <h3 data-group="Editor guide">Editor overview</h3>
         <p>The editor is built from a few panels. Everything you build lives in one of the <b>spaces</b> in the Explorer.</p>
         <table class="docs-table"><thead><tr><th>Part</th><th>What it does</th></tr></thead><tbody>
@@ -1247,6 +1247,8 @@ vanilla3D.Size(1, 2, 1)</code></pre>
           <div class="mp-box">
             <h3>Host a room</h3>
             <p>Guests edit this world with you. You stay authoritative, and the host tab must stay open.</p>
+            <label class="mp-check"><input id="mp-allow-scripts" type="checkbox">Guests may edit scripts</label>
+            <p class="mp-note">World Settings stay host-only.</p>
             <button class="btn btn-primary" id="mp-host" type="button">Host room</button>
           </div>
           <div class="mp-box">
@@ -1286,14 +1288,14 @@ vanilla3D.Size(1, 2, 1)</code></pre>
 
   <script src="../assets/peerjs.min.js"></script>
   <script src="../vanillalua.js?v=4.1.0.0.2"></script>
-  <script>const ENGINE_VERSION = '4.2.3.0'; const ENGINE_RELEASE = '4.2.3.0';</script>
+  <script>const ENGINE_VERSION = '4.3.1.0'; const ENGINE_RELEASE = '4.3.1.0';</script>
   <!-- The editor is split into ordered classic scripts that share one global scope. Load order matters. -->
   <script defer src="js/loader.js?v=4.1.0.0.1"></script>
   <script defer src="js/collision.js?v=4.1.0.0.1"></script>
   <script defer src="js/scene.js?v=4.1.0.0.1"></script>
   <script defer src="js/effects.js?v=4.1.0.0.1"></script>
   <script defer src="js/csg.js?v=4.1.0.0.1"></script>
-  <script defer src="js/version-history.js?v=4.1.0.0.6"></script>
+  <script defer src="js/version-history.js?v=4.3.1.0"></script>
   <script defer src="js/playeranim.js?v=4.1.0.0.1"></script>
   <script defer src="js/player.js?v=4.1.0.0.1"></script>
   <script defer src="js/sounds.js?v=4.1.0.0.2"></script>
@@ -1304,10 +1306,11 @@ vanilla3D.Size(1, 2, 1)</code></pre>
   <script defer src="js/explorer.js?v=4.1.0.0.1"></script>
   <script defer src="js/shortcuts.js?v=4.1.0.0.2"></script>
   <script defer src="js/properties.js?v=4.1.0.0.1"></script>
-  <script defer src="js/protocol.js?v=4.1.0.0.3"></script>
+  <script defer src="js/protocol.js?v=4.3.0.0"></script>
   <script defer src="js/net.js?v=4.1.0.0.2"></script>
-  <script defer src="js/multiplayer.js?v=4.1.0.0.2"></script>
-  <script defer src="js/playmultiplayer.js?v=4.1.0.0.6"></script>
+  <script defer src="js/room.js?v=4.3.1.0"></script>
+  <script defer src="js/multiplayer.js?v=4.3.1.0"></script>
+  <script defer src="js/playmultiplayer.js?v=4.3.1.0"></script>
   <script defer src="js/render.js?v=4.1.0.0.1"></script>
   <script defer src="js/gl.js?v=4.1.0.0.1"></script>
   <script defer src="../assets/release.js?v=4.1.0.0.1"></script>

@@ -2,6 +2,28 @@
 // Add an entry here whenever ENGINE_VERSION changes. The About dialog and What's new both warn if the running version is missing.
 const VERSION_HISTORY = [
   {
+    version: '4.3.1.0',
+    label: '4.3.1.0',
+    date: '2026-11-26',
+    notes: [
+      'This is a maintenance release for the 4.3 multiplayer hardening work. The shared room plumbing stays in room.js; the full one-file merge of the editor and play surfaces is explicitly descoped in PLAN.md.',
+      'Removed the unused room mode flags and two dead world-end handlers left by the extraction. No world, save or networking format changed; the wire version remains 2.'
+    ]
+  },
+  {
+    version: '4.3.0.0',
+    label: '4.3.0.0',
+    date: '2026-11-26',
+    notes: [
+      'Multiplayer guests can no longer create, change or delete scripts or World Settings. Host a room now has a Guests may edit scripts switch, off by default; World Settings always stay with the host. When an edit is refused, the host sees which guest sent it and the guest is told why, while ordinary shapes still sync.',
+      'World Settings changes now replicate without the world\'s assets. A large image or sound can no longer push a gravity or time-of-day edit past the object size cap; assets still travel with the complete world on join.',
+      'A guest asking for the world over and over can no longer make the host pack it repeatedly: each guest gets at most one transfer in flight and a five-second cooldown between starts.',
+      'Edit batches are checked by walking each object\'s parent chain, so an edit that would create a loop or point at a missing parent is refused instead of leaving a broken world.',
+      'The multiplayer wire version is now 2, so a tab on an older release and a tab on this one refuse to co-edit with a clear version message instead of mixing rules.',
+      'The shared room plumbing (transport, roster, chat envelope, world transfer and retries) now lives in room.js and is used by both the editor room and play mode. Behaviour is unchanged; this keeps future fixes in one place.'
+    ]
+  },
+  {
     version: '4.2.3.0',
     label: '4.2.3.0',
     date: '2026-11-26',

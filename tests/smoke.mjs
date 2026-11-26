@@ -133,7 +133,8 @@ try {
             return loader && loader.hidden === true;
         }, null, { timeout: 30000 });
         assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'screen');
-        // A first visit opens the release notes over the editor; dismiss them the way a reader would.
+        // A first visit opens the release notes shortly after the loader; wait for that window, then dismiss them.
+        await page.waitForTimeout(500);
         if (await page.isVisible('#release-popup')) {
             await page.click('#release-popup .release-close');
             await page.waitForSelector('#release-popup', { state: 'hidden' });
@@ -405,6 +406,77 @@ try {
         }));
         assert.equal(report.hasFall, true, 'the newer tab-close copy must win over the older IndexedDB save');
         assert.equal(report.local, null, 'the migrated tab-close copy should be removed from localStorage');
+    });
+
+    await step('multiplayer rejects parent cycles and keeps assets out of edit batches', async () => {
+        stage = 'multiplayer-protocol';
+        const report = await page.evaluate(() => {
+            const shape = (name, parent) => ({ type: 'prism6', name, parent, x: 0, y: 0, z: 0, length: 1, width: 1, height: 1 });
+            const current = { A: shape('A', 'world'), B: shape('B', 'A') };
+            const cycle = v3dValidOps({ upsert: [['A', shape('A', 'B')], ['B', shape('B', 'A')]], remove: [] }, current);
+            const unknownRoot = v3dValidOps({ upsert: [['C', shape('C', 'missing')]], remove: [] }, current);
+            const normal = v3dValidOps({ upsert: [['C', shape('C', 'B')]], remove: [] }, current);
+            const selfParent = v3dValidOps({ upsert: [['C', shape('C', 'C')]], remove: [] }, current);
+
+            // Keep this on a temporary settings object: mutating the real one would reorder its saved JSON.
+            const big = 'data:image/png;base64,' + 'A'.repeat(300 * 1024);
+            const bigAssets = [{ name: 'big.png', type: 'image/png', size: big.length, url: big }];
+            const wsId = 'TestWorldSettings';
+            sceneObjects[wsId] = { type: 'worldsettings', name: 'Test Settings', parent: 'world', gravity: 9.8, assets: bigAssets };
+            const previous = { [wsId]: JSON.parse(JSON.stringify(sceneObjects[wsId])) };
+            const next = JSON.parse(JSON.stringify(previous));
+            next[wsId].gravity = 1.23;
+            const ops = v3dDiffObjects(previous, next);
+            const wsOp = ops.upsert.find(([id]) => id === wsId);
+            const opBytes = wsOp ? JSON.stringify(wsOp[1]).length : -1;
+            const opsValid = v3dValidOps(ops, sceneObjects);
+            v3dApplyOps({ upsert: [[wsId, wsOp[1]]], remove: [] });
+            const applied = sceneObjects[wsId].gravity === 1.23 && sceneObjects[wsId].assets === bigAssets;
+
+            const guestScript = { type: 'script', name: 'Guest Script', parent: 'scripts', source: 'print(1)', language: 'lua', enabled: true };
+            const filtered = v3dFilterGuestOps({ upsert: [['GuestScript', guestScript], ['GuestShape', shape('GuestShape', 'world')]], remove: [] }, sceneObjects, false);
+            const wsFiltered = v3dFilterGuestOps({ upsert: [[wsId, JSON.parse(JSON.stringify(sceneObjects[wsId]))]], remove: [] }, sceneObjects, true);
+            delete sceneObjects[wsId];
+
+            const gate = v3dWorldSendGate(5000);
+            const first = gate.begin('guest');
+            const during = gate.begin('guest');
+            gate.end('guest');
+            const cooling = gate.begin('guest');
+            const other = gate.begin('other');
+            gate.clear();
+            const afterClear = gate.begin('guest');
+            return {
+                cycle, unknownRoot, normal, selfParent, wsOp: !!wsOp, opBytes, opsValid, applied,
+                filteredBlocked: filtered.blocked, filteredUpserts: filtered.ops.upsert.length,
+                wsFilteredBlocked: wsFiltered.blocked, netVersion: V3D_NET_VERSION,
+                first, during, cooling, other, afterClear
+            };
+        });
+        assert.equal(report.cycle, false, 'a parent cycle must be rejected');
+        assert.equal(report.unknownRoot, false, 'an unknown parent must be rejected');
+        assert.equal(report.normal, true, 'ordinary nesting must stay valid');
+        assert.equal(report.selfParent, false);
+        assert.equal(report.wsOp, true, 'a World Settings change must produce an edit');
+        assert.ok(report.opBytes < 256 * 1024, 'assets must not count against the World Settings edit: ' + report.opBytes + ' bytes');
+        assert.equal(report.opsValid, true);
+        assert.equal(report.applied, true, 'applying a settings edit must keep the receiver\'s assets');
+        assert.equal(report.filteredBlocked, 1, 'a guest script edit must be blocked with scripts off');
+        assert.equal(report.filteredUpserts, 1, 'the guest\'s ordinary shape edit must still go through');
+        assert.equal(report.wsFilteredBlocked, 1, 'World Settings must stay host-only even when scripts are allowed');
+        assert.equal(report.netVersion, 2, 'the changed permission and validation rules need wire version 2');
+        assert.deepEqual([report.first, report.during, report.cooling, report.other, report.afterClear], [true, false, false, true, true]);
+    });
+
+    await step('multiplayer defaults to no guest script editing', async () => {
+        stage = 'multiplayer-ui';
+        await page.click('#mp-btn');
+        await page.waitForSelector('#mp-modal.active');
+        assert.equal(await page.isVisible('#mp-allow-scripts'), true, 'the host should see the guest-script toggle');
+        assert.equal(await page.isChecked('#mp-allow-scripts'), false, 'guests must not edit scripts by default');
+        assert.match((await page.textContent('#mp-modal .mp-note')).trim(), /World Settings stay host-only/);
+        await page.click('#mp-close');
+        await page.waitForFunction(() => !document.getElementById('mp-modal').classList.contains('active'));
     });
 
     await step('play mode neither restores nor writes the editor autosave', async () => {

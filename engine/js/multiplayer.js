@@ -9,7 +9,7 @@ const mpState = {
     transport: null, role: null, room: '', name: '', color: '', selfId: '', hostId: '',
     peers: new Map(), roster: [], connected: false, ready: false, lastSync: null, lastPresence: null,
     applying: false, worldIn: null, transfers: 0, remoteSelections: new Map(), chatLines: 0,
-    worldTimer: null, worldRetries: 0
+    worldTimer: null, worldRetries: 0, allowScripts: false, gate: v3dWorldSendGate(5000)
 };
 const mpUi = {};
 
@@ -20,33 +20,22 @@ function mpSetStatus(text, kind) {
     mpUi.status.classList.toggle('bad', kind === 'bad');
     mpUi.status.classList.toggle('good', kind === 'good');
 }
-function mpClearWorldWait() {
-    if (mpState.worldTimer) { clearTimeout(mpState.worldTimer); mpState.worldTimer = null; }
-}
+function mpClearWorldWait() { v3dRoomClearWorldWait(mpState); }
 function mpAskForWorld(delay, quiet) {
-    mpClearWorldWait();
-    if (mpState.role !== 'guest' || mpState.ready) return;
-    mpState.worldTimer = setTimeout(() => {
-        mpState.worldTimer = null;
-        if (!mpState.transport || mpState.role !== 'guest' || mpState.ready) return;
-        if (mpState.worldRetries >= 5) return;
-        mpState.worldRetries++;
-        mpSend({ type: 'request-world' });
-        if (!quiet) mpSetStatus('Still waiting for the world. Asking the host to send it again…', 'bad');
-        mpAskForWorld(6000, true);
-    }, Math.max(0, delay));
+    v3dRoomAskForWorld(mpState, {
+        delay, quiet,
+        send: msg => mpSend(msg),
+        setStatus: mpSetStatus,
+        retryText: 'Still waiting for the world. Asking the host to send it again…'
+    });
 }
 function mpColorFor(id) {
     const person = mpState.roster.find(p => p.id === id);
     return person ? person.color : v3dNetColor(id);
 }
-function mpRosterForDisplay() {
-    if (mpState.roster.length) return mpState.roster;
-    return [{ id: mpState.selfId || 'you', name: mpState.name, color: mpState.color, role: mpState.role || 'host' }, ...mpState.peers.values()];
-}
 function mpRenderRoster() {
     if (!mpUi.roster) return;
-    const people = mpRosterForDisplay();
+    const people = v3dRoomRosterList(mpState);
     mpUi.roster.innerHTML = '';
     for (const person of people) {
         const row = document.createElement('div'); row.className = 'mp-person';
@@ -83,38 +72,15 @@ function mpAppendChat(from, text, system) {
     mpUi.chat.scrollTop = mpUi.chat.scrollHeight;
     while (mpUi.chat.children.length > 200) mpUi.chat.firstChild.remove();
 }
-function mpSend(msg, id) {
-    if (!mpState.transport) return false;
-    if (id) return mpState.transport.send(id, msg);
-    if (mpState.role === 'host') { mpState.transport.broadcast(msg); return true; }
-    return mpState.transport.send(mpState.hostId, msg);
-}
-function mpBroadcastRoster() {
-    if (mpState.role !== 'host') return;
-    mpSend({ type: 'roster', people: mpRosterForDisplay() });
-}
+function mpSend(msg, id) { return v3dRoomSend(mpState, msg, id); }
+function mpBroadcastRoster() { v3dRoomBroadcastRoster(mpState); }
 function mpHostWorld(guestId) {
-    if (mpState.role !== 'host') return;
-    (async () => {
-        try {
-            mpState.transfers++;
-            const packed = await v3dPackWorld(buildWorldFile(true));
-            const transfer = Math.random().toString(36).slice(2);
-            mpSend({ type: 'world-begin', transfer, encoding: packed.encoding, size: packed.size, rawSize: packed.rawSize, total: packed.chunks.length }, guestId);
-            for (let i = 0; i < packed.chunks.length; i++) {
-                if (!mpState.transport) return;
-                mpSend({ type: 'world-chunk', transfer, index: i, data: packed.chunks[i] }, guestId);
-                if (i % 12 === 11) await new Promise(r => setTimeout(r, 0));
-            }
-            mpSend({ type: 'world-end', transfer }, guestId);
-            mpSetStatus('Sent the world to a guest.', 'good');
-        } catch (err) {
-            mpSetStatus('Could not send the world: ' + err.message, 'bad');
-            mpSend({ type: 'error', code: 'world', message: err.message }, guestId);
-        } finally {
-            mpState.transfers = Math.max(0, mpState.transfers - 1);
-        }
-    })();
+    v3dRoomHostWorld(mpState, guestId, {
+        send: (msg, id) => mpSend(msg, id),
+        setStatus: mpSetStatus,
+        sentText: 'Sent the world to a guest.',
+        errorPrefix: 'Could not send the world: '
+    });
 }
 function mpPeerJoined(id, profile) {
     if (!id || id === mpState.selfId) return;
@@ -142,6 +108,7 @@ function mpPeerJoined(id, profile) {
 }
 function mpRosterSelf() { return { id: mpState.selfId, name: mpState.name, color: mpState.color, role: mpState.role || 'host' }; }
 function mpPeerLeft(id) {
+    mpState.gate.drop(id);
     const gone = mpState.peers.get(id);
     mpState.peers.delete(id);
     mpState.remoteSelections.delete(id);
@@ -154,11 +121,22 @@ function mpPeerLeft(id) {
 }
 function mpApplyIncomingOps(ops, from) {
     if (!v3dValidOps(ops, sceneObjects)) { mpSetStatus('Ignored an invalid edit batch from another peer.', 'bad'); return; }
+    let incoming = ops;
+    if (mpState.role === 'host') {
+        const filtered = v3dFilterGuestOps(ops, sceneObjects, mpState.allowScripts);
+        incoming = filtered.ops;
+        if (filtered.blocked) {
+            const blockedText = mpState.allowScripts ? 'World Settings are host-only in this room.' : V3D_GUEST_BLOCK_MESSAGE;
+            mpSetStatus('Ignored an edit from ' + (mpState.peers.get(from)?.name || 'a guest') + ': ' + blockedText, 'bad');
+            mpSend({ type: 'error', code: 'permission', message: blockedText }, from);
+        }
+        if (!incoming.upsert.length && !incoming.remove.length) return;
+    }
     mpState.applying = true;
     try {
-        v3dApplyOps(ops);
+        v3dApplyOps(incoming);
         mpState.lastSync = JSON.stringify(sceneObjects);
-        if (mpState.role === 'host' && mpState.transport) mpState.transport.broadcast({ type: 'ops', ops }, from);
+        if (mpState.role === 'host' && mpState.transport) mpState.transport.broadcast({ type: 'ops', ops: incoming }, from);
         mpSetStatus('Updated by ' + (mpState.peers.get(from)?.name || 'a peer') + '.', 'good');
     } catch (err) {
         mpSetStatus('Could not apply a peer edit: ' + err.message, 'bad');
@@ -195,12 +173,6 @@ function mpFinishWorldTransfer() {
             mpWorldFailed(err.message);
         }
     })();
-}
-function mpReceiveWorldEnd() {
-    const transfer = mpState.worldIn;
-    if (!transfer) return;
-    transfer.ended = true;
-    mpFinishWorldTransfer();
 }
 async function mpReceive(id, msg) {
     if (!msg || typeof msg !== 'object') return;
@@ -243,38 +215,9 @@ async function mpReceive(id, msg) {
         if (mpState.role === 'host' && mpState.transport) mpState.transport.broadcast({ type: 'chat', text }, id);
         return;
     }
-    if (msg.type === 'world-begin') {
-        if (mpState.role !== 'guest') return;
-        if (!Number.isInteger(msg.total) || msg.total < 1 || msg.total > 2048) return;
-        if (!Number.isFinite(msg.size) || msg.size < 0 || msg.size > V3D_NET_MAX_WORLD + 1024) return;
-        mpClearWorldWait();
-        mpState.worldIn = { transfer: msg.transfer, encoding: msg.encoding === 'gzip' ? 'gzip' : 'raw', size: msg.size, total: msg.total, chunks: new Array(msg.total), received: 0, pending: 0, ended: false, finishing: false, failed: '' };
-        mpSetStatus('Receiving the world…');
-        return;
-    }
-    if (msg.type === 'world-chunk') {
-        const t = mpState.worldIn;
-        if (!t || t.transfer !== msg.transfer || !Number.isInteger(msg.index) || msg.index < 0 || msg.index >= t.chunks.length) return;
-        t.pending++;
-        (async () => {
-            let failure = '';
-            try {
-                const chunk = await v3dChunkBytes(msg.data);
-                if (!(chunk instanceof ArrayBuffer) || chunk.byteLength > V3D_NET_CHUNK + 64) failure = 'The world transfer was damaged.';
-                else if (!t.chunks[msg.index]) { t.chunks[msg.index] = chunk; t.received++; }
-            } catch (err) { failure = err.message || 'The world transfer was damaged.'; }
-            finally {
-                if (failure && !t.failed) t.failed = failure;
-                t.pending--;
-                if (mpState.worldIn === t) mpFinishWorldTransfer();
-            }
-        })();
-        return;
-    }
-    if (msg.type === 'world-end') {
-        if (mpState.worldIn && mpState.worldIn.transfer === msg.transfer) mpReceiveWorldEnd();
-        return;
-    }
+    if (msg.type === 'world-begin') { v3dRoomBeginWorld(mpState, msg, mpSetStatus, 'Receiving the world…'); return; }
+    if (msg.type === 'world-chunk') { v3dRoomReceiveChunk(mpState, msg, mpFinishWorldTransfer); return; }
+    if (msg.type === 'world-end') { v3dRoomReceiveEnd(mpState, msg, mpFinishWorldTransfer); return; }
     if (msg.type === 'request-world') {
         if (mpState.role === 'host') mpHostWorld(id);
         return;
@@ -327,31 +270,23 @@ async function mpStartHost() {
     mpUi.name.value = mpState.name;
     try { localStorage.setItem(MP_NAME_KEY, mpState.name); } catch (e) {}
     mpState.color = v3dNetColor(mpState.name + ':' + Date.now());
+    mpState.allowScripts = !!(mpUi.allowScripts && mpUi.allowScripts.checked);
     mpSetStatus('Opening a room…');
-    let lastError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-        const code = v3dRoomCode();
-        const t = new V3DTransport();
-        try {
-            await t.host(code, { maxGuests: V3D_EDITOR_GUEST_LIMIT });
-            mpState.transport = t; mpState.role = 'host'; mpState.room = code; mpState.selfId = t.peer.id;
-            mpState.ready = true; mpState.lastSync = JSON.stringify(sceneObjects);
-            t.on('join', (id, profile) => mpPeerJoined(id, profile));
-            t.on('leave', id => mpPeerLeft(id));
-            t.on('data', (id, msg) => mpReceive(id, msg));
-            t.on('error', err => mpSetStatus(v3dNetErrorText(err), 'bad'));
-            t.on('offline', () => mpSetStatus('Signalling is offline; reconnecting…', 'bad'));
+    await v3dRoomOpenHost(mpState, {
+        maxGuests: V3D_EDITOR_GUEST_LIMIT,
+        join: (id, profile) => mpPeerJoined(id, profile),
+        leave: id => mpPeerLeft(id),
+        data: (id, msg) => mpReceive(id, msg),
+        error: err => mpSetStatus(v3dNetErrorText(err), 'bad'),
+        offline: () => mpSetStatus('Signalling is offline; reconnecting…', 'bad'),
+        opened: code => {
+            mpState.lastSync = JSON.stringify(sceneObjects);
             mpRenderSession();
             mpSetStatus('Room open. Share the code; guests can edit with you.', 'good');
             mpAppendChat('', 'Room opened. Share the code with up to 4 guests.', true);
-            return;
-        } catch (err) {
-            lastError = err;
-            t.close();
-            if (err && err.type !== 'unavailable-id') break;
-        }
-    }
-    mpSetStatus(v3dNetErrorText(lastError), 'bad');
+        },
+        failed: err => mpSetStatus(v3dNetErrorText(err), 'bad')
+    });
 }
 async function mpJoinRoom() {
     if (mpState.transport) return;
@@ -362,29 +297,26 @@ async function mpJoinRoom() {
     const code = v3dNormalizeRoomCode(mpUi.code.value);
     if (code.length !== V3D_ROOM_CODE_LENGTH) { mpSetStatus('Enter the 5-character room code.', 'bad'); return; }
     mpSetStatus('Joining ' + code + '…');
-    const t = new V3DTransport();
-    try {
-        await t.join(code, mpProfile());
-        mpState.transport = t; mpState.role = 'guest'; mpState.room = code; mpState.selfId = t.peer.id;
-        mpState.ready = false; mpState.lastSync = JSON.stringify(sceneObjects);
-        const host = t.peers()[0];
-        if (host) { mpState.hostId = host.id; mpPeerJoined(host.id, host); }
-        t.on('join', (id, profile) => { if (id !== mpState.selfId) mpPeerJoined(id, profile); });
-        t.on('leave', id => mpPeerLeft(id));
-        t.on('data', (id, msg) => mpReceive(id, msg));
-        t.on('error', err => mpSetStatus(v3dNetErrorText(err), 'bad'));
-        t.on('offline', () => mpSetStatus('Signalling is offline; reconnecting…', 'bad'));
-        mpRenderSession();
-        mpState.worldRetries = 0;
-        mpSetStatus('Waiting for the host to send the world…');
-        mpAppendChat('', 'Joined ' + code + '. Waiting for the world…', true);
-        // The guest normally receives the world immediately. If that first send is lost, ask for it rather than
-        // waiting forever on a blank editor.
-        mpAskForWorld(6000, true);
-    } catch (err) {
-        t.close();
-        mpSetStatus(v3dNetErrorText(err), 'bad');
-    }
+    await v3dRoomOpenGuest(mpState, code, mpProfile(), {
+        join: (id, profile) => { if (id !== mpState.selfId) mpPeerJoined(id, profile); },
+        leave: id => mpPeerLeft(id),
+        data: (id, msg) => mpReceive(id, msg),
+        error: err => mpSetStatus(v3dNetErrorText(err), 'bad'),
+        offline: () => mpSetStatus('Signalling is offline; reconnecting…', 'bad'),
+        host: host => mpPeerJoined(host.id, host),
+        opened: normalized => {
+            mpState.lastSync = JSON.stringify(sceneObjects);
+            mpRenderSession();
+            mpState.worldRetries = 0;
+            mpSetStatus('Waiting for the host to send the world…');
+            mpAppendChat('', 'Joined ' + normalized + '. Waiting for the world…', true);
+            // The guest normally receives the world immediately. If that first send is lost, ask for it rather than
+            // waiting forever on a blank editor.
+            mpAskForWorld(6000, true);
+        },
+        invalid: () => mpSetStatus('Enter the 5-character room code.', 'bad'),
+        failed: err => mpSetStatus(v3dNetErrorText(err), 'bad')
+    });
 }
 function mpEndSession(message, quiet) {
     if (mpState.transport) {
@@ -392,6 +324,9 @@ function mpEndSession(message, quiet) {
     }
     mpState.transport = null; mpState.role = null; mpState.room = ''; mpState.hostId = '';
     mpState.peers.clear(); mpState.roster = []; mpState.remoteSelections.clear();
+    mpState.gate.clear();
+    mpState.allowScripts = false;
+    if (mpUi.allowScripts) mpUi.allowScripts.checked = false;
     mpClearWorldWait();
     mpState.ready = false; mpState.worldIn = null; mpState.lastSync = null; mpState.lastPresence = null; mpState.transfers = 0; mpState.worldRetries = 0;
     mpState.connected = false;
@@ -427,6 +362,7 @@ function mpInit() {
     mpUi.roster = document.getElementById('mp-roster');
     mpUi.chat = document.getElementById('mp-chat');
     mpUi.chatInput = document.getElementById('mp-chat-input');
+    mpUi.allowScripts = document.getElementById('mp-allow-scripts');
     mpUi.dot = document.getElementById('mp-dot');
     if (!mpUi.modal || !mpUi.btn) return;
     try { mpUi.name.value = localStorage.getItem(MP_NAME_KEY) || 'Player'; } catch (e) { mpUi.name.value = 'Player'; }
@@ -440,6 +376,10 @@ function mpInit() {
     mpUi.code.addEventListener('input', () => { mpUi.code.value = v3dNormalizeRoomCode(mpUi.code.value); });
     mpUi.code.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); mpJoinRoom(); } });
     mpUi.leave.addEventListener('click', () => mpEndSession('Left the room.', true));
+    if (mpUi.allowScripts) {
+        mpUi.allowScripts.checked = false;
+        mpUi.allowScripts.addEventListener('change', () => { mpState.allowScripts = mpUi.allowScripts.checked; });
+    }
     mpUi.copy.addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(mpState.room); mpSetStatus('Room code copied.', 'good'); }
         catch (e) { mpSetStatus('Select the code and copy it manually.', 'bad'); }

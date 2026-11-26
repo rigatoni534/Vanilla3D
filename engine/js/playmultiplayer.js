@@ -2,10 +2,10 @@
 // The host runs the simulation and streams object changes to guests. A guest receives the host's world, then follows
 // the live snapshot stream in a read-only view; the editor's own multiplayer file handles co-editing separately.
 const playNet = {
-    transport: null, role: null, room: '', name: 'Player', selfId: '', hostId: '',
-    peers: new Map(), roster: [], ready: false, worldIn: null, transfers: 0, lastSnapshot: null, lastWorld: 0, closed: false,
+    transport: null, role: null, room: '', name: 'Player', color: '', selfId: '', hostId: '',
+    peers: new Map(), roster: [], ready: false, worldIn: null, transfers: 0, lastSnapshot: null, closed: false,
     avatars: new Map(), inputs: new Map(), followModel: '', lastFollow: 0, keys: {},
-    worldTimer: null, worldRetries: 0
+    worldTimer: null, worldRetries: 0, gate: v3dWorldSendGate(5000)
 };
 const playUi = {};
 
@@ -37,28 +37,20 @@ function playUiInit() {
     window.addEventListener('blur', () => { playNet.keys = {}; });
 }
 function playSetStatus(text) { if (playUi.status) playUi.status.textContent = text || ''; }
-function playClearWorldWait() {
-    if (playNet.worldTimer) { clearTimeout(playNet.worldTimer); playNet.worldTimer = null; }
-}
+function playClearWorldWait() { v3dRoomClearWorldWait(playNet); }
 function playAskForWorld(delay, quiet) {
-    playClearWorldWait();
-    if (playNet.role !== 'guest' || playNet.ready) return;
-    playNet.worldTimer = setTimeout(() => {
-        playNet.worldTimer = null;
-        if (!playNet.transport || playNet.role !== 'guest' || playNet.ready) return;
-        if (playNet.worldRetries >= 5) return;
-        playNet.worldRetries++;
-        playSend({ type: 'request-world' });
-        if (!quiet) playSetStatus('Still waiting for the host world. Asking again…');
-        playAskForWorld(6000, true);
-    }, Math.max(0, delay));
+    v3dRoomAskForWorld(playNet, {
+        delay, quiet,
+        send: msg => playSend(msg),
+        setStatus: playSetStatus,
+        retryText: 'Still waiting for the host world. Asking again…'
+    });
 }
-function playRosterSelf() { return { id: playNet.selfId, name: playNet.name, color: v3dNetColor(playNet.selfId), role: playNet.role || 'guest' }; }
-function playRosterList() { return playNet.roster.length ? playNet.roster : [playRosterSelf(), ...playNet.peers.values()]; }
+function playRosterSelf() { return { id: playNet.selfId, name: playNet.name, color: playNet.color || v3dNetColor(playNet.selfId), role: playNet.role || 'guest' }; }
 function playRenderRoster() {
     if (!playUi.roster) return;
     playUi.roster.innerHTML = '';
-    for (const person of playRosterList()) {
+    for (const person of v3dRoomRosterList(playNet)) {
         const row = document.createElement('span'); row.className = 'pn-person';
         const dot = document.createElement('i'); dot.style.background = person.color || v3dNetColor(person.id);
         const name = document.createElement('span'); name.textContent = (person.name || 'Player') + (person.id === playNet.selfId ? ' (you)' : '') + (person.role === 'host' ? ' · host' : '');
@@ -84,16 +76,8 @@ function playAppendChat(from, text, system) {
     playUi.chat.scrollTop = playUi.chat.scrollHeight;
     while (playUi.chat.children.length > 120) playUi.chat.firstChild.remove();
 }
-function playSend(msg, id) {
-    if (!playNet.transport) return false;
-    if (id) return playNet.transport.send(id, msg);
-    if (playNet.role === 'host') { playNet.transport.broadcast(msg); return true; }
-    return playNet.transport.send(playNet.hostId, msg);
-}
-function playBroadcastRoster() {
-    if (playNet.role !== 'host') return;
-    playSend({ type: 'roster', people: playRosterList() });
-}
+function playSend(msg, id) { return v3dRoomSend(playNet, msg, id); }
+function playBroadcastRoster() { v3dRoomBroadcastRoster(playNet); }
 function playSendChat() {
     if (!playNet.transport || !playUi.chatInput) return;
     const text = v3dCleanChat(playUi.chatInput.value);
@@ -105,6 +89,7 @@ function playSendChat() {
 function playLeave() {
     playNet.closed = true;
     playClearWorldWait();
+    playNet.gate.clear();
     if (playNet.transport) { try { playNet.transport.close(); } catch (e) {} }
     playNet.transport = null;
     if (playUi.panel) playUi.panel.hidden = true;
@@ -135,6 +120,7 @@ function playPeerJoined(id, profile) {
     }
 }
 function playPeerLeft(id) {
+    playNet.gate.drop(id);
     const gone = playNet.peers.get(id);
     playNet.peers.delete(id);
     playNet.inputs.delete(id);
@@ -274,20 +260,12 @@ function playInputTick() {
     const r = (keyState['d'] ? 1 : 0) - (keyState['a'] ? 1 : 0);
     playSend({ type: 'play-input', f, r, jump: !!keys[' '], sprint: !!keys['shift'], yaw: angleY });
 }
-async function playHostWorld(guestId) {
-    playNet.transfers++;
-    try {
-        const packed = await v3dPackWorld(buildWorldFile(true));
-        const transfer = Math.random().toString(36).slice(2);
-        playSend({ type: 'world-begin', transfer, encoding: packed.encoding, size: packed.size, rawSize: packed.rawSize, total: packed.chunks.length }, guestId);
-        for (let i = 0; i < packed.chunks.length; i++) {
-            playSend({ type: 'world-chunk', transfer, index: i, data: packed.chunks[i] }, guestId);
-            if (i % 12 === 11) await new Promise(r => setTimeout(r, 0));
-        }
-        playSend({ type: 'world-end', transfer }, guestId);
-        playNet.lastWorld = Date.now();
-    } catch (err) { playSetStatus('Could not send the world: ' + err.message); }
-    finally { playNet.transfers = Math.max(0, playNet.transfers - 1); }
+function playHostWorld(guestId) {
+    v3dRoomHostWorld(playNet, guestId, {
+        send: (msg, id) => playSend(msg, id),
+        setStatus: playSetStatus,
+        errorPrefix: 'Could not send the world: '
+    });
 }
 function playWorldFailed(message) {
     playSetStatus('Could not open the host world: ' + message);
@@ -330,12 +308,6 @@ function playFinishWorldTransfer() {
             playNet.cameraSet = false;
         } catch (err) { playWorldFailed(err.message); }
     })();
-}
-function playReceiveWorldEnd() {
-    const transfer = playNet.worldIn;
-    if (!transfer) return;
-    transfer.ended = true;
-    playFinishWorldTransfer();
 }
 function playSetTimeoutCamera() {
     setTimeout(() => {
@@ -401,62 +373,31 @@ async function playReceive(id, msg) {
         if (playNet.role === 'host' && playNet.transport) playNet.transport.broadcast({ type: 'chat', text }, id);
         return;
     }
-    if (msg.type === 'world-begin') {
-        if (playNet.role !== 'guest' || !Number.isInteger(msg.total) || msg.total < 1 || msg.total > 2048) return;
-        if (!Number.isFinite(msg.size) || msg.size < 0 || msg.size > V3D_NET_MAX_WORLD + 1024) return;
-        playClearWorldWait();
-        playNet.worldIn = { transfer: msg.transfer, encoding: msg.encoding === 'gzip' ? 'gzip' : 'raw', size: msg.size, total: msg.total, chunks: new Array(msg.total), received: 0, pending: 0, ended: false, finishing: false, failed: '' };
-        playSetStatus('Receiving the host world…'); return;
-    }
-    if (msg.type === 'world-chunk') {
-        const t = playNet.worldIn;
-        if (!t || t.transfer !== msg.transfer || !Number.isInteger(msg.index) || msg.index < 0 || msg.index >= t.chunks.length) return;
-        t.pending++;
-        (async () => {
-            let failure = '';
-            try {
-                const chunk = await v3dChunkBytes(msg.data);
-                if (!(chunk instanceof ArrayBuffer) || chunk.byteLength > V3D_NET_CHUNK + 64) failure = 'The world transfer was damaged.';
-                else if (!t.chunks[msg.index]) { t.chunks[msg.index] = chunk; t.received++; }
-            } catch (err) { failure = err.message || 'The world transfer was damaged.'; }
-            finally {
-                if (failure && !t.failed) t.failed = failure;
-                t.pending--;
-                if (playNet.worldIn === t) playFinishWorldTransfer();
-            }
-        })();
-        return;
-    }
-    if (msg.type === 'world-end') {
-        if (playNet.worldIn && playNet.worldIn.transfer === msg.transfer) playReceiveWorldEnd();
-        return;
-    }
+    if (msg.type === 'world-begin') { v3dRoomBeginWorld(playNet, msg, playSetStatus, 'Receiving the host world…'); return; }
+    if (msg.type === 'world-chunk') { v3dRoomReceiveChunk(playNet, msg, playFinishWorldTransfer); return; }
+    if (msg.type === 'world-end') { v3dRoomReceiveEnd(playNet, msg, playFinishWorldTransfer); return; }
     if (msg.type === 'request-world') { if (playNet.role === 'host') playHostWorld(id); }
 }
 async function playStartHost(name) {
     playNet.name = v3dCleanName(name, 'Host');
     playShow('host', '-----');
     playSetStatus('Opening a room…');
-    let lastError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-        const t = new V3DTransport();
-        try {
-            const code = v3dRoomCode();
-            await t.host(code, { maxGuests: V3D_PLAY_GUEST_LIMIT });
-            playNet.transport = t; playNet.role = 'host'; playNet.room = code; playNet.selfId = t.peer.id;
-            playNet.ready = true; playNet.lastSnapshot = JSON.stringify(sceneObjects);
-            t.on('join', (id, profile) => playPeerJoined(id, profile));
-            t.on('leave', id => playPeerLeft(id));
-            t.on('data', (id, msg) => playReceive(id, msg));
-            t.on('error', err => playSetStatus(v3dNetErrorText(err)));
+    const opened = await v3dRoomOpenHost(playNet, {
+        maxGuests: V3D_PLAY_GUEST_LIMIT,
+        join: (id, profile) => playPeerJoined(id, profile),
+        leave: id => playPeerLeft(id),
+        data: (id, msg) => playReceive(id, msg),
+        error: err => playSetStatus(v3dNetErrorText(err)),
+        opened: code => {
+            playNet.color = v3dNetColor(playNet.selfId);
+            playNet.lastSnapshot = JSON.stringify(sceneObjects);
             playShow('host', code);
             playSetStatus('Room open. Guests join with ' + code + '.');
             playAppendChat('', 'Room opened. Guests join with ' + code + '.', true);
-            return code;
-        } catch (err) { lastError = err; t.close(); if (err && err.type !== 'unavailable-id') break; }
-    }
-    playSetStatus(v3dNetErrorText(lastError));
-    return '';
+        },
+        failed: err => playSetStatus(v3dNetErrorText(err))
+    });
+    return opened ? playNet.room : '';
 }
 async function playStartGuest(room, name) {
     playNet.name = v3dCleanName(name, 'Guest');
@@ -464,24 +405,23 @@ async function playStartGuest(room, name) {
     playShow('guest', code || '-----');
     if (code.length !== V3D_ROOM_CODE_LENGTH) { playSetStatus('That room code is not valid.'); return false; }
     playSetStatus('Joining ' + code + '…');
-    const t = new V3DTransport();
-    try {
-        await t.join(code, { name: playNet.name, color: v3dNetColor(playNet.name) });
-        playNet.transport = t; playNet.role = 'guest'; playNet.room = code; playNet.selfId = t.peer.id;
-        playNet.ready = false;
-        const host = t.peers()[0];
-        if (host) { playNet.hostId = host.id; playPeerJoined(host.id, host); }
-        t.on('join', (id, profile) => { if (id !== playNet.selfId) playPeerJoined(id, profile); });
-        t.on('leave', id => playPeerLeft(id));
-        t.on('data', (id, msg) => playReceive(id, msg));
-        t.on('error', err => playSetStatus(v3dNetErrorText(err)));
-        playShow('guest', code);
-        playNet.worldRetries = 0;
-        playSetStatus('Waiting for the host world…');
-        playAppendChat('', 'Waiting for the host world…', true);
-        playAskForWorld(6000, true);
-        return true;
-    } catch (err) { t.close(); playSetStatus(v3dNetErrorText(err)); return false; }
+    return v3dRoomOpenGuest(playNet, code, { name: playNet.name, color: v3dNetColor(playNet.name) }, {
+        join: (id, profile) => { if (id !== playNet.selfId) playPeerJoined(id, profile); },
+        leave: id => playPeerLeft(id),
+        data: (id, msg) => playReceive(id, msg),
+        error: err => playSetStatus(v3dNetErrorText(err)),
+        host: host => playPeerJoined(host.id, host),
+        opened: normalized => {
+            playNet.color = v3dNetColor(playNet.selfId);
+            playShow('guest', normalized);
+            playNet.worldRetries = 0;
+            playSetStatus('Waiting for the host world…');
+            playAppendChat('', 'Waiting for the host world…', true);
+            playAskForWorld(6000, true);
+        },
+        invalid: () => playSetStatus('That room code is not valid.'),
+        failed: err => playSetStatus(v3dNetErrorText(err))
+    });
 }
 function playSnapshotTick() {
     if (playNet.role !== 'host' || !playNet.transport || !simulationRunning || !playNet.ready || playNet.transfers > 0) return;
